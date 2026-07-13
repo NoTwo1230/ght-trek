@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GHT 路段进度 · 分段完成情况</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap">
+<style>
+  :root {
+    /* ── 与行程对比页 / 主 app 完全一致的 Adventure Dark Palette ── */
+    --bg: #0a0e14;
+    --panel: #0d1219;
+    --panel-alt: #161b22;
+    --panel-bg: rgba(13,18,25,0.95);
+    --border: #1c2333;
+    --border-light: #21262d;
+    --text: #e6edf3;
+    --text-dim: #8b949e;
+    --text-dimmer: #7d8590;
+    --accent: #58a6ff;
+    --accent-bg: #1a3a5c;
+    --accent2: #f0883e;
+    --green: #3fb950;
+    --red: #f85149;
+    --purple: #bc8cff;
+    --yellow: #d29922;
+    --cyan: #39d2c0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  :focus:not(:focus-visible) { outline: none; }
+
+  html, body { height: 100%; }
+  body {
+    font-family: 'Noto Sans SC', -apple-system, sans-serif;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(88,166,255,0.08), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(240,136,62,0.06), transparent 60%),
+      var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── 顶部栏（吸顶 + 毛玻璃）── */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 20px;
+    background: rgba(10,14,20,0.82);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .topbar .title {
+    font-size: 17px; font-weight: 700; letter-spacing: .3px;
+    display: flex; align-items: center; gap: 9px; white-space: nowrap;
+  }
+  .topbar .title .glyph {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: var(--accent-bg); border: 1px solid rgba(88,166,255,0.25);
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+  }
+  .topbar .title small { font-weight: 400; color: var(--text-dim); font-size: 12px; }
+
+  .back-link {
+    margin-left: auto;
+    display: inline-flex; align-items: center; gap: 6px;
+    text-decoration: none; color: var(--text-dim);
+    border: 1px solid var(--border-light); border-radius: 8px;
+    padding: 7px 13px; font-size: 12px; transition: all .2s;
+  }
+  .back-link:hover { color: var(--text); border-color: var(--accent); background: rgba(88,166,255,0.08); }
+
+  /* ── 摘要条 ── */
+  .summary {
+    display: flex; flex-wrap: wrap; gap: 10px;
+    padding: 16px 20px 6px;
+  }
+  .stat {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; padding: 11px 16px; min-width: 116px; flex: 1 1 auto;
+  }
+  .stat .v { font-size: 21px; font-weight: 700; line-height: 1.1; }
+  .stat .v.green { color: var(--green); }
+  .stat .v.blue { color: var(--accent); }
+  .stat .v.amber { color: var(--yellow); }
+  .stat .v.gray { color: var(--text-dim); }
+  .stat .l { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+
+  /* ── 工具栏（筛选 / 排序）── */
+  .toolbar {
+    position: sticky; top: 59px; z-index: 90;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 12px 20px;
+    background: rgba(10,14,20,0.78);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
+  .toolbar .group { display: flex; align-items: center; gap: 6px; }
+  .toolbar .glabel { font-size: 11px; color: var(--text-dim); margin-right: 2px; }
+  .seg {
+    display: inline-flex; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 9px; overflow: hidden;
+  }
+  .seg button {
+    border: none; background: transparent; color: var(--text-dim);
+    padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: inherit;
+    transition: all .15s;
+  }
+  .seg button:hover { color: var(--text); }
+  .seg button.active { background: var(--accent-bg); color: var(--accent); }
+  .sel {
+    background: var(--panel); border: 1px solid var(--border); color: var(--text-dim);
+    border-radius: 9px; padding: 6px 10px; font-size: 12px; cursor: pointer; font-family: inherit;
+  }
+  .sel:focus { color: var(--text); border-color: var(--accent); }
+  .spacer { flex: 1; }
+  .count-note { font-size: 11px; color: var(--text-dim); white-space: nowrap; }
+
+  /* ── 列表 ── */
+  .list { padding: 18px 20px 60px; display: flex; flex-direction: column; gap: 18px; max-width: 980px; margin: 0 auto; width: 100%; }
+
+  /* 分组标题 */
+  .group-head {
+    display: flex; align-items: center; gap: 10px;
+    margin: 6px 2px -4px; font-size: 13px; font-weight: 700;
+  }
+  .group-head .gdot { width: 9px; height: 9px; border-radius: 50%; }
+  .group-head .gcount { font-size: 11px; color: var(--text-dim); font-weight: 400; }
+  .group-head.inprog { color: var(--accent); }
+  .group-head.inprog .gdot { background: var(--accent); }
+  .group-head.done { color: var(--green); }
+  .group-head.done .gdot { background: var(--green); }
+  .group-head.wait { color: var(--text-dim); }
+  .group-head.wait .gdot { background: var(--text-dim); }
+
+  /* 路段卡片（复用 day-card 视觉系统） */
+  .day-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 14px;
+    padding: 16px 18px;
+    transition: border-color .2s, transform .15s, box-shadow .2s;
+  }
+  .day-card:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,0,0,0.35); border-color: var(--border-light); }
+  .day-card.is-inprog { box-shadow: 0 0 0 1px rgba(88,166,255,0.5), 0 8px 26px rgba(88,166,255,0.12); }
+
+  .day-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .day-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--panel-alt); border: 1px solid var(--border-light);
+    border-radius: 10px; padding: 6px 12px; font-weight: 700; font-size: 13px;
+  }
+  .day-badge .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .sec-title { display: flex; flex-direction: column; line-height: 1.25; }
+  .sec-title .zh { font-size: 15px; font-weight: 700; }
+  .sec-title .en { font-size: 11px; color: var(--text-dim); font-weight: 400; }
+
+  .chip {
+    font-size: 11px; padding: 3px 9px; border-radius: 20px; white-space: nowrap; border: 1px solid transparent;
+  }
+  .chip.inprog { background: rgba(88,166,255,0.14); color: var(--accent); border-color: rgba(88,166,255,0.35); }
+  .chip.done { background: rgba(63,185,80,0.15); color: var(--green); border-color: rgba(63,185,80,0.35); }
+  .chip.wait { background: rgba(139,148,158,0.12); color: var(--text-dim); border-color: rgba(139,148,158,0.28); }
+
+  .sec-meta { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 4px 0 12px; font-size: 12px; color: var(--text-dim); }
+  .sec-meta b { color: var(--text); font-weight: 500; }
+  .sec-meta .mi { display: inline-flex; align-items: center; gap: 5px; }
+
+  .sec-detail { display: flex; flex-direction: column; gap: 5px; font-size: 12.5px; }
+  .row { display: flex; align-items: baseline; gap: 8px; }
+  .row .k { color: var(--text-dim); min-width: 52px; flex-shrink: 0; font-size: 11.5px; }
+  .row .v { color: var(--text); }
+  .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+  .tag-row .t { font-size: 11px; background: var(--panel-alt); border: 1px solid var(--border-light); border-radius: 14px; padding: 3px 10px; color: var(--text-dim); }
+
+  /* 进行中：当前位置面板 */
+  .curpos { margin-top: 14px; border-top: 1px dashed var(--border); padding-top: 13px; }
+  .curpos-head { font-size: 12px; font-weight: 700; color: var(--accent2); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .curpos-body { display: flex; gap: 14px; flex-wrap: wrap; }
+  .mini-wrap { flex: 1 1 240px; min-width: 220px; }
+  .mini-track { width: 100%; height: auto; display: block; background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 10px; }
+  .curpos-info { flex: 1 1 180px; display: flex; flex-direction: column; gap: 8px; justify-content: center; font-size: 12.5px; }
+  .curpos-info .ci-row { display: flex; gap: 8px; }
+  .curpos-info .k { color: var(--text-dim); min-width: 44px; flex-shrink: 0; }
+  .curpos-info .v { color: var(--text); }
+  .curpos-info .v.acc { color: var(--accent2); font-weight: 600; }
+  .curpos-info .note { font-size: 11px; color: var(--text-dim); margin-top: 2px; line-height: 1.5; }
+
+  /* 空状态 */
+  .empty { max-width: 520px; margin: 80px auto; text-align: center; color: var(--text-dim); padding: 0 20px; }
+  .empty .ico { font-size: 54px; margin-bottom: 16px; }
+  .empty h2 { color: var(--text); font-size: 17px; margin-bottom: 10px; font-weight: 600; }
+  .empty p { font-size: 13px; line-height: 1.8; }
+  .empty a { color: var(--accent); text-decoration: none; border-bottom: 1px solid rgba(88,166,255,0.4); }
+  .empty code { background: var(--panel-alt); padding: 1px 6px; border-radius: 5px; font-size: 12px; color: var(--cyan); }
+
+  .foot-note { text-align: center; font-size: 11px; color: var(--text-dimmer); padding: 24px 20px 8px; line-height: 1.7; }
+
+  @media (max-width: 640px) {
+    .stat { min-width: calc(50% - 5px); }
+    .topbar .title small { display: none; }
+    .curpos-body { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="title">
+    <span class="glyph">🏔️</span>
+    <span>路段进度<small> · 分段完成情况</small></span>
+  </div>
+  <a class="back-link" href="index.html" title="返回地图追踪页">🗺️ 返回地图</a>
+</header>
+
+<div id="summary" class="summary"></div>
+
+<div class="toolbar">
+  <div class="group">
+    <span class="glabel">状态</span>
+    <div class="seg" id="segStatus">
+      <button data-status="all" class="active">全部</button>
+      <button data-status="in-progress">进行中</button>
+      <button data-status="completed">已完成</button>
+      <button data-status="upcoming">未完成</button>
+    </div>
+  </div>
+  <div class="group">
+    <span class="glabel">省份</span>
+    <select class="sel" id="selProvince">
+      <option value="all">全部</option>
+      <option value="koshi">科西省</option>
+      <option value="bagmati">巴格马蒂省</option>
+      <option value="gandaki">甘达基省</option>
+      <option value="karnali">卡尔纳利省</option>
+      <option value="sudurpashchim">远西省</option>
+    </select>
+  </div>
+  <div class="spacer"></div>
+  <div class="count-note" id="countNote"></div>
+</div>
+
+<main id="list" class="list"></main>
+
+<div class="foot-note" id="footNote"></div>
+
+<script>
+/* ════════════════════════════════════════════════════════════
+   路段进度页：读取与主 app 完全相同的 localStorage 键。
+   - ght_sections   → APP.sectionRanges（每段 status / parkColor）
+   - ght_preset     → 预设轨迹（用于绘制段轨迹缩略）
+   - ght_current_pos→ 最后一次上传轨迹的当前位置 {lat,lon,elev}
+   - ght_actual     → 实际轨迹（回退取末点作为当前位置）
+   纯前端渲染，无外部依赖，长列表可完整滚动。
+   ════════════════════════════════════════════════════════════ */
+const LS = {
+  sections:   'ght_sections',     // JSON, array of sectionRanges (status/parkColor/...)
+  preset:     'ght_preset',       // JSON, { trackPoints, distances, waypoints, ... }
+  currentPos: 'ght_current_pos',  // JSON, { lat, lon, elev }
+  actual:     'ght_actual'        // JSON, array of uploaded tracks
+};
+function load(k){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch(e){ return null; } }
+
+/* ── 10 段静态定义（与主 app ghtSections 一致，内联以保证离线可用）── */
+const ghtSections = [
+  { id:1, name:'干城章嘉段', nameEn:'Kanchenjunga', province:'koshi', days:'14-18天', distance:180, maxElev:5140,
+    mainPass:{name:'Mirgin La', elev:5140}, startPoint:'Taplejung (1,820m)',
+    highlights:['干城章嘉峰南北大本营','杜鹃花森林','林布族村庄'],
+    trail:[[27.35,87.95],[27.45,87.85],[27.55,87.75],[27.6,87.7],[27.7,87.65],[27.8,87.6]] },
+  { id:2, name:'马卡鲁-巴润段', nameEn:'Makalu-Barun', province:'koshi', days:'12-16天', distance:160, maxElev:4850,
+    mainPass:{name:'Tutu La', elev:4850}, startPoint:'Num (1,560m)',
+    highlights:['马卡鲁-巴润国家公园','阿润河谷','世界级生物多样性'],
+    trail:[[27.6,87.7],[27.65,87.45],[27.7,87.25],[27.75,87.05],[27.8,86.85],[27.85,86.7]] },
+  { id:3, name:'珠峰-昆布段', nameEn:'Everest-Khumbu', province:'koshi', days:'12-18天', distance:150, maxElev:5535,
+    mainPass:{name:'Kongma La', elev:5535}, startPoint:'Lukla (2,860m)',
+    highlights:['三垭口穿越','珠峰大本营支线','昆布冰川'],
+    trail:[[27.85,86.7],[27.9,86.55],[27.95,86.4],[28.0,86.3]] },
+  { id:4, name:'若瓦岭段', nameEn:'Rolwaling', province:'bagmati', days:'10-14天', distance:130, maxElev:5755,
+    mainPass:{name:'Tashi Lapcha', elev:5755}, startPoint:'Beding (3,690m)',
+    highlights:['Tashi Lapcha垭口','若瓦岭秘境山谷','冰川穿越'],
+    trail:[[28.0,86.3],[28.05,86.2],[28.1,86.1],[28.1,86.0],[28.15,85.85]] },
+  { id:5, name:'郎当-戈赛昆达段', nameEn:'Langtang-Gosaikunda', province:'bagmati', days:'12-15天', distance:140, maxElev:5122,
+    mainPass:{name:'Tserko Ri', elev:5122}, startPoint:'Syabrubesi (1,460m)',
+    highlights:['戈赛昆达圣湖群','塔芒文化遗产步道','郎当国家公园'],
+    trail:[[28.15,85.85],[28.2,85.6],[28.25,85.4],[28.3,85.15]] },
+  { id:6, name:'马纳斯鲁-楚姆段', nameEn:'Manaslu-Tsum', province:'gandaki', days:'14-18天', distance:160, maxElev:5160,
+    mainPass:{name:'Larkya La', elev:5160}, startPoint:'Arughat (570m)',
+    highlights:['马纳斯鲁峰环绕','楚姆山谷藏传佛教','Larkya La垭口'],
+    trail:[[28.3,85.15],[28.35,84.9],[28.4,84.7]] },
+  { id:7, name:'安纳普尔纳段', nameEn:'Annapurna', province:'gandaki', days:'14-20天', distance:170, maxElev:5416,
+    mainPass:{name:'Thorong La', elev:5416}, startPoint:'Besisahar (820m)',
+    highlights:['Thorong La垭口','木斯塘边境','马南高海拔荒漠'],
+    trail:[[28.4,84.7],[28.5,84.5],[28.6,84.3],[28.7,84.1]] },
+  { id:8, name:'道拉吉里-多尔普东段', nameEn:'Dhaulagiri-Dolpo East', province:'gandaki', days:'15-20天', distance:170, maxElev:5860,
+    mainPass:{name:'Jungben La', elev:5860}, startPoint:'Marpha (2,670m)',
+    highlights:['道拉吉里峰群','Jungben La垭口','偏远露营路段'],
+    trail:[[28.7,84.1],[28.8,83.9],[28.9,83.7],[29.0,83.5]] },
+  { id:9, name:'多尔普-胡姆拉段', nameEn:'Dolpo-Humla West', province:'karnali', days:'18-25天', distance:200, maxElev:6146,
+    mainPass:{name:'Kagmara La', elev:6146}, startPoint:'Dunai (2,140m)',
+    highlights:['全路线最高垭口 Kagmara La','多尔普秘境','最极端路段'],
+    trail:[[29.0,83.5],[29.2,83.2],[29.4,82.9],[29.6,82.6],[29.8,82.2]] },
+  { id:10, name:'胡姆拉-西米科特段', nameEn:'Humla-Simikot', province:'sudurpashchim', days:'10-14天', distance:120, maxElev:4620,
+    mainPass:{name:'Nara La', elev:4620}, startPoint:'Simikot (2,910m)',
+    highlights:['Nara La垭口','苯教传统文化','远西秘境'],
+    trail:[[29.8,82.2],[29.9,81.9],[29.95,81.6],[30.0,81.3]] }
+];
+
+const SECTION_COLORS = ['#FF6B6B','#FFA94D','#FFD43B','#69DB7C','#38D9A9','#4DABF7','#748FFC','#DA77F2','#F783AC','#63E6BE'];
+const PROV = { koshi:'科西省', bagmati:'巴格马蒂省', gandaki:'甘达基省', karnali:'卡尔纳利省', sudurpashchim:'远西省' };
+
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+/* ── 地理工具 ── */
+function haversine(lat1,lon1,lat2,lon2){
+  const R=6371000, toR=x=>x*Math.PI/180;
+  const dLat=toR(lat2-lat1), dLon=toR(lon2-lon1);
+  const a=Math.sin(dLat/2)**2 + Math.cos(toR(lat1))*Math.cos(toR(lat2))*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(a));
+}
+
+/* 抽稀点集（等间隔采样） */
+function decimate(pts, max){
+  if(!pts || pts.length<=max) return pts||[];
+  const out=[]; const step=(pts.length-1)/(max-1);
+  for(let i=0;i<max;i++) out.push(pts[Math.round(i*step)]);
+  return out;
+}
+
+/* 取该段的轨迹点（优先真实预设轨迹，回退示意 trail） */
+function getTrackPoints(s, preset){
+  if(preset && preset.trackPoints && preset.trackPoints.length>1){
+    return decimate(preset.trackPoints, 60);
+  }
+  return s.trail || [];
+}
+
+/* 生成该段迷你轨迹 SVG + 当前位置脉冲点 */
+function miniTrackSVG(points, cur, color){
+  if(!points || points.length<2) return '';
+  const latOf = p => p.lat!=null ? p.lat : p[0];
+  const lonOf = p => p.lon!=null ? p.lon : p[1];
+  const lats = points.map(latOf), lons = points.map(lonOf);
+  const minLat=Math.min(...lats), maxLat=Math.max(...lats);
+  const minLon=Math.min(...lons), maxLon=Math.max(...lons);
+  const W=300, H=120, pad=16;
+  const spanLat=(maxLat-minLat)||1e-6, spanLon=(maxLon-minLon)||1e-6;
+  const sx = lon => pad + ((lon-minLon)/spanLon)*(W-2*pad);
+  const sy = lat => pad + (1-(lat-minLat)/spanLat)*(H-2*pad);
+  const d = points.map((p,i)=>{ const x=sx(lonOf(p)), y=sy(latOf(p)); return (i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1); }).join(' ');
+
+  let cx=null, cy=null;
+  if(cur && cur.lat!=null && cur.lon!=null){
+    // 投影当前点，并验证其落在轨迹包围盒附近（避免画到框外）
+    const px=sx(cur.lon), py=sy(cur.lat);
+    if(px>=pad-6 && px<=W-pad+6 && py>=pad-6 && py<=H-pad+6){ cx=px; cy=py; }
+  }
+
+  return `<svg class="mini-track" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="该段轨迹示意与当前位置">
+    <path d="${d}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>
+    ${cx!=null ? `
+      <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="4" fill="none" stroke="#FFD43B" stroke-width="2">
+        <animate attributeName="r" from="4" to="17" dur="1.6s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" from="0.85" to="0" dur="1.6s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="4.5" fill="#FFD43B" stroke="#0a0e14" stroke-width="1.5"/>
+    ` : ''}
+  </svg>`;
+}
+
+/* ════════════════════════════════════════════════════════════
+   构建路段数据
+   ════════════════════════════════════════════════════════════ */
+function buildSegments(){
+  const ranges = load(LS.sections) || [];   // array, index === sectionId-1
+  const preset = load(LS.preset) || {};
+  const curPos = load(LS.currentPos);        // { lat, lon, elev } | null
+  const actuals = load(LS.actual) || [];
+
+  // 当前位置：优先存储的 ght_current_pos，回退取最后一个实际上传轨迹的末点
+  let cur = curPos;
+  if(!cur && actuals.length){
+    const last = actuals[actuals.length-1];
+    const pts = last.trackPoints || [];
+    if(pts.length){ cur = { lat: pts[pts.length-1].lat, lon: pts[pts.length-1].lon, elev: null }; }
+  }
+
+  const segs = ghtSections.map(s=>{
+    const r = ranges[s.id-1] || null;
+    return {
+      id: s.id,
+      name: s.name, nameEn: s.nameEn, province: s.province,
+      days: s.days, distance: s.distance, maxElev: s.maxElev,
+      mainPass: s.mainPass, startPoint: s.startPoint, highlights: s.highlights,
+      trail: s.trail,
+      status: r ? (r.status || 'upcoming') : 'upcoming',
+      color: (r && r.parkColor) || SECTION_COLORS[s.id-1],
+      _preset: preset
+    };
+  });
+
+  return { segs, cur, hasData: ranges.length>0 || !!(preset && preset.trackPoints && preset.trackPoints.length) };
+}
+
+/* ════════════════════════════════════════════════════════════
+   渲染
+   ════════════════════════════════════════════════════════════ */
+let STATE = { status:'all', province:'all' };
+
+function statusChip(s){
+  if(s.status==='in-progress') return '<span class="chip inprog">🔵 进行中</span>';
+  if(s.status==='completed')   return '<span class="chip done">✅ 已完成</span>';
+  return '<span class="chip wait">⬜ 未完成</span>';
+}
+
+function secCard(s, cur){
+  const cls = ['day-card'];
+  if(s.status==='in-progress') cls.push('is-inprog');
+
+  const meta = `
+    <div class="sec-meta">
+      <span class="mi">📍 <b>${esc(PROV[s.province]||s.province)}</b></span>
+      <span class="mi">🗓 计划 <b>${esc(s.days)}</b></span>
+      <span class="mi">📏 <b>${s.distance}km</b></span>
+      <span class="mi">⛰ 最高 <b>${s.maxElev.toLocaleString()}m</b></span>
+    </div>`;
+
+  const detail = `
+    <div class="sec-detail">
+      <div class="row"><span class="k">起点</span><span class="v">${esc(s.startPoint)}</span></div>
+      <div class="row"><span class="k">主垭口</span><span class="v">${esc(s.mainPass.name)} · ${s.mainPass.elev.toLocaleString()}m</span></div>
+      <div class="tag-row">${s.highlights.map(h=>`<span class="t">${esc(h)}</span>`).join('')}</div>
+    </div>`;
+
+  // 进行中：当前位置面板（迷你轨迹 + 脉冲点）
+  let curpos = '';
+  if(s.status==='in-progress'){
+    const pts = getTrackPoints(s, s._preset);
+    const svg = miniTrackSVG(pts, cur, s.color);
+    const coord = (cur && cur.lat!=null) ? cur.lat.toFixed(3)+'°N, '+cur.lon.toFixed(3)+'°E' : '—';
+    const elev = (cur && cur.elev!=null) ? Math.round(cur.elev).toLocaleString()+'m' : '—（未记录海拔）';
+    curpos = `
+      <div class="curpos">
+        <div class="curpos-head">📍 当前位置 · 最后一次上传轨迹</div>
+        <div class="curpos-body">
+          <div class="mini-wrap">${svg || '<div style="padding:30px;text-align:center;color:var(--text-dim);font-size:12px;">暂无该段轨迹数据</div>'}</div>
+          <div class="curpos-info">
+            <div class="ci-row"><span class="k">坐标</span><span class="v acc">${coord}</span></div>
+            <div class="ci-row"><span class="k">海拔</span><span class="v">${elev}</span></div>
+            <div class="note">🟡 黄点为本次上传轨迹的当前所在位置，位于第 ${s.id} 段沿线。在地图追踪页上传新的 GPS 文件后，本页自动同步刷新。</div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  return `
+    <article class="${cls.join(' ')}" data-id="${s.id}" data-status="${s.status}" style="border-left-color:${s.color}">
+      <div class="day-head">
+        <span class="day-badge"><span class="dot" style="background:${s.color}"></span>第 ${s.id} 段</span>
+        <span class="sec-title"><span class="zh">${esc(s.name)}</span><span class="en">${esc(s.nameEn)}</span></span>
+        ${statusChip(s)}
+      </div>
+      ${meta}
+      ${detail}
+      ${curpos}
+    </article>`;
+}
+
+function renderSummary(segs){
+  const total = segs.length;
+  const done = segs.filter(s=>s.status==='completed').length;
+  const inprog = segs.filter(s=>s.status==='in-progress').length;
+  const wait = segs.filter(s=>s.status==='upcoming').length;
+  const distTotal = segs.reduce((a,s)=>a+s.distance,0);
+  return `
+    <div class="stat"><div class="v gray">${total}</div><div class="l">🏔️ 总段数</div></div>
+    <div class="stat"><div class="v green">${done}</div><div class="l">✅ 已完成</div></div>
+    <div class="stat"><div class="v blue">${inprog}</div><div class="l">🔵 进行中</div></div>
+    <div class="stat"><div class="v gray">${wait}</div><div class="l">⬜ 未完成</div></div>
+    <div class="stat"><div class="v">${distTotal}km</div><div class="l">📏 计划总距离</div></div>`;
+}
+
+const GROUP_ORDER = [
+  { key:'in-progress', label:'进行中', cls:'inprog' },
+  { key:'completed',   label:'已完成', cls:'done' },
+  { key:'upcoming',    label:'未完成', cls:'wait' }
+];
+
+function render(){
+  const { segs, cur, hasData } = buildSegments();
+  const summaryEl = document.getElementById('summary');
+  const listEl = document.getElementById('list');
+  const countEl = document.getElementById('countNote');
+  const footEl = document.getElementById('footNote');
+
+  summaryEl.innerHTML = renderSummary(segs);
+
+  if(!hasData){
+    listEl.innerHTML = `
+      <div class="empty">
+        <div class="ico">🏔️</div>
+        <h2>尚未生成路段分段</h2>
+        <p>路段进度会根据 <b>真实的预设轨迹（GPX）</b> 自动分段并计算完成情况。<br>
+        请先在 <a href="index.html">地图追踪页</a> 导入预设轨迹，上传实际徒步 GPS 后本页将显示各段状态。<br>
+        <span style="color:var(--text-dim);">本页读取与地图页相同的本地数据，不会凭空生成占位段落。</span></p>
+      </div>`;
+    countEl.textContent = '';
+    footEl.textContent = '';
+    return;
+  }
+
+  let visible = segs.filter(s=>
+    (STATE.status==='all' || s.status===STATE.status) &&
+    (STATE.province==='all' || s.province===STATE.province)
+  );
+
+  if(!visible.length){
+    listEl.innerHTML = `<div class="empty"><div class="ico">🔍</div><h2>没有符合条件的路段</h2><p>调整上方状态 / 省份筛选试试。</p></div>`;
+    countEl.textContent = '显示 0 / '+segs.length+' 段';
+    footEl.textContent = '';
+    return;
+  }
+
+  let html = '';
+  GROUP_ORDER.forEach(g=>{
+    const items = visible.filter(s=>s.status===g.key);
+    if(!items.length) return;
+    html += `<div class="group-head ${g.cls}"><span class="gdot"></span>${g.label}<span class="gcount">· ${items.length} 段</span></div>`;
+    html += items.map(s=>secCard(s, cur)).join('');
+  });
+
+  listEl.innerHTML = html;
+  countEl.textContent = `显示 ${visible.length} / ${segs.length} 段`;
+  footEl.innerHTML = `数据来源：本浏览器本地存储（与地图页共享）。在地图页上传 / 编辑后，刷新本页即可同步。`;
+}
+
+/* ── 工具栏事件 ── */
+document.getElementById('segStatus').addEventListener('click', e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  STATE.status=b.dataset.status;
+  [...e.currentTarget.children].forEach(x=>x.classList.toggle('active',x===b));
+  render();
+});
+document.getElementById('selProvince').addEventListener('change', e=>{
+  STATE.province=e.target.value;
+  render();
+});
+
+/* 跨标签页同步：地图页更新后本页自动刷新 */
+window.addEventListener('storage', e=>{
+  if([LS.sections,LS.preset,LS.currentPos,LS.actual].includes(e.key)) render();
+});
+
+render();
+</script>
+</body>
+</html>
