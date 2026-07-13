@@ -3,11 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- 后端地址：部署到 Netlify 时填入 Render 后台地址，例如 https://ght-trek-backend.onrender.com ；留空=同源（本地开发 / 前后端同域） -->
-<meta name="ght-backend" content="">
+<!-- Supabase 后端（免卡）：部署前在下面填入你的 Project URL 与 anon public key（Supabase 后台 Settings → API 获取）。anon key 可公开，RLS 保证只有登录后才能写入 -->
+<meta name="supabase-url" content="">
+<meta name="supabase-anon" content="">
+<!-- 主人账号邮箱：须与你在 Supabase Auth 里新建的用户邮箱一致 -->
+<meta name="supabase-email" content="owner@ght.app">
 <title>GHT 大喜马拉雅高线徒步追踪</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="nepal-provinces.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
@@ -1984,42 +1988,85 @@ function highlightProvince(provinceId) {
 function setCard(id, html) { const el = document.getElementById(id); if (el) el.innerHTML = html; }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  BACKEND API  (真密码校验 + 配置同步 + 轨迹落盘)
-//  密码只存在于服务端，前端仅持有登录后下发的 token
+//  SUPABASE 后端（免卡）：Supabase Auth + Storage + DB
+//  密码只存在于 Supabase，前端仅持有登录后的 session(JWT)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const API = (function () {
-  const TOKEN_KEY = 'ght_token';
-  // 后端基地址：读 <meta name="ght-backend">；为空则同源（本地开发 / 前后端同域部署）
-  function backendBase() {
-    const m = document.querySelector('meta[name="ght-backend"]');
-    const v = (m && m.getAttribute('content') || '').trim();
-    return v.replace(/\/+$/, '');
+  function metaVal(name) {
+    const m = document.querySelector('meta[name="' + name + '"]');
+    return (m && m.getAttribute('content') || '').trim();
   }
-  function getToken() { try { return sessionStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; } }
-  function setToken(t) { try { sessionStorage.setItem(TOKEN_KEY, t || ''); } catch (e) {} }
-  function clearToken() { try { sessionStorage.removeItem(TOKEN_KEY); } catch (e) {} }
-  function authHeader() { const t = getToken(); return t ? { 'Authorization': 'Bearer ' + t } : {}; }
-  async function req(method, path, opts) {
-    opts = opts || {};
-    const base = backendBase();
-    const url = base ? base + path : path;
-    const headers = Object.assign({}, authHeader(), opts.headers || {});
-    const res = await fetch(url, { method, headers, body: opts.body });
-    let data = null;
-    try { data = await res.json(); } catch (e) { /* non-JSON */ }
-    return { ok: res.ok, status: res.status, data };
+  let _client = null;
+  function client() {
+    if (_client) return _client;
+    const url = metaVal('supabase-url');
+    const key = metaVal('supabase-anon');
+    if (!url || !key || !window.supabase) return null;
+    _client = window.supabase.createClient(url, key);
+    return _client;
   }
+  // 读取 supabase 当前会话的 access_token（即「token」，登录后自动持久化在 localStorage）
+  function getToken() {
+    const c = client();
+    if (!c) return '';
+    try {
+      const res = c.auth.getSession();
+      const session = res && res.data ? res.data.session : null;
+      return (session && session.access_token) || '';
+    } catch (e) { return ''; }
+  }
+  function setToken() { /* supabase 登录后自动持久化 session，无需手动存 */ }
+  function clearToken() {
+    const c = client();
+    if (c) { try { c.auth.signOut(); } catch (e) {} }
+  }
+  function authErr(status) { return { ok: false, status: status || 401, data: null }; }
   return {
-    getToken, setToken, clearToken, authHeader,
-    login: (pwd) => req('POST', '/api/login', { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pwd }) }),
-    getConfig: () => req('GET', '/api/config'),
-    putConfig: (obj) => req('PUT', '/api/config', { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(obj) }),
-    upload: (fileList) => {
-      const fd = new FormData();
-      Array.from(fileList).forEach(f => fd.append('files', f));
-      return req('POST', '/api/upload', { body: fd });
+    getToken, setToken, clearToken,
+    authHeader() { return {}; }, // supabase-js 自动附加 Authorization
+    login: async (pwd) => {
+      const c = client();
+      if (!c) return authErr(0);
+      const email = metaVal('supabase-email') || 'owner@ght.app';
+      const { data, error } = await c.auth.signInWithPassword({ email, password: pwd });
+      if (error || !data.session) return authErr(401);
+      return { ok: true, status: 200, data: { token: data.session.access_token } };
     },
-    listTracks: () => req('GET', '/api/tracks')
+    getConfig: async () => {
+      const c = client();
+      if (!c) return authErr(0);
+      const { data, error } = await c.from('site_config').select('*').eq('id', 1).single();
+      if (error) return authErr(500);
+      return { ok: true, status: 200, data };
+    },
+    putConfig: async (obj) => {
+      const c = client();
+      if (!c) return authErr(0);
+      const patch = {};
+      ['language', 'itineraryStartDate', 'expeditionName', 'startPlaceName', 'totalDistance']
+        .forEach(k => { if (obj[k] != null) patch[k] = obj[k]; });
+      const { data, error } = await c.from('site_config').update(patch).eq('id', 1).select().single();
+      if (error) return authErr(500);
+      return { ok: true, status: 200, data };
+    },
+    upload: async (fileList) => {
+      const c = client();
+      if (!c) return authErr(0);
+      let okAll = true;
+      for (const f of Array.from(fileList)) {
+        const path = 'raw/' + Date.now() + '_' + f.name.replace(/[^\w.\-]/g, '_');
+        const { error } = await c.storage.from('gpx').upload(path, f, { upsert: true, cacheControl: '3600' });
+        if (error) { okAll = false; console.warn('[ght] 上传失败', f.name, error); }
+      }
+      return { ok: okAll, status: okAll ? 200 : 500, data: null };
+    },
+    listTracks: async () => {
+      const c = client();
+      if (!c) return authErr(0);
+      const { data, error } = await c.storage.from('gpx').list('raw', { limit: 3 });
+      if (error) return authErr(error.status || 500);
+      return { ok: true, status: 200, data };
+    }
   };
 })();
 

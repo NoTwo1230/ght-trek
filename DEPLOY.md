@@ -1,81 +1,82 @@
-# GHT 追踪平台 · 免费部署清单（Netlify 前台 + Render 后台）
+# GHT 追踪平台 · 免费部署清单（Netlify 前台 + Supabase 后台）
 
-**不需要买域名。** 两个平台都会给你免费子域名：
-- 前台：`https://<你的名>.netlify.app`
-- 后台：`https://<你的名>.onrender.com`
+**不需要买域名，也不需要国际银行卡。** 两个平台都免费、都给你子域名：
+- 前台：`https://<你的名>.netlify.app`（静态托管，全球 CDN）
+- 后台：`https://<你的项目>.supabase.co`（Auth + Storage + 数据库，免运维、不休眠、不丢文件）
 
-架构：前台静态托管在 Netlify（全球 CDN），后端 Node 跑在 Render，两者通过 `index-notwo.html` 里的 `<meta name="ght-backend">` 关联，后端已加 CORS 支持跨域。
+架构：前台是纯静态页面，挂在 Netlify；所有「密码登录 / 配置持久化 / GPX 备份」都走 Supabase 的 JavaScript SDK（已通过 CDN 引入，无需构建）。前端只持有登录后的会话 JWT，密码只在 Supabase 里。
 
 ---
 
 ## 前置条件
-1. 一个 GitHub 账号（Netlify / Render 都从 GitHub 拉代码）
+1. 一个 GitHub 账号（Netlify 从 GitHub 拉代码）
 2. 把 `ght-trek/` 整个目录推到 GitHub 仓库
-3. **确保 `secrets.json` 没有被提交**（已在 `.gitignore` 忽略）。
-   若仓库里已提交了它，执行：`git rm --cached secrets.json` 再 push。
+3. 一个邮箱（用于注册 Supabase 账号，**不需要信用卡**）
 
 ---
 
-## 一、后台（Render）
+## 一、后台（Supabase，免卡）
 
-1. 打开 https://render.com → 用 GitHub 注册登录
-2. **New → Blueprint** → 连接 GitHub → 选 `ght-trek` 仓库（根目录有 `render.yaml`）
-3. 确认 service 类型 `web`、plan 选 **Free**
-4. 在 **Environment** 里设置环境变量：
-   - `GHT_ADMIN_PWD` = 你的主人密码（**务必改掉默认 ght2026**）
-   - `GHT_SECRET` = 一长串随机字符串（用于签发登录 token）
-   - `GHT_CORS_ORIGIN` = `https://<你的名>.netlify.app`（或填 `*` 放行所有来源）
-5. 点 **Deploy** → 等构建完成，记下后台地址，形如
-   `https://ght-trek-backend.onrender.com`
+1. 打开 https://supabase.com → **Start your project** → 用 GitHub / 邮箱注册（**不绑卡**）
+2. 新建一个 Project：填名字 `ght-trek`、设一个数据库密码（记一下）、区域选 **Singapore** 或 **Northeast Asia**
+3. 等约 1–2 分钟建好，进入项目控制台
+4. **SQL Editor** → 新建查询 → 把本仓库 `SUPABASE_SETUP.sql` 的内容整段粘贴 → **Run**
+   → 会建好 `site_config` 表 + `gpx` 存储桶 + 读写权限策略
+5. **Authentication → Users → Add user**：
+   - 邮箱：`owner@ght.app`（须与 `index-notwo.html` 里 `<meta name="supabase-email">` 一致）
+   - 密码：自己设一个强密码（例如 `Ght2026!Himalaya`）
+   - 勾选 **Auto Confirm User**
+6. **Settings → API**：复制两样东西备用：
+   - **Project URL**（形如 `https://xxxx.supabase.co`）
+   - **anon public key**（一长串 `eyJ...`）
 
-> ⚠️ **免费层两个已知限制**
-> - 15 分钟无访问会**休眠**，下次打开冷启动约 20–30 秒（访客首次进地图可能要等一下）
-> - **文件系统重启会重置**：上传的 GPX 在重新部署 / 实例重启后可能丢失。
->   缓解办法（任选）：
->   ① 上传后本地留一份 GPX 备份（浏览器 localStorage 里也有一份解析后的数据）；
->   ② 在 Render 加一个 **Disk**（付费，约 $0.1–0.25/GB·月）挂到 `/data`；
->   ③ 进阶：把文件存储换成 Cloudflare R2 / Supabase Storage。
+> 为什么免卡还安全：前端嵌入的 `anon key` 是公开密钥，真正写数据靠登录后的 JWT；RLS 策略已规定「配置/文件公开读、登录才能写」。
 
 ---
 
-## 二、前台（Netlify）
+## 二、前台（Netlify，免卡）
 
 1. 打开 https://netlify.com → 用 GitHub 注册登录
 2. **Add new site → Import from Git** → 选 `ght-trek` 仓库
 3. Build 设置：**Build command 留空**，**Publish directory 填 `.`**
    （`netlify.toml` 已配好根目录发布 + `/` 重定向到 `index-notwo.html`）
 4. 点 **Deploy** → 记下前台地址，形如 `https://ght-trek.netlify.app`
-5. **把前台指向后台**：编辑 `index-notwo.html` 第 6 行附近：
-   ```html
-   <meta name="ght-backend" content="">
-   ```
-   改成你的 Render 后台地址：
-   ```html
-   <meta name="ght-backend" content="https://ght-trek-backend.onrender.com">
-   ```
-   保存后 `git push`，Netlify 会自动重新部署。
 
 ---
 
-## 三、联调验证
+## 三、把 Supabase 接上前台（关键一步）
+
+编辑 `index-notwo.html` 头部（第 6–8 行附近），填好刚才复制的两样东西：
+```html
+<meta name="supabase-url" content="https://xxxx.supabase.co">
+<meta name="supabase-anon" content="eyJxxxxxxxxxxxxx">
+<meta name="supabase-email" content="owner@ght.app">
+```
+保存 → `git push` → Netlify 自动重新部署。
+
+（主人邮箱若改成别的，三个地方要一致：Supabase 用户邮箱、这里 `supabase-email`、登录时输入的账号。）
+
+---
+
+## 四、联调验证
 
 1. 打开前台 `https://<名>.netlify.app`
-2. 右上角 **🔧 数据管理** → 输入密码 → 应提示「登录成功」
-3. 上传一个 GPX → 在 Render 后台的 Shell 里执行 `ls data/tracks` 应能看到文件
-4. 打开浏览器控制台（F12）→ 不应有红色 **CORS** 报错
-   （若有，检查 Render 的 `GHT_CORS_ORIGIN` 是否填成了你的 Netlify 地址）
+2. 右上角 **🔧 数据管理** → 输入你在 Supabase 设的主人密码 → 应解锁出上传区
+3. 上传一个 GPX → Supabase 后台 **Storage → gpx** 桶里应能看到文件
+4. 刷新页面（或换无痕窗口）→ 配置（语言/出发日期）仍生效 = 持久化 OK
+5. 按 **F12** 看 Console → 不应有红色报错
 
 ---
 
-## 四、安全提醒
+## 五、安全与维护提醒
 
-- `secrets.json` 已被 `.gitignore` 忽略，**不要**提交到公开仓库
-- 后台密码只通过 Render 环境变量 `GHT_ADMIN_PWD` 设置，绝不写回代码
-- Netlify 侧已把 `secrets.json` / `config.json` 重定向到 404，避免源码泄露
-- 访客只能读地图、不能上传；上传入口受密码保护（token 存在 sessionStorage，关页即失效）
+- `anon key` 可公开嵌入，但**切勿**把 Supabase 的 **service_role key** 写进前端（那是绕过 RLS 的万能钥匙）
+- 主人密码就是 Supabase 那个用户的密码；忘记就在 Supabase → Authentication → 重置
+- 前台是纯静态，改完代码 `git push` 即自动重新部署
+- 想绑定自己域名可后续再加（需自行购买），免费子域名已足够用
 
 ---
 
-## 备选：想省掉跨域 / 两个平台？
-- **全放 Render**（单源、免 CORS）：把前台也作为一个 Static Site 挂到 Render，或用 Render 的 Web Service 直接托管（server.js 已含 `express.static` 可同时服务前端）。代价：前台没有 Netlify 的全球 CDN 加速。
-- **想要不休眠 + 持久存储**：见DEPLOY 之外方案——Cloudflare Pages + Workers + R2，或 Supabase，可彻底替代 Node 后台。
+## 备选方案（当初因「没国际卡」才选 Supabase）
+- 若有国际卡且想要「自己跑服务器」：可换回 Node 后台挂 Render（需绑卡，免费层会休眠、磁盘重启会清数据）
+- 若连 Supabase 都不想用：可退化为纯静态（无后台，密码闸退回隐藏按钮，GPX 需 git 提交进仓库）

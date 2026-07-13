@@ -1,5 +1,5 @@
-# GHT 前台部署配置（Netlify）
-# 把本目录作为静态站点发布；后端走 Render（地址写在 index-notwo.html 的 <meta name="ght-backend">）
+# GHT 前台部署配置（Netlify，纯静态）
+# 后端改用 Supabase（免卡），无需本仓库携带任何服务端文件
 
 [build]
   publish = "."
@@ -9,17 +9,6 @@
   from = "/"
   to = "/index-notwo.html"
   status = 200
-
-# 阻止敏感文件被公开下载（这些仅供 Render 后台使用）
-[[redirects]]
-  from = "/secrets.json"
-  to = "/404"
-  status = 404
-
-[[redirects]]
-  from = "/config.json"
-  to = "/404"
-  status = 404
 
 [[headers]]
   for = "/*"
