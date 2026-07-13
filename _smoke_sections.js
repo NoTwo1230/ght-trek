@@ -37,6 +37,10 @@ ranges[2].status = 'completed';      // 段3 已完成
 // 段4 upcoming（默认）；其余 upcoming
 const preset = { trackPoints: [
   {lat:27.35,lon:87.95},{lat:27.5,lon:87.8},{lat:27.65,lon:87.7},{lat:27.8,lon:87.6}
+], waypoints: [
+  {lat:27.5,lon:87.8,  _type:'pass', name:'Mirgin La',  elev:5140},   // 最近→段1
+  {lat:27.68,lon:87.1, _type:'pass', name:'Tutu La',    elev:4850},   // 最近→段2
+  {lat:27.95,lon:86.4, _type:'peak', name:'Kongma Peak',elev:5535}    // 最近→段3
 ]};
 const curPos = JSON.stringify({ lat:27.7, lon:87.66, elev:4500 });
 const actuals = JSON.stringify([{ name:'ght-day01.gpx', dayNum:1, distance:12, trackPoints:[{lat:27.35,lon:87.95},{lat:27.8,lon:87.6}] }]);
@@ -92,6 +96,20 @@ const actuals = JSON.stringify([{ name:'ght-day01.gpx', dayNum:1, distance:12, t
   const waitCard = [...cards].find(c=>c.getAttribute('data-status')==='upcoming');
   check('未完成 chip 文案', waitCard && /未完成/.test(waitCard.textContent));
 
+  // 垭口数据来自导入轨迹（按最近段归属）
+  const seg1 = [...cards].find(c=>c.getAttribute('data-id')==='1');
+  const seg2 = [...cards].find(c=>c.getAttribute('data-id')==='2');
+  const seg3 = [...cards].find(c=>c.getAttribute('data-id')==='3');
+  check('段1 显示导入垭口 Mirgin La', /Mirgin La/.test(seg1.textContent));
+  check('段1 垭口 chip 带 .t.pass 样式', !!seg1.querySelector('.t.pass'));
+  check('段1 显示导入垭口海拔 5,140m', /5,140m/.test(seg1.textContent));
+  check('段2 显示导入垭口 Tutu La', /Tutu La/.test(seg2.textContent));
+  check('段3 显示导入 peak Kongma Peak', /Kongma Peak/.test(seg3.textContent));
+  check('垭口不写死主垭口（段1 不含静态 Mirgin La 之外无 fallback 文案）', !/未导入轨迹/.test(seg1.textContent));
+  check('导入垭口标注「来自导入轨迹」', /来自导入轨迹/.test(seg1.textContent));
+  // 归属正确性：Mirgin La 不应出现在段2/段3
+  check('Mirgin La 仅归属段1（不串段）', !/Mirgin La/.test(seg2.textContent) && !/Mirgin La/.test(seg3.textContent));
+
   // 状态筛选：completed
   const segStatus = d.getElementById('segStatus');
   const btnDone = [...segStatus.children].find(b=>b.dataset.status==='completed');
@@ -125,6 +143,22 @@ console.log('=== C. 当前位置回退 ===');
   const d = dom.window.document;
   const inprog = d.querySelector('.day-card.is-inprog');
   check('无 current_pos 时回退到 actual 末点坐标', /28\.100°N/.test(inprog.textContent));
+}
+
+/* ── 测试 D：无导入 waypoints → 垭口回退静态主垭口，不显示 .t.pass ── */
+console.log('=== D. 垭口回退（无导入轨迹标注点） ===');
+{
+  const rangesD = JSON.parse(JSON.stringify(ranges));
+  const presetD = { trackPoints: [{lat:27.35,lon:87.95},{lat:27.8,lon:87.6}] }; // 无 waypoints
+  const dom = makeDom({
+    ght_sections: JSON.stringify(rangesD),
+    ght_preset: JSON.stringify(presetD)
+  });
+  const d = dom.window.document;
+  const seg1 = d.querySelector('.day-card[data-id="1"]');
+  check('无导入垭口时回退显示「主垭口」预设值', /主垭口/.test(seg1.textContent) && /未导入轨迹/.test(seg1.textContent));
+  check('回退时不渲染 .t.pass chip', seg1.querySelectorAll('.t.pass').length === 0);
+  check('回退时显示静态 Mirgin La', /Mirgin La/.test(seg1.textContent));
 }
 
 console.log(`\n${fail===0?'✅ ALL SMOKE CHECKS PASSED':'❌ SOME CHECKS FAILED'}  (pass=${pass}, fail=${fail})`);

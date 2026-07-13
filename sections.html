@@ -177,6 +177,13 @@
   .row .v { color: var(--text); }
   .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
   .tag-row .t { font-size: 11px; background: var(--panel-alt); border: 1px solid var(--border-light); border-radius: 14px; padding: 3px 10px; color: var(--text-dim); }
+  .tag-row .t.pass { color: var(--cyan); border-color: rgba(57,210,192,0.32); background: rgba(57,210,192,0.10); }
+
+  /* 垭口区块：数据来自导入轨迹（而非写死） */
+  .pass-block { margin: 4px 0 2px; }
+  .pass-block .k { display: block; font-size: 11.5px; color: var(--text-dim); margin-bottom: 7px; }
+  .pass-src-note { display: block; font-size: 10.5px; color: var(--text-dimmer); margin-top: 6px; }
+  .pass-fallback { color: var(--text-dim); font-size: 11px; }
 
   /* 进行中：当前位置面板 */
   .curpos { margin-top: 14px; border-top: 1px dashed var(--border); padding-top: 13px; }
@@ -389,6 +396,10 @@ function buildSegments(){
     if(pts.length){ cur = { lat: pts[pts.length-1].lat, lon: pts[pts.length-1].lon, elev: null }; }
   }
 
+  // 垭口数据：仅来自导入的轨迹（预设 GPX 的 waypoints），
+  // 按「坐标离哪段最近」归属到对应路段。无导入数据时回退静态 mainPass。
+  const passMap = attributePasses(preset);
+
   const segs = ghtSections.map(s=>{
     const r = ranges[s.id-1] || null;
     return {
@@ -397,6 +408,7 @@ function buildSegments(){
       days: s.days, distance: s.distance, maxElev: s.maxElev,
       mainPass: s.mainPass, startPoint: s.startPoint, highlights: s.highlights,
       trail: s.trail,
+      passes: passMap[s.id] || [],          // 来自导入轨迹的垭口（已归属到本段）
       status: r ? (r.status || 'upcoming') : 'upcoming',
       color: (r && r.parkColor) || SECTION_COLORS[s.id-1],
       _preset: preset
@@ -404,6 +416,29 @@ function buildSegments(){
   });
 
   return { segs, cur, hasData: ranges.length>0 || !!(preset && preset.trackPoints && preset.trackPoints.length) };
+}
+
+/* 从导入的预设轨迹 waypoints 中筛出垭口（_type==='pass'||'peak'），
+   并归属到「坐标最近的路段」。返回 { sectionId: [waypoint,...] }。 */
+function attributePasses(preset){
+  const out = {};
+  if(!preset || !preset.waypoints || !preset.waypoints.length) return out;
+  const passList = preset.waypoints.filter(w =>
+    (w._type==='pass' || w._type==='peak') && w.lat!=null && w.lon!=null);
+  if(!passList.length) return out;
+
+  passList.forEach(w=>{
+    let bestSec = null, best = Infinity;
+    ghtSections.forEach(s=>{
+      const trk = s.trail || [];
+      trk.forEach(tp=>{
+        const d = haversine(tp[0], tp[1], w.lat, w.lon);
+        if(d < best){ best = d; bestSec = s.id; }
+      });
+    });
+    if(bestSec != null){ (out[bestSec] = out[bestSec] || []).push(w); }
+  });
+  return out;
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -429,10 +464,27 @@ function secCard(s, cur){
       <span class="mi">⛰ 最高 <b>${s.maxElev.toLocaleString()}m</b></span>
     </div>`;
 
+  // 垭口数据：优先用导入轨迹里归属到本段的垭口；无导入数据时回退静态主垭口
+  let passBlock;
+  if(s.passes && s.passes.length){
+    passBlock = `
+      <div class="pass-block">
+        <span class="k">⛰ 垭口（来自导入轨迹）</span>
+        <div class="tag-row">${s.passes.map(w=>{
+          const elev = w.elev!=null ? ' · '+Math.round(w.elev).toLocaleString()+'m' : '';
+          return `<span class="t pass">⛰ ${esc(w.name||'垭口')}${elev}</span>`;
+        }).join('')}</div>
+        <span class="pass-src-note">以上垭口由导入的 GPS 轨迹（GPX 标注点）自动归类，不依赖写死的预设值。</span>
+      </div>`;
+  } else {
+    passBlock = `
+      <div class="row"><span class="k">主垭口</span><span class="v pass-fallback">${esc(s.mainPass.name)} · ${s.mainPass.elev.toLocaleString()}m <span style="opacity:.6">（未导入轨迹，显示预设值）</span></span></div>`;
+  }
+
   const detail = `
     <div class="sec-detail">
       <div class="row"><span class="k">起点</span><span class="v">${esc(s.startPoint)}</span></div>
-      <div class="row"><span class="k">主垭口</span><span class="v">${esc(s.mainPass.name)} · ${s.mainPass.elev.toLocaleString()}m</span></div>
+      ${passBlock}
       <div class="tag-row">${s.highlights.map(h=>`<span class="t">${esc(h)}</span>`).join('')}</div>
     </div>`;
 
