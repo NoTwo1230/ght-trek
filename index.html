@@ -1873,20 +1873,15 @@ function drawElevationProfile() {
 function updateCurrentPosition() {
   // Try to find current section from sectionRanges (national park based)
   let sectionName = '', sectionNameEn = '';
-  let totalSections = 10;
-  let currentSectionNum = APP.currentSection;
 
   if (APP.sectionRanges && APP.sectionRanges.length > 0) {
-    totalSections = APP.sectionRanges.length;
     // Find the in-progress section, or the last completed one
     const inProg = APP.sectionRanges.findIndex(r => r.status === 'in-progress');
     if (inProg >= 0) {
-      currentSectionNum = inProg + 1;
       sectionName = APP.sectionRanges[inProg].parkName || '';
       sectionNameEn = APP.sectionRanges[inProg].parkNameEn || '';
     } else {
       const completed = APP.sectionRanges.filter(r => r.status === 'completed').length;
-      currentSectionNum = completed + 1;
       const idx = Math.min(completed, APP.sectionRanges.length - 1);
       sectionName = APP.sectionRanges[idx].parkName || '';
       sectionNameEn = APP.sectionRanges[idx].parkNameEn || '';
@@ -1901,8 +1896,8 @@ function updateCurrentPosition() {
 
   document.getElementById('currentPosBadge').innerHTML =
     '📍 当前位置: <span class="prov-name">' + (sectionNameEn || sectionName || '—') + '</span><span class="prov-elev">' + elevStr + '</span>';
-
-  APP.progressPct = totalSections > 0 ? Math.round((currentSectionNum / totalSections) * 100) : 0;
+  // NOTE: 不在此处写 APP.progressPct —— 总进度只由 updateProgress()(已记录距离/总距离) 驱动，
+  // 否则未上传轨迹时会被误算成「当前段序号/总段数」(1/10=10%)。
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

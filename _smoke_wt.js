@@ -43,6 +43,11 @@ function smoke(file) {
     const st = window.document.querySelector('.statusbar');
     checks.push(['statusbar does NOT load hiking-route layer (no Waymarked Trails)', !!st && !/Waymarked Trails/.test(st.textContent)]);
     checks.push(['statusbar credits basemap source (OpenStreetMap)', !!st && /OpenStreetMap/.test(st.textContent)]);
+    // 征途总进度 bug 回归：全新访客(无数据)必须显示 0%，不得是 10%(旧 bug: 当前段序号/总段数=1/10)
+    const pc = window.document.getElementById('cardProgress');
+    const pctEl = pc ? pc.querySelector('.pc-pct') : null;
+    const pctTxt = pctEl ? pctEl.textContent.trim() : '';
+    checks.push(['expedition progress = 0% for fresh visitor (regression: was 10%)', pctTxt === '0.0%']);
   } else {
     const c = window.document.getElementById('sidebarContent');
     checks.push(['sidebar progress rendered', !!c && c.innerHTML.length > 50]);
