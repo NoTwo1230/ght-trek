@@ -1,0 +1,19 @@
+# Render 后台部署配置（render.com → New → Blueprint → 选本仓库）
+services:
+  - type: web
+    name: ght-trek-backend
+    runtime: node
+    plan: free
+    region: singapore        # 离国内最近；国际访客可选 oregon / frankfurt
+    branch: main             # 改成你的默认分支名
+    buildCommand: "npm install"
+    startCommand: "node server.js"
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: GHT_ADMIN_PWD   # 部署时在 Render 后台手动填入，别用默认 ght2026
+        sync: false
+      - key: GHT_SECRET      # 登录 token 签名密钥，随便填一长串随机字符
+        sync: false
+      - key: GHT_CORS_ORIGIN # 改成你实际的 Netlify 前台地址；或填 * 放行所有来源
+        value: "https://ght-trek.netlify.app"

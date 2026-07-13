@@ -1,0 +1,124 @@
+#gpx	v1
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="PeakVisorWeb" xmlns="http://www.topografix.com/GPX/1/1" xmlns:gpxx="http://www.garmin.com/xmlschemas/GpxExtensions/v3" xmlns:gpxtrkx="http://www.garmin.com/xmlschemas/TrackStatsExtension/v1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+  <metadata>
+    <name>Annapurna Circuit Trek</name>
+    <desc>PeakVisor exported route with peak annotations</desc>
+    <author><name>PeakVisor</name></author>
+    <time>2026-06-15T08:00:00Z</time>
+    <link href="https://peakvisor.com/route/annapurna-circuit.html"><text>PeakVisor Route</text></link>
+  </metadata>
+
+  <!-- Waypoint with Garmin extension color -->
+  <wpt lat="28.7935" lon="83.9357">
+    <ele>5416</ele>
+    <time>2026-06-18T08:00:00Z</time>
+    <name>Thorong La Pass</name>
+    <desc>Annapurna Circuit highest point — 5416m mountain pass between Manang and Mustang. Prayer flags at summit.</desc>
+    <cmt>Rest stop available during season. Cross before 10am to avoid afternoon wind.</cmt>
+    <sym>Mountain Pass</sym>
+    <type>Pass</type>
+    <src>PeakVisor 3D Map</src>
+    <link href="https://peakvisor.com/peak/thorong-la.html"><text>PeakVisor Details</text></link>
+    <extensions>
+      <gpxx:DisplayColor>DarkOrange</gpxx:DisplayColor>
+      <gpxx:AutorouteParts>
+        <gpxx:Part idx="0">BaseLayer</gpxx:Part>
+      </gpxx:AutorouteParts>
+    </extensions>
+  </wpt>
+
+  <!-- Waypoint: Peak with all fields -->
+  <wpt lat="28.5961" lon="83.8203">
+    <ele>8091</ele>
+    <time>2026-06-14T10:00:00Z</time>
+    <name>Annapurna I</name>
+    <desc>10th highest mountain in the world — first 8000m peak ever climbed (1950). Located in Gandaki Province.</desc>
+    <cmt>Visible from Poon Hill and many points along the trek</cmt>
+    <sym>Summit</sym>
+    <type>Peak</type>
+    <src>PeakVisor / OpenTopoMap</src>
+    <link href="https://peakvisor.com/peak/annapurna-i.html"><text>Peak Details</text></link>
+    <extensions>
+      <gpxx:DisplayColor>Red</gpxx:DisplayColor>
+    </extensions>
+  </wpt>
+
+  <!-- Waypoint: Camp -->
+  <wpt lat="28.6667" lon="84.0167">
+    <ele>3540</ele>
+    <time>2026-06-16T10:00:00Z</time>
+    <name>Manang Village</name>
+    <desc>Key acclimatization stop on the Annapurna Circuit. Lodges, bakeries, medical post available. Last major village before Thorong La.</desc>
+    <sym>Campground</sym>
+    <type>Camp</type>
+    <src>OSM / PeakVisor</src>
+  </wpt>
+
+  <!-- Waypoint: Viewpoint -->
+  <wpt lat="28.3964" lon="83.6989">
+    <ele>3210</ele>
+    <time>2026-06-19T05:30:00Z</time>
+    <name>Poon Hill</name>
+    <desc>Famous sunrise viewpoint overlooking Annapurna and Dhaulagiri ranges. 45min climb from Ghorepani.</desc>
+    <sym>Scenic Viewpoint</sym>
+    <type>Viewpoint</type>
+  </wpt>
+
+  <!-- Waypoint: Other (temple) -->
+  <wpt lat="28.7833" lon="83.7333">
+    <ele>3760</ele>
+    <time>2026-06-18T11:00:00Z</time>
+    <name>Muktinath Temple</name>
+    <desc>Sacred pilgrimage site for Hindus and Buddhists. Eternal flame temple. Important cultural stop on the Circuit.</desc>
+    <sym>Trailhead</sym>
+    <type>Other</type>
+  </wpt>
+
+  <!-- Track segments -->
+  <trk>
+    <name>Day 1: Besisahar to Chame</name>
+    <trkseg>
+      <trkpt lat="28.2333" lon="84.3667"><ele>760</ele><time>2026-06-15T06:00:00Z</time></trkpt>
+      <trkpt lat="28.2500" lon="84.3500"><ele>850</ele><time>2026-06-15T07:00:00Z</time></trkpt>
+      <trkpt lat="28.3000" lon="84.3167"><ele>1100</ele><time>2026-06-15T08:00:00Z</time></trkpt>
+      <trkpt lat="28.3500" lon="84.3000"><ele>1300</ele><time>2026-06-15T09:00:00Z</time></trkpt>
+      <trkpt lat="28.4000" lon="84.2667"><ele>1600</ele><time>2026-06-15T10:00:00Z</time></trkpt>
+      <trkpt lat="28.4500" lon="84.2333"><ele>1900</ele><time>2026-06-15T11:00:00Z</time></trkpt>
+      <trkpt lat="28.5000" lon="84.2000"><ele>2200</ele><time>2026-06-15T12:00:00Z</time></trkpt>
+      <trkpt lat="28.5500" lon="84.1667"><ele>2670</ele><time>2026-06-15T13:00:00Z</time></trkpt>
+    </trkseg>
+  </trk>
+
+  <trk>
+    <name>Day 2: Chame to Manang</name>
+    <trkseg>
+      <trkpt lat="28.5500" lon="84.1667"><ele>2670</ele><time>2026-06-16T06:00:00Z</time></trkpt>
+      <trkpt lat="28.6000" lon="84.1333"><ele>3000</ele><time>2026-06-16T07:00:00Z</time></trkpt>
+      <trkpt lat="28.6333" lon="84.0833"><ele>3300</ele><time>2026-06-16T08:30:00Z</time></trkpt>
+      <trkpt lat="28.6667" lon="84.0167"><ele>3540</ele><time>2026-06-16T10:00:00Z</time></trkpt>
+    </trkseg>
+  </trk>
+
+  <trk>
+    <name>Day 3: Manang to Thorong Phedi</name>
+    <trkseg>
+      <trkpt lat="28.6667" lon="84.0167"><ele>3540</ele><time>2026-06-17T06:00:00Z</time></trkpt>
+      <trkpt lat="28.7000" lon="83.9833"><ele>3900</ele><time>2026-06-17T08:00:00Z</time></trkpt>
+      <trkpt lat="28.7333" lon="83.9667"><ele>4200</ele><time>2026-06-17T09:30:00Z</time></trkpt>
+      <trkpt lat="28.7667" lon="83.9500"><ele>4540</ele><time>2026-06-17T11:00:00Z</time></trkpt>
+    </trkseg>
+  </trk>
+
+  <trk>
+    <name>Day 4: Thorong La Pass to Muktinath</name>
+    <trkseg>
+      <trkpt lat="28.7667" lon="83.9500"><ele>4540</ele><time>2026-06-18T04:00:00Z</time></trkpt>
+      <trkpt lat="28.7833" lon="83.9500"><ele>4900</ele><time>2026-06-18T06:00:00Z</time></trkpt>
+      <trkpt lat="28.7935" lon="83.9357"><ele>5416</ele><time>2026-06-18T08:00:00Z</time></trkpt>
+      <trkpt lat="28.8000" lon="83.8833"><ele>4500</ele><time>2026-06-18T09:30:00Z</time></trkpt>
+      <trkpt lat="28.7833" lon="83.7333"><ele>3760</ele><time>2026-06-18T11:00:00Z</time></trkpt>
+    </trkseg>
+  </trk>
+
+</gpx>

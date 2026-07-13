@@ -1,0 +1,2231 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>GHT 大喜马拉雅高线徒步追踪</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="nepal-provinces.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-dim: #8b949e;
+    --accent: #58a6ff;
+    --accent2: #f0883e;
+    --green: #3fb950;
+    --red: #f85149;
+    --purple: #bc8cff;
+    --yellow: #d29922;
+    --cyan: #39d2c0;
+    --current-province: rgba(88, 166, 255, 0.25);
+  }
+
+  body {
+    font-family: 'Noto Sans SC', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .app {
+    display: flex;
+    height: 100vh;
+  }
+
+  /* Map */
+  .map-container {
+    flex: 1;
+    position: relative;
+  }
+  #map {
+    width: 100%;
+    height: 100%;
+    background: #1a1a2e;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 420px;
+    background: var(--panel);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .sidebar-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(135deg, #0d1117, #161b22);
+  }
+  .sidebar-header h1 {
+    font-size: 18px;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .sidebar-header .subtitle {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  .sidebar-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-tabs button {
+    flex: 1;
+    padding: 12px;
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 13px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  .sidebar-tabs button.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  .sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+  }
+
+  .sidebar-content::-webkit-scrollbar { width: 4px; }
+  .sidebar-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* Progress */
+  .progress-section h3 {
+    font-size: 14px;
+    margin-bottom: 12px;
+    color: var(--accent);
+  }
+  .progress-bar-outer {
+    height: 8px;
+    background: var(--border);
+    border-radius: 4px;
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+  .progress-bar-inner {
+    height: 100%;
+    background: linear-gradient(90deg, var(--green), var(--accent));
+    border-radius: 4px;
+    transition: width 0.5s;
+  }
+  .progress-stats {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+  }
+
+  /* Stats Grid */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .stat-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .stat-card .label {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+  .stat-card .value {
+    font-size: 20px;
+    font-weight: 700;
+    margin-top: 4px;
+  }
+  .stat-card .unit {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-dim);
+  }
+
+  /* Section List */
+  .section-list {
+    margin-bottom: 20px;
+  }
+  .section-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .section-item:hover {
+    border-color: var(--accent);
+  }
+  .section-item.active {
+    border-color: var(--green);
+    background: rgba(63,185,80,0.08);
+  }
+  .section-item.completed {
+    border-color: var(--green);
+    opacity: 0.7;
+  }
+  .section-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .section-indicator.done { background: var(--green); }
+  .section-indicator.current { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+  .section-indicator.upcoming { background: var(--border); }
+  .section-info { flex: 1; }
+  .section-info .name { font-size: 13px; font-weight: 500; }
+  .section-info .detail { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+  /* Key Points */
+  .keypoint-item {
+    display: flex;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .keypoint-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .keypoint-icon.pass { background: rgba(240,136,62,0.2); color: var(--accent2); }
+  .keypoint-icon.camp { background: rgba(63,185,80,0.2); color: var(--green); }
+  .keypoint-icon.view { background: rgba(188,140,255,0.2); color: var(--purple); }
+  .keypoint-info .name { font-size: 13px; font-weight: 500; }
+  .keypoint-info .detail { font-size: 11px; color: var(--text-dim); }
+  .keypoint-info .elevation { font-size: 11px; color: var(--accent2); margin-top: 2px; }
+
+  /* Log */
+  .log-entry {
+    padding: 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 10px;
+  }
+  .log-entry .date {
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .log-entry .text {
+    font-size: 13px;
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+  .log-entry .daily-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+  }
+  .log-entry .daily-stats .stat-item {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .log-entry .daily-stats .stat-item .val {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent2);
+    display: block;
+  }
+  .log-entry .daily-stats .stat-item .val.green { color: var(--green); }
+  .log-entry .daily-stats .stat-item .val.orange { color: var(--accent2); }
+  .log-entry .daily-stats .stat-item .val.white { color: var(--text); }
+  .log-entry .gpx-badge {
+    display: inline-block;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    background: rgba(88,166,255,0.15);
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .log-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .log-form textarea {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 13px;
+    resize: vertical;
+    min-height: 80px;
+  }
+  .log-form textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .log-form input[type="file"] {
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .btn {
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--text);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    transition: all 0.2s;
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  /* Donation */
+  .donation-section {
+    text-align: center;
+    padding: 20px;
+  }
+  .qr-placeholder {
+    width: 180px;
+    height: 180px;
+    background: var(--bg);
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    margin: 16px auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-dim);
+    font-size: 12px;
+  }
+  .qr-placeholder .icon { font-size: 36px; margin-bottom: 8px; }
+  .donation-msg {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  /* Province Legend */
+  .province-legend {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(22,27,34,0.92);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 8px;
+    z-index: 1000;
+    font-size: 10px;
+    max-width: 110px;
+  }
+  .province-legend .title {
+    font-weight: 600;
+    margin-bottom: 3px;
+    font-size: 10px;
+    color: var(--text);
+  }
+  .province-legend .item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 1px;
+    line-height: 1.4;
+    color: var(--text-dim);
+  }
+  .province-legend .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .province-legend .item.current {
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .province-legend .item.current .dot {
+    box-shadow: 0 0 5px currentColor;
+  }
+
+  /* Custom popup */
+  .leaflet-popup-content-wrapper {
+    background: var(--panel) !important;
+    color: var(--text) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 8px !important;
+  }
+  .leaflet-popup-tip { background: var(--panel) !important; }
+
+  /* Current position badge */
+  .current-pos-badge {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    background: rgba(22,27,34,0.95);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    z-index: 1000;
+    font-size: 12px;
+    color: var(--text);
+  }
+  .current-pos-badge .province-name {
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .app { flex-direction: column; }
+    .map-container { height: 55vh; }
+    .sidebar { width: 100%; height: 45vh; }
+  }
+
+  /* Owner mode */
+  .btn-owner {
+    width: 36px; height: 36px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  .btn-owner:hover { border-color: var(--accent); background: rgba(88,166,255,0.1); }
+  .btn-owner.unlocked {
+    border-color: var(--green);
+    background: rgba(63,185,80,0.15);
+  }
+
+  .owner-badge {
+    font-size: 11px;
+    color: var(--green);
+    padding: 2px 8px;
+    border: 1px solid var(--green);
+    border-radius: 4px;
+    display: inline-block;
+    margin-bottom: 12px;
+  }
+
+  .visitor-notice {
+    font-size: 12px;
+    color: var(--text-dim);
+    text-align: center;
+    padding: 16px;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    margin-bottom: 12px;
+    opacity: 0.7;
+  }
+
+  /* Loading overlay */
+  .loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 9999;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(3px);
+  }
+  .loading-overlay.active { display: flex; }
+  .loading-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 32px;
+    text-align: center;
+    color: var(--text);
+  }
+  .loading-card .spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 12px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .btn-reset {
+    font-size: 10px;
+    padding: 3px 8px;
+    background: transparent;
+    border: 1px solid rgba(248,81,73,0.3);
+    color: var(--text-dim);
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 4px;
+    display: none;
+  }
+  .btn-reset.visible { display: inline-block; }
+  .btn-reset:hover { background: rgba(248,81,73,0.15); color: var(--red); }
+</style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-card">
+    <div class="spinner"></div>
+    <div style="font-size:13px;">正在解析 GPX 轨迹...</div>
+  </div>
+</div>
+
+<div class="app">
+  <div class="map-container">
+    <div id="map"></div>
+    <div class="province-legend" id="provinceLegend"></div>
+    <div class="current-pos-badge" id="currentPosBadge">
+      当前位置: <span class="province-name">—</span>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+          <h1>🏔️ GHT 大喜马拉雅高线</h1>
+          <div class="subtitle">尼泊尔 · 1,700km · 10段 · 5省</div>
+          <button class="btn-reset" id="btnReset" onclick="clearAllData()" title="清除所有数据（仅主人模式）">🗑️ 重置数据</button>
+        </div>
+        <button class="btn-owner" id="ownerBtn" onclick="toggleOwnerMode()" title="主人登录/退出">
+          🔒
+        </button>
+      </div>
+    </div>
+    <div class="sidebar-tabs">
+      <button class="active" data-tab="progress">📊 进度</button>
+      <button data-tab="keypoints">📍 关键点</button>
+      <button data-tab="log">📝 日志</button>
+      <button data-tab="donate">❤️ 捐助</button>
+    </div>
+    <div class="sidebar-content" id="sidebarContent"></div>
+  </div>
+</div>
+
+<script>
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  DATA: Nepal Provinces (real GeoJSON from OSM, Douglas-Peucker simplified)
+//  Loaded from nepal-provinces.js → nepalProvinceData
+//  Data source: github.com/Acesmndr/nepal-geojson (MIT License)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const nepalProvinces = nepalProvinceData;
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  DATA: GHT Sections (10 sections, East → West)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const ghtSections = [
+  {
+    id: 1, name: '干城章嘉段', nameEn: 'Kanchenjunga', province: 'koshi',
+    days: '14-18天', distance: 180, maxElev: 5140,
+    mainPass: { name: 'Mirgin La', elev: 5140 },
+    startPoint: 'Taplejung (1,820m)',
+    highlights: ['干城章嘉峰南北大本营', '杜鹃花森林', '林布族村庄'],
+    trail: [[27.35,87.95],[27.45,87.85],[27.55,87.75],[27.6,87.7],[27.7,87.65],[27.8,87.6]]
+  },
+  {
+    id: 2, name: '马卡鲁-巴润段', nameEn: 'Makalu-Barun', province: 'koshi',
+    days: '12-16天', distance: 160, maxElev: 4850,
+    mainPass: { name: 'Tutu La', elev: 4850 },
+    startPoint: 'Num (1,560m)',
+    highlights: ['马卡鲁-巴润国家公园', '阿润河谷', '世界级生物多样性'],
+    trail: [[27.6,87.7],[27.65,87.45],[27.7,87.25],[27.75,87.05],[27.8,86.85],[27.85,86.7]]
+  },
+  {
+    id: 3, name: '珠峰-昆布段', nameEn: 'Everest-Khumbu', province: 'koshi',
+    days: '12-18天', distance: 150, maxElev: 5535,
+    mainPass: { name: 'Kongma La', elev: 5535 },
+    startPoint: 'Lukla (2,860m)',
+    highlights: ['三垭口穿越', '珠峰大本营支线', '昆布冰川'],
+    trail: [[27.85,86.7],[27.9,86.55],[27.95,86.4],[28.0,86.3]]
+  },
+  {
+    id: 4, name: '若瓦岭段', nameEn: 'Rolwaling', province: 'bagmati',
+    days: '10-14天', distance: 130, maxElev: 5755,
+    mainPass: { name: 'Tashi Lapcha', elev: 5755 },
+    startPoint: 'Beding (3,690m)',
+    highlights: ['Tashi Lapcha垭口', '若瓦岭秘境山谷', '冰川穿越'],
+    trail: [[28.0,86.3],[28.05,86.2],[28.1,86.1],[28.1,86.0],[28.15,85.85]]
+  },
+  {
+    id: 5, name: '郎当-戈赛昆达段', nameEn: 'Langtang-Gosaikunda', province: 'bagmati',
+    days: '12-15天', distance: 140, maxElev: 5122,
+    mainPass: { name: 'Tserko Ri', elev: 5122 },
+    startPoint: 'Syabrubesi (1,460m)',
+    highlights: ['戈赛昆达圣湖群', '塔芒文化遗产步道', '郎当国家公园'],
+    trail: [[28.15,85.85],[28.2,85.6],[28.25,85.4],[28.3,85.15]]
+  },
+  {
+    id: 6, name: '马纳斯鲁-楚姆段', nameEn: 'Manaslu-Tsum', province: 'gandaki',
+    days: '14-18天', distance: 160, maxElev: 5160,
+    mainPass: { name: 'Larkya La', elev: 5160 },
+    startPoint: 'Arughat (570m)',
+    highlights: ['马纳斯鲁峰环绕', '楚姆山谷藏传佛教', 'Larkya La垭口'],
+    trail: [[28.3,85.15],[28.35,84.9],[28.4,84.7]]
+  },
+  {
+    id: 7, name: '安纳普尔纳段', nameEn: 'Annapurna', province: 'gandaki',
+    days: '14-20天', distance: 170, maxElev: 5416,
+    mainPass: { name: 'Thorong La', elev: 5416 },
+    startPoint: 'Besisahar (820m)',
+    highlights: ['Thorong La垭口', '木斯塘边境', '马南高海拔荒漠'],
+    trail: [[28.4,84.7],[28.5,84.5],[28.6,84.3],[28.7,84.1]]
+  },
+  {
+    id: 8, name: '道拉吉里-多尔普东段', nameEn: 'Dhaulagiri-Dolpo East', province: 'gandaki',
+    days: '15-20天', distance: 170, maxElev: 5860,
+    mainPass: { name: 'Jungben La', elev: 5860 },
+    startPoint: 'Marpha (2,670m)',
+    highlights: ['道拉吉里峰群', 'Jungben La垭口', '偏远露营路段'],
+    trail: [[28.7,84.1],[28.8,83.9],[28.9,83.7],[29.0,83.5]]
+  },
+  {
+    id: 9, name: '多尔普-胡姆拉段', nameEn: 'Dolpo-Humla West', province: 'karnali',
+    days: '18-25天', distance: 200, maxElev: 6146,
+    mainPass: { name: 'Kagmara La', elev: 6146 },
+    startPoint: 'Dunai (2,140m)',
+    highlights: ['全路线最高垭口 Kagmara La', '多尔普秘境', '最极端路段'],
+    trail: [[29.0,83.5],[29.2,83.2],[29.4,82.9],[29.6,82.6],[29.8,82.2]]
+  },
+  {
+    id: 10, name: '胡姆拉-西米科特段', nameEn: 'Humla-Simikot', province: 'sudurpashchim',
+    days: '10-14天', distance: 120, maxElev: 4620,
+    mainPass: { name: 'Nara La', elev: 4620 },
+    startPoint: 'Simikot (2,910m)',
+    highlights: ['Nara La垭口', '苯教传统文化', '远西秘境'],
+    trail: [[29.8,82.2],[29.9,81.9],[29.95,81.6],[30.0,81.3]]
+  }
+];
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  KEY POINTS OF INTEREST
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const keyPoints = [
+  // Passes (垭口)
+  { type: 'pass', name: 'Mirgin La', section: 1, lat: 27.7, lng: 87.65, elev: 5140, desc: '干城章嘉段最高垭口' },
+  { type: 'pass', name: 'Tutu La', section: 2, lat: 27.75, lng: 87.1, elev: 4850, desc: '马卡鲁-巴润段垭口' },
+  { type: 'pass', name: 'Kongma La', section: 3, lat: 27.92, lng: 86.6, elev: 5535, desc: '珠峰三垭口之一' },
+  { type: 'pass', name: 'Cho La', section: 3, lat: 27.96, lng: 86.78, elev: 5420, desc: '珠峰三垭口之一' },
+  { type: 'pass', name: 'Renjo La', section: 3, lat: 27.92, lng: 86.72, elev: 5360, desc: '珠峰三垭口之一' },
+  { type: 'pass', name: 'Tashi Lapcha', section: 4, lat: 28.05, lng: 86.1, elev: 5755, desc: '全路线技术难度最高垭口' },
+  { type: 'pass', name: 'Tserko Ri', section: 5, lat: 28.22, lng: 85.58, elev: 5122, desc: '郎当段制高点' },
+  { type: 'pass', name: 'Larkya La', section: 6, lat: 28.38, lng: 84.85, elev: 5160, desc: '马纳斯鲁环线标志垭口' },
+  { type: 'pass', name: 'Thorong La', section: 7, lat: 28.65, lng: 84.2, elev: 5416, desc: '安纳普尔纳标志垭口' },
+  { type: 'pass', name: 'Jungben La', section: 8, lat: 28.85, lng: 83.85, elev: 5860, desc: '道拉吉里-多尔普垭口' },
+  { type: 'pass', name: 'Kagmara La', section: 9, lat: 29.5, lng: 82.9, elev: 6146, desc: '全GHT最高垭口' },
+  { type: 'pass', name: 'Nara La', section: 10, lat: 29.9, lng: 81.8, elev: 4620, desc: '远西段垭口' },
+  // Camps / Major Stops (住宿点)
+  { type: 'camp', name: 'Taplejung', section: 1, lat: 27.36, lng: 87.67, elev: 1820, desc: '东部起点补给镇' },
+  { type: 'camp', name: 'Lukla', section: 3, lat: 27.68, lng: 86.73, elev: 2860, desc: '珠峰门户机场' },
+  { type: 'camp', name: 'Namche Bazaar', section: 3, lat: 27.8, lng: 86.71, elev: 3440, desc: '昆布地区最大集镇' },
+  { type: 'camp', name: 'Syabrubesi', section: 5, lat: 28.16, lng: 85.34, elev: 1460, desc: '郎当徒步起点' },
+  { type: 'camp', name: 'Manang', section: 7, lat: 28.67, lng: 84.02, elev: 3519, desc: '高海拔适应重镇' },
+  { type: 'camp', name: 'Jomsom', section: 7, lat: 28.78, lng: 83.73, elev: 2743, desc: '木斯塘门户机场' },
+  { type: 'camp', name: 'Simikot', section: 10, lat: 29.97, lng: 81.83, elev: 2910, desc: '西部终点机场' },
+  // Viewpoints (观景点)
+  { type: 'view', name: '干城章嘉观景台', section: 1, lat: 27.63, lng: 87.9, elev: 4600, desc: '世界第三高峰全景' },
+  { type: 'view', name: 'Gokyo Ri', section: 3, lat: 27.96, lng: 86.69, elev: 5357, desc: '珠峰+卓奥友+洛子峰全景' },
+  { type: 'view', name: 'Kala Patthar', section: 3, lat: 27.99, lng: 86.83, elev: 5545, desc: '珠穆朗玛峰最佳观景点' },
+  { type: 'view', name: '戈赛昆达湖群', section: 5, lat: 28.08, lng: 85.42, elev: 4380, desc: '圣湖群全景' },
+  { type: 'view', name: 'Poon Hill', section: 7, lat: 28.4, lng: 83.7, elev: 3210, desc: '道拉吉里+安纳普尔纳日出' },
+];
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  APP STATE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const APP = {
+  currentSection: 1,
+  activeTab: 'progress',
+  isOwner: false,           // 主人模式: 可写日志/上传GPX
+  ownerPassword: 'ght2026', // 简单密码, 部署后可改
+  logEntries: [
+    { date: '2026-07-01', text: '确定GHT高线徒步计划，开始筹备装备和训练。目标11月出发。' },
+    { date: '2026-06-15', text: '完成初步路线研究，确定10段分段方案，总距离约1700公里。' },
+  ],
+  progressPct: 0,
+  uploadedTracks: [],
+  totalDistance: 1700,
+  totalElevGain: 0,
+  // New fields for preset/actual tracks
+  presetTrack: null,        // 预设轨迹
+  actualTracks: [],         // 实际轨迹段数组
+  currentPosition: null,    // 当前位置
+  hikingPersonMarker: null, // 徒步小人标记
+  sectionRanges: null,       // 路段范围
+  progressPercentage: 0,    // 进度百分比
+  completedDistance: 0      // 已完成距离
+};
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  MAP INITIALIZATION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const map = L.map('map', {
+  center: [28.5, 84.0],
+  zoom: 7,
+  zoomControl: true,
+  attributionControl: true,
+  minZoom: 6,
+  maxZoom: 13
+});
+
+// Dark tile layer
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
+  maxZoom: 13
+}).addTo(map);
+
+// Scale control
+L.control.scale({ metric: true, imperial: false, position: 'bottomright', maxWidth: 120 }).addTo(map);
+
+// Province layer group
+const provinceLayerGroup = L.layerGroup().addTo(map);
+const uploadedTrackGroup = L.layerGroup().addTo(map);
+
+// Store uploaded GPX data
+APP.uploadedGPX = null;
+
+// Draw provinces with real GeoJSON boundaries
+nepalProvinces.forEach(p => {
+  const color = p.color;
+  const name = p.name;
+  const nameEn = p.nameEn;
+
+  function addPolygon(coords, provId) {
+    // coords is in GeoJSON format: [lng, lat] — need to swap for Leaflet [lat, lng]
+    const latLngs = coords.map(ring => ring.map(pt => [pt[1], pt[0]]));
+    const poly = L.polygon(latLngs, {
+      color: color, weight: 1.5,
+      fillColor: color, fillOpacity: 0.08,
+      dashArray: '4 2'
+    }).addTo(provinceLayerGroup);
+    poly.bindPopup(`<b>${name}</b><br>${nameEn}`);
+    poly._provinceId = provId;
+    poly._provinceData = { color, name, nameEn };
+  }
+
+  if (p.type === 'MultiPolygon') {
+    p.coordinates.forEach(mp => addPolygon(mp, p.provinceId));
+  } else {
+    addPolygon(p.coordinates, p.provinceId);
+  }
+});
+
+// Highlight current province
+function highlightProvince(provinceId) {
+  provinceLayerGroup.eachLayer(layer => {
+    if (layer._provinceId === provinceId) {
+      const c = layer._provinceData.color;
+      layer.setStyle({ fillOpacity: 0.3, weight: 3, color: c, dashArray: '' });
+    } else {
+      const c = layer._provinceData.color;
+      layer.setStyle({ fillOpacity: 0.06, weight: 1.5, color: c, dashArray: '4 2' });
+    }
+  });
+}
+
+// Collect all preset trail coordinates (no gray dashed lines, no red dots — removed per user request)
+let allTrailCoords = [];
+ghtSections.forEach((section) => {
+  allTrailCoords = allTrailCoords.concat(section.trail);
+});
+
+// Key points NOT drawn on map (non-track annotations removed per user request)
+
+// Zoom to fit Nepal based on real province boundaries
+const allLatLngs = [];
+nepalProvinces.forEach(p => {
+  function collectCoords(coords) {
+    coords.forEach(ring => ring.forEach(pt => allLatLngs.push([pt[1], pt[0]])));
+  }
+  if (p.type === 'MultiPolygon') {
+    p.coordinates.forEach(mp => collectCoords(mp));
+  } else {
+    collectCoords(p.coordinates);
+  }
+});
+const allBounds = L.latLngBounds(allLatLngs);
+map.fitBounds(allBounds, { padding: [20, 20] });
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  PROVINCE LEGEND
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function renderProvinceLegend(currentProvinceId) {
+  const el = document.getElementById('provinceLegend');
+  el.innerHTML = '<div class="title">🏛️ 七省</div>' +
+    nepalProvinces.map(p => {
+      const isCurrent = p.provinceId === currentProvinceId;
+      return `<div class="item${isCurrent ? ' current' : ''}">
+        <div class="dot" style="background:${p.color}"></div>
+        ${p.name}
+        ${isCurrent ? ' ●' : ''}
+      </div>`;
+    }).join('');
+}
+
+function updateCurrentPosition() {
+  const section = ghtSections[APP.currentSection - 1];
+  let elevHTML = '';
+  if (APP.currentPosition && APP.currentPosition.elev != null) {
+    elevHTML = ` · ⛰️ <span style="color:var(--accent2);font-weight:600;">${Math.round(APP.currentPosition.elev).toLocaleString()}m</span>`;
+  }
+  document.getElementById('currentPosBadge').innerHTML =
+    `📍 当前位置: <span class="province-name">${section.name} · ${section.nameEn}</span>${elevHTML}`;
+
+  highlightProvince(section.province);
+  renderProvinceLegend(section.province);
+
+  // Update progress (only set data — renderProgress() will show it via template)
+  APP.progressPct = Math.round((APP.currentSection / 10) * 100);
+}
+
+function updateProgressDOM() {
+  const el = document.getElementById('progressPct');
+  if (!el) return; // guard: DOM not ready yet
+  el.textContent = APP.progressPct + '%';
+  const bar = document.getElementById('progressBar');
+  if (bar) bar.style.width = APP.progressPct + '%';
+  const detail = document.getElementById('progressDetail');
+  if (detail) {
+    const completed = APP.sectionRanges ? APP.sectionRanges.filter(r => r.status === 'completed').length : (APP.currentSection - 1);
+    const inProg = APP.sectionRanges ? APP.sectionRanges.filter(r => r.status === 'in-progress').length : 0;
+    const completedKm = APP.completedDistance ? (APP.completedDistance / 1000).toFixed(1) : '0';
+    detail.textContent = `${completed}✅ ${inProg > 0 ? '+' + inProg + '🔵 ' : ''}/ ${ghtSections.length} 段 · ${completedKm}km / ${APP.totalDistance}km`;
+  }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  SIDEBAR RENDERING
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function renderProgress() {
+  // Generate section list based on APP.sectionRanges if available
+  let sec = '';
+  if (APP.sectionRanges && APP.sectionRanges.length > 0) {
+    sec = APP.sectionRanges.map((range, idx) => {
+      const s = ghtSections[idx];
+      const status = range.status || 'upcoming';
+      const cssStatus = status === 'completed' ? 'done' : status === 'in-progress' ? 'current' : 'upcoming';
+      const label = status === 'completed' ? '✅' : status === 'in-progress' ? '🔵' : '⚪';
+      const coverageText = range.coverage ? ` (${(range.coverage * 100).toFixed(0)}%)` : '';
+      const secDist = range.sectionActualDist ? Math.round(range.sectionActualDist) : s.distance;
+      const colorDot = sectionColors[idx] || '#888';
+      return `<div class="section-item ${cssStatus === 'current' ? 'active' : ''} ${cssStatus === 'done' ? 'completed' : ''}" data-section="${s.id}">
+        <div class="section-indicator ${cssStatus}"></div>
+        <div class="section-info">
+          <div class="name"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${colorDot};margin-right:5px;vertical-align:middle;"></span>${label} 第${s.id}段: ${s.name} <span style="font-size:11px;color:var(--text-dim)">${s.nameEn}</span>${coverageText}</div>
+          <div class="detail">📏 ${secDist}km · ⏱ ${s.days} · ⛰️ ${s.mainPass.name} ${s.mainPass.elev}m</div>
+        </div>
+      </div>`;
+    }).join('');
+  } else {
+    // Fallback: use old method
+    sec = ghtSections.map(s => {
+      const status = s.id < APP.currentSection ? 'done' : s.id === APP.currentSection ? 'current' : 'upcoming';
+      const label = s.id < APP.currentSection ? '✅' : s.id === APP.currentSection ? '🔵' : '⚪';
+      return `<div class="section-item ${s.id === APP.currentSection ? 'active' : ''} ${s.id < APP.currentSection ? 'completed' : ''}" data-section="${s.id}">
+        <div class="section-indicator ${status}"></div>
+        <div class="section-info">
+          <div class="name">${label} 第${s.id}段: ${s.name} <span style="font-size:11px;color:var(--text-dim)">${s.nameEn}</span></div>
+          <div class="detail">📏 ${s.distance}km · ⏱ ${s.days} · ⛰️ ${s.mainPass.name} ${s.mainPass.elev}m</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Update progress percentage display
+  APP.progressPct = Math.round(APP.progressPercentage || 0);
+  const completedCount = APP.sectionRanges ? APP.sectionRanges.filter(r => r.status === 'completed').length : (APP.currentSection - 1);
+  const inProgressCount = APP.sectionRanges ? APP.sectionRanges.filter(r => r.status === 'in-progress').length : 0;
+
+  return `
+    <div class="progress-section">
+      <h3>📊 整体进度</h3>
+      <div class="progress-bar-outer">
+        <div class="progress-bar-inner" id="progressBar" style="width:${APP.progressPct}%"></div>
+      </div>
+      <div class="progress-stats">
+        <span id="progressPct">${APP.progressPct.toFixed(1)}%</span>
+        <span id="progressDetail">${completedCount}✅ ${inProgressCount > 0 ? '+' + inProgressCount + '🔵' : ''} / ${ghtSections.length} 段</span>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="label">📏 总距离</div>
+          <div class="value">${APP.totalDistance}<span class="unit"> km</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="label">⛰️ 已完成</div>
+          <div class="value">${(APP.completedDistance / 1000).toFixed(1)}<span class="unit"> km</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="label">📊 进度</div>
+          <div class="value">${APP.progressPct.toFixed(1)}<span class="unit"> %</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="label">🏔️ 当前海拔</div>
+          <div class="value">${APP.currentPosition && APP.currentPosition.elev != null ? Math.round(APP.currentPosition.elev).toLocaleString() : '?'}<span class="unit"> m</span></div>
+        </div>
+      </div>
+
+      <h3 style="font-size:14px;color:var(--accent);margin-bottom:10px;">🗺️ 路段列表</h3>
+      <div class="section-list">${sec}</div>
+
+      ${APP.gpxResultHTML || ''}
+      ${APP.isOwner ? `
+      <div style="margin-top:12px;padding:12px;background:var(--bg);border:1px dashed var(--border);border-radius:8px;text-align:center;">
+        <input type="file" id="gpxUpload" accept=".gpx,.kml,.geojson" style="display:none" onchange="handleGPXUpload(event)">
+        <button class="btn primary" onclick="document.getElementById('gpxUpload').click()" style="width:100%;">
+          📤 上传GPS轨迹 (.gpx/.kml)
+        </button>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:6px;">
+          支持 PeakVisor / Strava / Garmin 导出的 GPX<br>
+          自动解析轨迹点、标注点和海拔数据
+        </div>
+      </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+function renderKeyPoints() {
+  let html = '<h3 style="font-size:14px;color:var(--accent);margin-bottom:12px;">⛰️ 主要垭口 (12个)</h3>';
+  keyPoints.filter(k => k.type === 'pass').forEach(k => {
+    html += `<div class="keypoint-item">
+      <div class="keypoint-icon pass">⛰️</div>
+      <div class="keypoint-info">
+        <div class="name">${k.name} · 第${k.section}段</div>
+        <div class="detail">${k.desc}</div>
+        <div class="elevation">海拔 ${k.elev.toLocaleString()}m</div>
+      </div>
+    </div>`;
+  });
+
+  html += '<h3 style="font-size:14px;color:var(--accent);margin:16px 0 12px;">🏕️ 主要住宿点 (7个)</h3>';
+  keyPoints.filter(k => k.type === 'camp').forEach(k => {
+    html += `<div class="keypoint-item">
+      <div class="keypoint-icon camp">🏕️</div>
+      <div class="keypoint-info">
+        <div class="name">${k.name} · 第${k.section}段</div>
+        <div class="detail">${k.desc}</div>
+        <div class="elevation">海拔 ${k.elev.toLocaleString()}m</div>
+      </div>
+    </div>`;
+  });
+
+  html += '<h3 style="font-size:14px;color:var(--accent);margin:16px 0 12px;">📸 最佳观景点 (5个)</h3>';
+  keyPoints.filter(k => k.type === 'view').forEach(k => {
+    html += `<div class="keypoint-item">
+      <div class="keypoint-icon view">📸</div>
+      <div class="keypoint-info">
+        <div class="name">${k.name} · 第${k.section}段</div>
+        <div class="detail">${k.desc}</div>
+        <div class="elevation">海拔 ${k.elev.toLocaleString()}m</div>
+      </div>
+    </div>`;
+  });
+
+  return html;
+}
+
+function renderLog() {
+  const entries = APP.logEntries.map(e => {
+    let body = '';
+    if (e.dailyStats) {
+      const ds = e.dailyStats;
+      const startTime = ds.startTime ? new Date(ds.startTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '';
+      const endTime = ds.endTime ? new Date(ds.endTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '';
+      
+      body = `
+        <div class="gpx-badge">📡 GPS 自动记录 ${startTime && endTime ? '· ' + startTime + ' → ' + endTime : ''}</div>
+        <div style="color:var(--text-dim);font-size:11px;margin-bottom:2px;">${e.text || ''}</div>
+        <div class="daily-stats">
+          <div class="stat-item">
+            <span class="val green">${ds.distance.toFixed(1)}<span style="font-size:10px;font-weight:400;"> km</span></span>
+            距离
+          </div>
+          <div class="stat-item">
+            <span class="val orange">${ds.elevGain.toLocaleString()}<span style="font-size:10px;font-weight:400;"> m</span></span>
+            爬升
+          </div>
+          <div class="stat-item">
+            <span class="val orange">${ds.elevLoss.toLocaleString()}<span style="font-size:10px;font-weight:400;"> m</span></span>
+            下降
+          </div>
+          ${ds.durationStr ? `
+          <div class="stat-item">
+            <span class="val white">${ds.durationStr}</span>
+            用时
+          </div>` : ''}
+          ${ds.avgSpeed ? `
+          <div class="stat-item">
+            <span class="val white">${ds.avgSpeed}<span style="font-size:10px;font-weight:400;"> km/h</span></span>
+            均速
+          </div>` : ''}
+          <div class="stat-item">
+            <span class="val white">${ds.maxElev.toLocaleString()}<span style="font-size:10px;font-weight:400;"> m</span></span>
+            最高
+          </div>
+        </div>`;
+    } else {
+      body = `<div class="text">${e.text}</div>`;
+    }
+
+    return `<div class="log-entry">
+      <div class="date">📅 ${e.date}</div>
+      ${body}
+    </div>`;
+  }).reverse().join('');
+
+  const ownerForm = APP.isOwner ? `
+    <div style="margin-top:16px;">
+      <div class="owner-badge">🔓 主人模式</div>
+      <h4 style="font-size:13px;margin-bottom:8px;color:var(--accent);">✏️ 写日志</h4>
+      <div class="log-form">
+        <textarea id="logText" placeholder="记录今天的徒步经历..."></textarea>
+        <div style="display:flex;gap:8px;">
+          <button class="btn primary" onclick="addLogEntry()">💾 保存</button>
+          <button class="btn" onclick="document.getElementById('photoUpload').click()">📷 添加照片</button>
+          <input type="file" id="photoUpload" accept="image/*" style="display:none" onchange="handlePhotoUpload(event)">
+        </div>
+        <div id="photoPreview" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"></div>
+      </div>
+    </div>
+  ` : `
+    <div class="visitor-notice">
+      🔒 日志仅主人可编辑，访客只读<br>
+      <span style="font-size:11px;">点击右上角 🔒 按钮登录</span>
+    </div>
+  `;
+
+  return entries + ownerForm;
+}
+
+function renderDonate() {
+  return `
+    <div class="donation-section">
+      <h3 style="font-size:16px;color:var(--accent);margin-bottom:8px;">❤️ 支持我的 GHT 之旅</h3>
+      <p class="donation-msg">
+        这次徒步将穿越尼泊尔最偏远的地区，<br>
+        您的每一份支持都是我前行的力量！
+      </p>
+      <div class="qr-placeholder">
+        <div class="icon">📱</div>
+        <div>微信/支付宝</div>
+        <div>捐助二维码</div>
+        <div style="margin-top:4px;opacity:0.5;">(开发中)</div>
+      </div>
+      <div class="donation-msg" style="margin-top:16px;">
+        <b>💰 预计总费用</b><br>
+        许可证 + 向导 + 补给 + 保险<br>
+        约 ¥8-12万 / $12,000-16,000
+      </div>
+      <div style="margin-top:16px;font-size:11px;color:var(--text-dim);">
+        所有捐助将用于徒步期间的装备、补给<br>
+        和紧急医疗预备金
+      </div>
+    </div>
+  `;
+}
+
+function renderSidebar() {
+  const content = document.getElementById('sidebarContent');
+  switch (APP.activeTab) {
+    case 'progress': content.innerHTML = renderProgress(); break;
+    case 'keypoints': content.innerHTML = renderKeyPoints(); break;
+    case 'log': content.innerHTML = renderLog(); break;
+    case 'donate': content.innerHTML = renderDonate(); break;
+  }
+
+  // Re-bind section click handlers — fly map to section start
+  document.querySelectorAll('.section-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const secId = parseInt(el.dataset.section);
+      if (secId !== APP.currentSection) {
+        APP.currentSection = secId;
+        updateCurrentPosition();
+        // Fly map to section's first coordinate
+        if (APP.presetTrack && APP.sectionRanges && APP.sectionRanges[secId - 1]) {
+          const range = APP.sectionRanges[secId - 1];
+          const tp = APP.presetTrack.trackPoints;
+          if (tp && tp[range.startIndex]) {
+            map.flyTo([tp[range.startIndex].lat, tp[range.startIndex].lon], 10, { duration: 1.5 });
+          }
+        } else if (ghtSections[secId - 1]) {
+          const sec = ghtSections[secId - 1];
+          map.flyTo([sec.trail[0][0], sec.trail[0][1]], 10, { duration: 1.5 });
+        }
+        // Re-render sidebar content (preserving current tab)
+        const content = document.getElementById('sidebarContent');
+        if (APP.activeTab === 'progress') content.innerHTML = renderProgress();
+        // Update progress bar
+        updateProgressDOM();
+      }
+    });
+  });
+
+  // Sync DOM after render
+  updateProgressDOM();
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  TAB SWITCHING
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+document.querySelectorAll('.sidebar-tabs button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.sidebar-tabs button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    APP.activeTab = btn.dataset.tab;
+    renderSidebar();
+  });
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  LOG & UPLOAD HANDLERS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function addLogEntry() {
+  const text = document.getElementById('logText').value.trim();
+  if (!text) return;
+  const today = new Date().toISOString().split('T')[0];
+  APP.logEntries.push({ date: today, text });
+  document.getElementById('logText').value = '';
+  saveLogEntries();
+  renderSidebar();
+}
+
+function saveLogEntries() {
+  try { localStorage.setItem('ght_log', JSON.stringify(APP.logEntries)); } catch(e) {}
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  GPX PARSING ENGINE
+//  Parses PeakVisor/any GPX: waypoints (peaks/垭口), track points, stats
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371000; // Earth radius in meters
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function parseGPX(xmlText) {
+  if (!xmlText || !xmlText.trim()) {
+    throw new Error('文件内容为空，请确认选择了正确的 GPX 文件。');
+  }
+  // Strip BOM if present
+  if (xmlText.charCodeAt(0) === 0xFEFF) {
+    xmlText = xmlText.slice(1);
+  }
+  // PeakVisor prepends e.g. "#gpx	v1\n" before the <?xml declaration — strip it
+  const peakVisorHeader = /^#gpx\s+\S+\s*\n/;
+  if (peakVisorHeader.test(xmlText)) {
+    xmlText = xmlText.replace(peakVisorHeader, '');
+  }
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(xmlText, 'text/xml');
+  const parseError = doc.querySelector('parsererror');
+  if (parseError) {
+    const preview = xmlText.trim().substring(0, 200);
+    throw new Error('XML 解析失败: ' + parseError.textContent + '\n\n文件开头预览:\n' + preview + '\n\n请确认文件是有效的 GPX/XML 格式。');
+  }
+
+  const result = {
+    waypoints: [],
+    trackPoints: [],
+    metadata: {}
+  };
+
+  // Parse metadata (use getElementsByTagName for namespace compatibility)
+  const gpxList = doc.getElementsByTagName('gpx');
+  if (gpxList.length > 0) {
+    const gpx = gpxList[0];
+    const metaList = gpx.getElementsByTagName('metadata');
+    if (metaList.length > 0) {
+      const nameList = metaList[0].getElementsByTagName('name');
+      if (nameList.length > 0) result.metadata.name = nameList[0].textContent;
+    }
+  }
+
+  // Parse waypoints (wpt) — PeakVisor peak annotations, custom POIs
+  // getElementsByTagName is namespace-agnostic; querySelectorAll fails on namespaced GPX
+  const wptElements = doc.getElementsByTagName('wpt');
+  for (let i = 0; i < wptElements.length; i++) {
+    const wpt = wptElements[i];
+    const lat = parseFloat(wpt.getAttribute('lat'));
+    const lon = parseFloat(wpt.getAttribute('lon'));
+    if (isNaN(lat) || isNaN(lon)) continue;
+
+    const waypoint = { lat, lon };
+
+    const ele = wpt.getElementsByTagName('ele');
+    const name = wpt.getElementsByTagName('name');
+    const desc = wpt.getElementsByTagName('desc');
+    const cmt = wpt.getElementsByTagName('cmt');
+    const sym = wpt.getElementsByTagName('sym');
+    const time = wpt.getElementsByTagName('time');
+
+    if (ele.length > 0) waypoint.elev = parseFloat(ele[0].textContent);
+    if (name.length > 0) waypoint.name = name[0].textContent.trim();
+    if (desc.length > 0) waypoint.desc = desc[0].textContent.trim();
+    if (cmt.length > 0) waypoint.comment = cmt[0].textContent.trim();
+    if (sym.length > 0) waypoint.sym = sym[0].textContent.trim();
+    if (time.length > 0) waypoint.time = time[0].textContent.trim();
+
+    // Parse <type> — PeakVisor puts "Peak" / "Pass" / "Viewpoint" here
+    const typeEl = wpt.getElementsByTagName('type');
+    if (typeEl.length > 0) waypoint.gpxType = typeEl[0].textContent.trim();
+
+    // Parse <src> — data source
+    const srcEl = wpt.getElementsByTagName('src');
+    if (srcEl.length > 0) waypoint.src = srcEl[0].textContent.trim();
+
+    // Parse <link> — PeakVisor links to peak detail pages
+    const linkEls = wpt.getElementsByTagName('link');
+    if (linkEls.length > 0) {
+      waypoint.links = [];
+      for (let li = 0; li < linkEls.length; li++) {
+        const href = linkEls[li].getAttribute('href');
+        const textEl = linkEls[li].getElementsByTagName('text');
+        waypoint.links.push({
+          href: href || '',
+          text: textEl.length > 0 ? textEl[0].textContent.trim() : ''
+        });
+      }
+    }
+
+    // Recursively parse ALL descendant elements of this waypoint
+    // This captures namespaced extension fields that getElementsByTagName misses
+    const allFields = {};
+    const allFieldsFlat = {};  // flattened: "extensions.DisplayColor" → value
+
+    function parseElementChildren(el, prefix) {
+      for (let ci = 0; ci < el.children.length; ci++) {
+        const child = el.children[ci];
+        const localName = child.localName || child.tagName.split(':').pop();
+        const key = prefix ? prefix + '.' + localName : localName;
+        const text = child.textContent.trim();
+        // Only store if this element has no element children (leaf node)
+        if (child.children.length === 0) {
+          if (text) {
+            allFields[key] = text;
+            allFieldsFlat[key] = text;
+          }
+        } else {
+          // Has children — recurse, but also capture textContent if meaningful
+          const childText = child.textContent.replace(/\s+/g, ' ').trim();
+          const onlyText = child.firstChild && child.firstChild === child.lastChild && child.firstChild.nodeType === 3;
+          if (onlyText && childText) {
+            allFields[key] = childText;
+            allFieldsFlat[key] = childText;
+          } else {
+            parseElementChildren(child, key);
+          }
+        }
+      }
+    }
+    parseElementChildren(wpt, '');
+    waypoint.allFields = allFields;
+    waypoint.allFieldsFlat = allFieldsFlat;
+
+    // Also try to get DisplayColor from extensions (Garmin GPX)
+    const extEls = wpt.getElementsByTagName('extensions');
+    if (extEls.length > 0) {
+      const ext = extEls[0];
+      // Search all descendants for DisplayColor
+      const allDesc = ext.getElementsByTagName
+        ? ext.getElementsByTagName('*')
+        : [];
+      for (let di = 0; di < (allDesc.length || 0); di++) {
+        const d = allDesc[di];
+        const nm = (d.localName || d.tagName || '').split(':').pop();
+        if (nm.toLowerCase().indexOf('displaycolor') !== -1) {
+          waypoint.displayColor = d.textContent.trim();
+          break;
+        }
+      }
+      // Fallback: check allFieldsFlat
+      if (!waypoint.displayColor) {
+        for (const [k, v] of Object.entries(allFieldsFlat)) {
+          if (k.toLowerCase().indexOf('displaycolor') !== -1) {
+            waypoint.displayColor = v;
+            break;
+          }
+        }
+      }
+    }
+
+    // Classify by pv:tagId first (PeakVisor extension), then fallback to name/symbol/type
+    // pv:tagId values: logistics:hut, logistics:camp, navigation:pass, viewpoint, summit, etc.
+    if (allFieldsFlat) {
+      const tagId = allFieldsFlat['pv:tagId'] || allFieldsFlat['tagId'] || '';
+      if (/logistics:hut|logistics:camp|lodging/.test(tagId)) waypoint._type = 'camp';
+      else if (/navigation:pass|pass/.test(tagId)) waypoint._type = 'pass';
+      else if (/viewpoint|view/.test(tagId)) waypoint._type = 'view';
+      else if (/summit|peak|peak/.test(tagId)) waypoint._type = 'peak';
+    }
+    // Fallback: classify by name/symbol/type/desc text
+    if (!waypoint._type) {
+      const txt = ((waypoint.name||'') + (waypoint.desc||'') + (waypoint.sym||'') + (waypoint.gpxType||'')).toLowerCase();
+      if (/pass|垭口|la\b/.test(txt)) waypoint._type = 'pass';
+      else if (/camp|营地|lodge/.test(txt)) waypoint._type = 'camp';
+      else if (/peak|summit|峰|山/.test(txt) || waypoint.sym === 'Summit') waypoint._type = 'peak';
+      else if (/view|观景|lookout|viewpoint/.test(txt)) waypoint._type = 'view';
+      else waypoint._type = 'other';
+    }
+
+    result.waypoints.push(waypoint);
+  }
+
+  // Parse track points (trk > trkseg > trkpt) and route points (rte > rtept)
+  const trkptElements = doc.getElementsByTagName('trkpt');
+  for (let i = 0; i < trkptElements.length; i++) {
+    const pt = trkptElements[i];
+    const lat = parseFloat(pt.getAttribute('lat'));
+    const lon = parseFloat(pt.getAttribute('lon'));
+    if (isNaN(lat) || isNaN(lon)) continue;
+
+    const trackPt = { lat, lon };
+    const ele = pt.getElementsByTagName('ele');
+    const time = pt.getElementsByTagName('time');
+    if (ele.length > 0) trackPt.elev = parseFloat(ele[0].textContent);
+    if (time.length > 0) trackPt.time = time[0].textContent.trim();
+    result.trackPoints.push(trackPt);
+  }
+
+  // Also parse route points (rtept) in case the file uses route format
+  const rteptElements = doc.getElementsByTagName('rtept');
+  for (let i = 0; i < rteptElements.length; i++) {
+    const pt = rteptElements[i];
+    const lat = parseFloat(pt.getAttribute('lat'));
+    const lon = parseFloat(pt.getAttribute('lon'));
+    if (isNaN(lat) || isNaN(lon)) continue;
+
+    const trackPt = { lat, lon };
+    const ele = pt.getElementsByTagName('ele');
+    if (ele.length > 0) trackPt.elev = parseFloat(ele[0].textContent);
+    result.trackPoints.push(trackPt);
+  }
+
+  return result;
+}
+
+function calculateGPXStats(trackPoints) {
+  if (trackPoints.length < 2) return { distance: 0, elevGain: 0, elevLoss: 0, maxElev: 0, minElev: Infinity, pointCount: 0 };
+
+  let distance = 0;
+  let elevGain = 0;
+  let elevLoss = 0;
+  let maxElev = -Infinity;
+  let minElev = Infinity;
+  let prevElev = null;
+
+  // Also calculate distances array
+  const distances = [0];
+  for (let i = 1; i < trackPoints.length; i++) {
+    const p1 = trackPoints[i-1];
+    const p2 = trackPoints[i];
+    const d = haversine(p1.lat, p1.lon, p2.lat, p2.lon);
+    distance += d;
+    distances.push(distances[distances.length - 1] + d);
+
+    if (p2.elev != null) {
+      if (p2.elev > maxElev) maxElev = p2.elev;
+      if (p2.elev < minElev) minElev = p2.elev;
+    }
+
+    if (p1.elev != null && p2.elev != null) {
+      const diff = p2.elev - p1.elev;
+      if (diff > 0) elevGain += diff;
+      else elevLoss += Math.abs(diff);
+      prevElev = p2.elev;
+    }
+  }
+
+  if (minElev === Infinity) minElev = 0;
+  if (maxElev === -Infinity) maxElev = 0;
+
+  return {
+    distance: distance / 1000, // km
+    elevGain: Math.round(elevGain),
+    elevLoss: Math.round(elevLoss),
+    maxElev: Math.round(maxElev),
+    minElev: Math.round(minElev),
+    pointCount: trackPoints.length
+  };
+}
+
+// Format minutes to human-readable duration
+function formatDuration(totalMinutes) {
+  if (!totalMinutes || totalMinutes <= 0) return null;
+  const hours = Math.floor(totalMinutes / 60);
+  const mins = Math.round(totalMinutes % 60);
+  if (hours === 0) return mins + 'min';
+  if (mins === 0) return hours + 'h';
+  return hours + 'h' + mins + 'min';
+}
+
+// Calculate daily stats from timestamped GPX track points
+// Returns null if no timestamps found
+function calculateDailyStats(trackPoints) {
+  if (!trackPoints || trackPoints.length < 2) return null;
+
+  // Check if points have timestamps
+  const hasTime = trackPoints.some(p => p.time);
+  if (!hasTime) return null;
+
+  let distance = 0, elevGain = 0, elevLoss = 0;
+  let maxElev = -Infinity, minElev = Infinity;
+  let startTime = null, endTime = null;
+  let dateStr = null;
+
+  for (let i = 0; i < trackPoints.length; i++) {
+    const p = trackPoints[i];
+
+    // Track time bounds
+    if (p.time) {
+      try {
+        const t = new Date(p.time);
+        if (isNaN(t.getTime())) continue;
+        if (!startTime || t < startTime) startTime = t;
+        if (!endTime || t > endTime) endTime = t;
+        if (!dateStr) dateStr = t.toISOString().split('T')[0];
+      } catch(e) {}
+    }
+
+    // Distance & elevation between consecutive points
+    if (i > 0) {
+      const prev = trackPoints[i-1];
+      distance += haversine(prev.lat, prev.lon, p.lat, p.lon);
+      if (prev.elev != null && p.elev != null) {
+        const diff = p.elev - prev.elev;
+        if (diff > 0) elevGain += diff;
+        else elevLoss += Math.abs(diff);
+      }
+    }
+
+    if (p.elev != null) {
+      if (p.elev > maxElev) maxElev = p.elev;
+      if (p.elev < minElev) minElev = p.elev;
+    }
+  }
+
+  if (minElev === Infinity) minElev = 0;
+  if (maxElev === -Infinity) maxElev = 0;
+
+  let durationMin = null;
+  let durationStr = null;
+  let avgSpeed = null;
+  if (startTime && endTime) {
+    durationMin = (endTime - startTime) / 60000;
+    durationStr = formatDuration(durationMin);
+    if (distance > 0 && durationMin > 0) {
+      avgSpeed = (distance / 1000) / (durationMin / 60); // km/h
+    }
+  }
+
+  return {
+    date: dateStr,
+    distance: distance / 1000, // km
+    elevGain: Math.round(elevGain),
+    elevLoss: Math.round(elevLoss),
+    maxElev: Math.round(maxElev),
+    minElev: Math.round(minElev),
+    startTime: startTime ? startTime.toISOString() : null,
+    endTime: endTime ? endTime.toISOString() : null,
+    durationMin: durationMin ? Math.round(durationMin) : null,
+    durationStr,
+    avgSpeed: avgSpeed ? parseFloat(avgSpeed.toFixed(1)) : null,
+    pointCount: trackPoints.length
+  };
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  TRACK DISTANCE & SECTION RANGE CALCULATION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// Calculate cumulative distances for track points
+function calculateTrackDistances(trackPoints) {
+  const distances = [0];
+  for (let i = 1; i < trackPoints.length; i++) {
+    const p1 = trackPoints[i-1];
+    const p2 = trackPoints[i];
+    const d = haversine(p1.lat, p1.lon, p2.lat, p2.lon);
+    distances.push(distances[distances.length - 1] + d);
+  }
+  return distances;
+}
+
+// Calculate which track point indices correspond to each GHT section
+// Uses preset track's actual total distance to proportionally distribute sections
+function calculateSectionRanges(presetTrack) {
+  if (!presetTrack || !presetTrack.distances || presetTrack.distances.length === 0) return [];
+  
+  const totalDist = presetTrack.distances[presetTrack.distances.length - 1]; // actual GPX total distance in meters
+  const ghtTotal = ghtSections.reduce((s, sec) => s + sec.distance, 0) * 1000; // ghtSections total in meters
+  
+  let cumulativeDist = 0;
+  const sectionRanges = [];
+  
+  ghtSections.forEach((sec, idx) => {
+    // Proportional: section share of ghtTotal → same share of actual totalDist
+    const secShare = (sec.distance * 1000) / ghtTotal;
+    const sectionActualDist = secShare * totalDist;
+    
+    const startDist = cumulativeDist;
+    const endDist = Math.min(cumulativeDist + sectionActualDist, totalDist);
+    
+    // Find closest indices
+    const startIndex = findClosestDistanceIndex(presetTrack.distances, startDist);
+    const endIndex = findClosestDistanceIndex(presetTrack.distances, endDist);
+    
+    sectionRanges.push({
+      sectionId: sec.id,
+      startIndex: startIndex,
+      endIndex: endIndex,
+      startDist: startDist,
+      endDist: endDist,
+      sectionActualDist: sectionActualDist / 1000, // km
+      status: 'upcoming'
+    });
+    
+    cumulativeDist = endDist;
+  });
+  
+  return sectionRanges;
+}
+
+// Find index of closest distance in distances array
+function findClosestDistanceIndex(distances, targetDist) {
+  let minDiff = Infinity;
+  let closestIdx = 0;
+  
+  for (let i = 0; i < distances.length; i++) {
+    const diff = Math.abs(distances[i] - targetDist);
+    if (diff < minDiff) {
+      minDiff = diff;
+      closestIdx = i;
+    }
+  }
+  
+  return closestIdx;
+}
+
+// Check completion status for all sections
+function checkAllSectionsCompletion() {
+  if (!APP.presetTrack || APP.actualTracks.length === 0) {
+    // No actual tracks yet, all are upcoming
+    if (APP.sectionRanges) {
+      APP.sectionRanges.forEach(r => r.status = 'upcoming');
+    }
+    return;
+  }
+  
+  APP.sectionRanges.forEach(range => {
+    // Check if any actual track point is close to this section's track points
+    let coveredCount = 0;
+    const sampleStep = Math.max(1, Math.floor((range.endIndex - range.startIndex) / 100)); // Sample 100 points
+    
+    for (let i = range.startIndex; i <= range.endIndex; i += sampleStep) {
+      const presetPoint = APP.presetTrack.trackPoints[i];
+      
+      // Check if any actual track point is within 250m
+      const isCovered = APP.actualTracks.some(track => 
+        track.trackPoints.some(p => 
+          haversine(presetPoint.lat, presetPoint.lon, p.lat, p.lon) < 250
+        )
+      );
+      
+      if (isCovered) coveredCount++;
+    }
+    
+    const totalSamples = Math.floor((range.endIndex - range.startIndex) / sampleStep) + 1;
+    const coverage = coveredCount / totalSamples;
+    
+    // Tighter thresholds for better accuracy
+    if (coverage > 0.75) {
+      range.status = 'completed';
+    } else if (coverage > 0.05) {
+      range.status = 'in-progress';
+    } else {
+      range.status = 'upcoming';
+    }
+    
+    range.coverage = coverage;
+  });
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  SECTION COLOR PALETTE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const sectionColors = [
+  '#FF6B6B', // 1 干城章嘉 — 珊瑚红
+  '#FFA94D', // 2 马卡鲁-巴润 — 暖橙
+  '#FFD43B', // 3 珠峰-昆布 — 金黄
+  '#69DB7C', // 4 若瓦岭 — 草绿
+  '#38D9A9', // 5 郎当-戈赛昆达 — 青绿
+  '#4DABF7', // 6 马纳斯鲁-楚姆 — 天蓝
+  '#748FFC', // 7 安纳普尔纳 — 靛蓝
+  '#DA77F2', // 8 道拉吉里-多尔普东 — 紫
+  '#F783AC', // 9 多尔普-胡姆拉 — 粉
+  '#63E6BE', // 10 胡姆拉-西米科特 — 薄荷
+];
+
+// Status styling for each section on map
+function getSectionLineStyle(sectionIdx, status) {
+  const color = sectionColors[sectionIdx];
+  if (status === 'completed') {
+    return { color: color, weight: 5, opacity: 1.0, dashArray: null };
+  } else if (status === 'in-progress') {
+    return { color: color, weight: 5, opacity: 0.9, dashArray: '8, 4' };
+  }
+  // upcoming — thinner, slightly transparent
+  return { color: color, weight: 3, opacity: 0.55, dashArray: null };
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  RENDER ALL TRACKS (Preset + Actual)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function renderAllTracks() {
+  // Clear previous layers
+  uploadedTrackGroup.clearLayers();
+  
+  // 1. Draw preset track — each section with its own color
+  if (APP.presetTrack && APP.presetTrack.trackPoints.length >= 2 && APP.sectionRanges && APP.sectionRanges.length > 0) {
+    APP.sectionRanges.forEach((range, idx) => {
+      const slice = APP.presetTrack.trackPoints.slice(range.startIndex, range.endIndex + 1);
+      if (slice.length < 2) return;
+      const coords = slice.map(p => [p.lat, p.lon]);
+      const style = getSectionLineStyle(idx, range.status);
+      L.polyline(coords, {
+        color: style.color,
+        weight: style.weight,
+        opacity: style.opacity,
+        dashArray: style.dashArray || undefined,
+        className: 'preset-section-line'
+      }).bindPopup('<b>📍 第' + (idx+1) + '段: ' + ghtSections[idx].name + '</b><br>' +
+        '状态: ' + (range.status === 'completed' ? '✅ 已完成' : range.status === 'in-progress' ? '🔵 进行中' : '⚪ 未开始') +
+        (range.coverage ? '<br>覆盖: ' + (range.coverage*100).toFixed(0) + '%' : '') +
+        '<br>距离: ~' + Math.round((range.endDist - range.startDist)/1000) + 'km'
+      ).addTo(uploadedTrackGroup);
+    });
+    
+    // Mark preset start & end with red dots
+    const start = APP.presetTrack.trackPoints[0];
+    const end = APP.presetTrack.trackPoints[APP.presetTrack.trackPoints.length - 1];
+    L.circleMarker([start.lat, start.lon], {
+      radius: 6, color: '#fff', fillColor: '#f85149', fillOpacity: 1, weight: 2
+    }).bindPopup('<b>🚩 预设起点</b>').addTo(uploadedTrackGroup);
+    L.circleMarker([end.lat, end.lon], {
+      radius: 6, color: '#fff', fillColor: '#f85149', fillOpacity: 1, weight: 2
+    }).bindPopup('<b>🏁 预设终点</b>').addTo(uploadedTrackGroup);
+  }
+  
+  // 2. Draw actual tracks (green solid line)
+  APP.actualTracks.forEach((track, idx) => {
+    if (track.trackPoints.length < 2) return;
+    const coords = track.trackPoints.map(p => [p.lat, p.lon]);
+    L.polyline(coords, {
+      color: '#3fb950',
+      weight: 4,
+      opacity: 0.9
+    }).addTo(uploadedTrackGroup);
+    
+    // Mark actual track start & end
+    const start = track.trackPoints[0];
+    const end = track.trackPoints[track.trackPoints.length - 1];
+    L.circleMarker([start.lat, start.lon], {
+      radius: 5, color: '#fff', fillColor: '#3fb950', fillOpacity: 1, weight: 2
+    }).bindPopup(`<b>📍 实际轨迹 ${idx+1} 起点</b>`).addTo(uploadedTrackGroup);
+    L.circleMarker([end.lat, end.lon], {
+      radius: 5, color: '#fff', fillColor: '#f85149', fillOpacity: 1, weight: 2
+    }).bindPopup(`<b>🏁 实际轨迹 ${idx+1} 终点</b>`).addTo(uploadedTrackGroup);
+  });
+  
+  // 3. Calculate current position (last point of last actual track)
+  if (APP.actualTracks.length > 0) {
+    const lastTrack = APP.actualTracks[APP.actualTracks.length - 1];
+    if (lastTrack.trackPoints.length > 0) {
+      APP.currentPosition = lastTrack.trackPoints[lastTrack.trackPoints.length - 1];
+      // Save to localStorage
+      try { localStorage.setItem('ght_current_pos', JSON.stringify(APP.currentPosition)); } catch(e) {}
+    }
+  }
+  
+  // 4. Draw hiking person (徒步小人)
+  drawHikingPerson();
+  
+  // 5. Update progress
+  updateProgress();
+  
+  // 6. Update current position badge (elevation display)
+  updateCurrentPosition();
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  SECTION COLOR LEGEND (路段颜色图例)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// (section legend removed — redundant with sidebar section list)
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  BEARING CALCULATION (方位角)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function calculateBearing(lat1, lon1, lat2, lon2) {
+  const phi1 = lat1 * Math.PI / 180;
+  const phi2 = lat2 * Math.PI / 180;
+  const dLam = (lon2 - lon1) * Math.PI / 180;
+  const y = Math.sin(dLam) * Math.cos(phi2);
+  const x = Math.cos(phi1) * Math.sin(phi2) - Math.sin(phi1) * Math.cos(phi2) * Math.cos(dLam);
+  const bearing = Math.atan2(y, x) * 180 / Math.PI;
+  return (bearing + 360) % 360;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  DRAW HIKING PERSON (徒步小人 — 含朝向)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function drawHikingPerson() {
+  // Remove previous hiking person
+  if (APP.hikingPersonMarker) {
+    map.removeLayer(APP.hikingPersonMarker);
+    APP.hikingPersonMarker = null;
+  }
+  
+  if (!APP.currentPosition) return;
+  
+  // Calculate bearing: find next point on preset track
+  let bearingDeg = 0;
+  let hasBearing = false;
+  if (APP.presetTrack && APP.presetTrack.trackPoints.length > 0 && APP.presetTrack.distances) {
+    // Find closest point index on preset track
+    let minDist = Infinity, closestIdx = -1;
+    for (let i = 0; i < APP.presetTrack.trackPoints.length; i++) {
+      const p = APP.presetTrack.trackPoints[i];
+      const d = haversine(APP.currentPosition.lat, APP.currentPosition.lon, p.lat, p.lon);
+      if (d < minDist) { minDist = d; closestIdx = i; }
+    }
+    // Look ahead ~10 points for bearing
+    if (closestIdx >= 0) {
+      const lookAhead = Math.min(closestIdx + 10, APP.presetTrack.trackPoints.length - 1);
+      if (lookAhead !== closestIdx) {
+        const next = APP.presetTrack.trackPoints[lookAhead];
+        bearingDeg = calculateBearing(APP.currentPosition.lat, APP.currentPosition.lon, next.lat, next.lon);
+        hasBearing = true;
+      }
+    }
+  }
+  
+  // Falling back to last actual track direction
+  if (!hasBearing && APP.actualTracks.length > 0) {
+    const lastTrack = APP.actualTracks[APP.actualTracks.length - 1];
+    if (lastTrack.trackPoints.length >= 2) {
+      const prev = lastTrack.trackPoints[lastTrack.trackPoints.length - 2];
+      const curr = lastTrack.trackPoints[lastTrack.trackPoints.length - 1];
+      bearingDeg = calculateBearing(prev.lat, prev.lon, curr.lat, curr.lon);
+      hasBearing = true;
+    }
+  }
+  
+  const rotationStyle = hasBearing ? `transform:rotate(${bearingDeg}deg);` : '';
+  
+  // Create hiking person icon with pulse animation & rotation
+  const hikingIcon = L.divIcon({
+    html: `<div style="position:relative;text-align:center;">
+      <div style="font-size:26px;filter:drop-shadow(0 0 8px rgba(255,215,0,0.9));line-height:1;${rotationStyle}display:inline-block;">🚶</div>
+      <div class="hiker-pulse" style="position:absolute;top:50%;left:50%;width:32px;height:32px;border-radius:50%;border:2px solid rgba(255,215,0,0.7);animation:pulse-ring 2s ease-out infinite;pointer-events:none;"></div>
+      <div class="hiker-pulse2" style="position:absolute;top:50%;left:50%;width:32px;height:32px;border-radius:50%;border:1px solid rgba(255,215,0,0.4);animation:pulse-ring 2s ease-out 0.6s infinite;pointer-events:none;"></div>
+    </div>
+    <style>
+      @keyframes pulse-ring {
+        0% { transform:translate(-50%,-50%) scale(0.8); opacity:1; }
+        100% { transform:translate(-50%,-50%) scale(3); opacity:0; }
+      }
+    </style>`,
+    className: '',
+    iconSize: [44, 44],
+    iconAnchor: [22, 22]
+  });
+  
+  APP.hikingPersonMarker = L.marker([APP.currentPosition.lat, APP.currentPosition.lon], {
+    icon: hikingIcon,
+    zIndexOffset: 1000
+  }).addTo(map);
+  
+  const ele = APP.currentPosition.elev != null ? Math.round(APP.currentPosition.elev) + 'm' : '?';
+  const bearingInfo = hasBearing ? '<br>🧭 朝向: ' + bearingDeg.toFixed(0) + '°' : '';
+  APP.hikingPersonMarker.bindPopup(`<b>🚶 当前位置</b><br>海拔: ${ele}${bearingInfo}`);
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  UPDATE PROGRESS (更新进度)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function updateProgress() {
+  // If we have section ranges, calculate progress based on sections
+  if (APP.sectionRanges && APP.sectionRanges.length > 0) {
+    // Check section completion status
+    checkAllSectionsCompletion();
+    
+    // Calculate progress based on completed sections
+    let completedDist = 0;
+    let totalDist = 0;
+    
+    APP.sectionRanges.forEach(range => {
+      const sectionDist = (range.endDist - range.startDist) / 1000; // actual km
+      totalDist += sectionDist;
+      
+      if (range.status === 'completed') {
+        completedDist += sectionDist;
+      } else if (range.status === 'in-progress') {
+        completedDist += sectionDist * (range.coverage || 0);
+      }
+    });
+    
+    APP.completedDistance = completedDist * 1000; // convert to meters
+    APP.progressPercentage = parseFloat(((completedDist / totalDist) * 100).toFixed(1));
+    APP.progressPct = APP.progressPercentage;
+    return;
+  }
+  
+  // Fallback: old method (closest point)
+  if (!APP.presetTrack || !APP.currentPosition) return;
+  
+  // Find closest point on preset track to current position
+  const presetPoints = APP.presetTrack.trackPoints;
+  let minDist = Infinity;
+  let closestIdx = -1;
+  
+  for (let i = 0; i < presetPoints.length; i++) {
+    const d = haversine(APP.currentPosition.lat, APP.currentPosition.lon, presetPoints[i].lat, presetPoints[i].lon);
+    if (d < minDist) {
+      minDist = d;
+      closestIdx = i;
+    }
+  }
+  
+  if (closestIdx < 0) return;
+  
+  // Calculate progress percentage
+  APP.progressPercentage = parseFloat(((closestIdx / (presetPoints.length - 1)) * 100).toFixed(1));
+  APP.progressPct = APP.progressPercentage;
+  
+  // Calculate completed distance
+  let completedDist = 0;
+  for (let i = 1; i <= closestIdx; i++) {
+    completedDist += haversine(presetPoints[i-1].lat, presetPoints[i-1].lon, presetPoints[i].lat, presetPoints[i].lon);
+  }
+  APP.completedDistance = completedDist;
+  
+  // Update UI
+  // Progress UI already updated via renderSidebar() — no separate call needed
+
+
+function handleGPXUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  // Show loading overlay
+  const loader = document.getElementById('loadingOverlay');
+  if (loader) loader.classList.add('active');
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      // Hide loading
+      if (loader) loader.classList.remove('active');
+      const gpxData = parseGPX(e.target.result);
+      const stats = calculateGPXStats(gpxData.trackPoints);
+
+      console.log('📁 GPX 解析结果:', {
+        waypoints: gpxData.waypoints.length,
+        trackPoints: gpxData.trackPoints.length,
+        stats
+      });
+
+      // Calculate distances array for this track
+      gpxData.distances = calculateTrackDistances(gpxData.trackPoints);
+      
+      // Store in app state
+      APP.uploadedGPX = { ...gpxData, stats };
+
+      // Preset track logic — Scheme A (simplified)
+      if (!APP.presetTrack) {
+        // No preset track yet → ask user
+        const setAsPreset = confirm('📍 检测到这是第一条轨迹。\n\n是否设为预设路线？\n（设为预设后，后续上传将与此路线对比显示进度）');
+        if (setAsPreset) {
+          APP.presetTrack = { ...gpxData, stats, uploadedAt: new Date().toISOString() };
+          APP.actualTracks = [];
+          
+          // Update total distance based on preset track
+          APP.totalDistance = Math.round(stats.distance);
+          
+          // Calculate section ranges based on ghtSections
+          APP.sectionRanges = calculateSectionRanges(APP.presetTrack);
+          
+          // Save to localStorage
+          try { 
+            localStorage.setItem('ght_preset', JSON.stringify(APP.presetTrack)); 
+            localStorage.setItem('ght_sections', JSON.stringify(APP.sectionRanges));
+            localStorage.setItem('ght_total_distance', APP.totalDistance.toString());
+          } catch(e) {}
+          alert('✅ 已设为预设轨迹！\n\n总距离: ' + APP.totalDistance + 'km\n已自动划分 ' + APP.sectionRanges.length + ' 个路段。\n之后的上传将与此路线对比。');
+        }
+      } else {
+        // Preset track exists → ask user
+        const choice = confirm('📊 已存在预设轨迹。\n\n点击「确定」→ 作为实际轨迹段上传（显示进度）\n点击「取消」→ 设为新的预设轨迹（会清除旧预设）');
+        if (choice) {
+          // Add as actual track
+          APP.actualTracks.push({ ...gpxData, stats, uploadedAt: new Date().toISOString() });
+
+          // Auto-generate daily stats log entry if GPX has timestamps
+          const dailyStats = calculateDailyStats(gpxData.trackPoints);
+          if (dailyStats && dailyStats.date) {
+            const logEntry = {
+              date: dailyStats.date,
+              text: '📡 自动记录',
+              dailyStats: dailyStats
+            };
+            // Avoid duplicate: only add if no entry for this date has dailyStats
+            const existingIdx = APP.logEntries.findIndex(
+              e => e.date === dailyStats.date && e.dailyStats
+            );
+            if (existingIdx >= 0) {
+              APP.logEntries[existingIdx] = logEntry;
+            } else {
+              APP.logEntries.push(logEntry);
+            }
+            saveLogEntries();
+          }
+
+          // Check section completion
+          checkAllSectionsCompletion();
+
+          // Save to localStorage
+          try { 
+            localStorage.setItem('ght_actual', JSON.stringify(APP.actualTracks)); 
+            localStorage.setItem('ght_sections', JSON.stringify(APP.sectionRanges));
+          } catch(e) {}
+          alert('✅ 已添加实际轨迹段！\n\n当前共 ' + APP.actualTracks.length + ' 个轨迹段。');
+        } else {
+          // Set as new preset (need confirmation)
+          const confirmReset = confirm('⚠️ 这将清除所有已上传的实际轨迹段！\n\n确定要继续吗？');
+          if (confirmReset) {
+            APP.presetTrack = { ...gpxData, stats, uploadedAt: new Date().toISOString() };
+            APP.actualTracks = [];
+            
+            // Update total distance
+            APP.totalDistance = Math.round(stats.distance);
+            
+            // Recalculate section ranges
+            APP.sectionRanges = calculateSectionRanges(APP.presetTrack);
+            
+            // Save to localStorage
+            try { 
+              localStorage.setItem('ght_preset', JSON.stringify(APP.presetTrack)); 
+              localStorage.setItem('ght_actual', JSON.stringify(APP.actualTracks)); 
+              localStorage.setItem('ght_sections', JSON.stringify(APP.sectionRanges));
+              localStorage.setItem('ght_total_distance', APP.totalDistance.toString());
+            } catch(e) {}
+            alert('✅ 预设轨迹已更新！\n\n总距离: ' + APP.totalDistance + 'km\n已重新划分 ' + APP.sectionRanges.length + ' 个路段。');
+          }
+        }
+      }
+
+      // Clear previous upload layers
+      uploadedTrackGroup.clearLayers();
+
+      // Render all tracks (preset + actual)
+      renderAllTracks();
+      
+      // Fit map to track
+      if (gpxData.trackPoints.length >= 2) {
+        const coords = gpxData.trackPoints.map(p => [p.lat, p.lon]);
+        const bounds = L.latLngBounds(coords);
+        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+      }
+
+      // Waypoints (peaks, passes from PeakVisor) NOT drawn on map
+      // (non-track annotations removed per user request)
+
+      // Update sidebar: show uploaded stats
+      APP.lastGPXData = gpxData;
+      showGPXUploadResult(gpxData, stats);
+
+      // Update APP stats
+      APP.gpxDistance = stats.distance;
+      APP.gpxElevGain = stats.elevGain;
+      APP.gpxElevLoss = stats.elevLoss;
+
+      renderSidebar();
+
+    } catch (err) {
+      const loader = document.getElementById('loadingOverlay');
+      if (loader) loader.classList.remove('active');
+      console.error('GPX 解析失败:', err);
+      alert('❌ GPX 解析失败: ' + err.message + '\n\n请确认文件是有效的 GPX 格式。');
+    }
+  };
+  // Use UTF-8 explicitly; PeakVisor GPX files are standard XML
+  reader.readAsText(file, 'UTF-8');
+  event.target.value = '';
+}
+
+function showGPXUploadResult(gpxData, stats) {
+  // Check for daily stats from timestamps
+  const dailyStats = calculateDailyStats(gpxData.trackPoints);
+  let timeRow = '';
+  if (dailyStats && dailyStats.startTime) {
+    const startStr = new Date(dailyStats.startTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+    const endStr = dailyStats.endTime ? new Date(dailyStats.endTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '—';
+    timeRow = `
+      <div style="display:flex;gap:12px;font-size:11px;color:var(--text-dim);margin-top:4px;">
+        <span>🕐 ${startStr} → ${endStr}</span>
+        ${dailyStats.durationStr ? '<span>⏱️ ' + dailyStats.durationStr + '</span>' : ''}
+        ${dailyStats.avgSpeed ? '<span>🚶 ' + dailyStats.avgSpeed + ' km/h</span>' : ''}
+      </div>`;
+  }
+
+  APP.gpxResultHTML = `
+    <div style="padding:12px;background:var(--bg);border:1px solid var(--green);border-radius:8px;margin-bottom:12px;">
+      <div style="font-size:13px;font-weight:600;color:var(--green);margin-bottom:8px;">
+        ✅ GPX轨迹已加载
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="label">📏 距离</div>
+          <div class="value">${stats.distance.toFixed(1)}<span class="unit"> km</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="label">📍 轨迹点</div>
+          <div class="value">${stats.pointCount}<span class="unit"> 个</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="label">⬆️ 累计爬升</div>
+          <div class="value">${stats.elevGain.toLocaleString()}<span class="unit"> m</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="label">⬇️ 累计下降</div>
+          <div class="value">${stats.elevLoss.toLocaleString()}<span class="unit"> m</span></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;font-size:11px;color:var(--text-dim);margin-top:4px;">
+        <span>⬆️ 最高点: ${stats.maxElev.toLocaleString()}m</span>
+        <span>⬇️ 最低点: ${stats.minElev.toLocaleString()}m</span>
+      </div>
+      ${timeRow}
+    </div>`;
+
+  // Skip old manual log entry — daily stats auto-generated in handleGPXUpload instead
+}
+
+function handlePhotoUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = document.createElement('img');
+    img.src = e.target.result;
+    img.style.cssText = 'width:80px;height:80px;object-fit:cover;border-radius:6px;border:1px solid var(--border);';
+    document.getElementById('photoPreview').appendChild(img);
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  OWNER MODE (主人/访客权限)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function toggleOwnerMode() {
+  if (APP.isOwner) {
+    // 退出主人模式
+    APP.isOwner = false;
+    updateOwnerUI();
+    renderSidebar();
+    return;
+  }
+
+  // 登录
+  const pw = prompt('请输入主人密码：');
+  if (pw === APP.ownerPassword) {
+    APP.isOwner = true;
+    updateOwnerUI();
+    renderSidebar();
+  } else if (pw !== null) {
+    alert('❌ 密码错误，仅主人可编辑日志和上传轨迹。');
+  }
+}
+
+function updateOwnerUI() {
+  const btn = document.getElementById('ownerBtn');
+  const resetBtn = document.getElementById('btnReset');
+  if (APP.isOwner) {
+    btn.textContent = '🔓';
+    btn.classList.add('unlocked');
+    btn.title = '主人模式 · 点击退出';
+    if (resetBtn) resetBtn.classList.add('visible');
+  } else {
+    btn.textContent = '🔒';
+    btn.classList.remove('unlocked');
+    btn.title = '访客模式 · 点击登录';
+    if (resetBtn) resetBtn.classList.remove('visible');
+  }
+}
+
+function clearAllData() {
+  if (!APP.isOwner) return;
+  if (!confirm('⚠️ 确定清除所有数据吗？\n\n这将删除：\n• 预设轨迹\n• 所有实际轨迹段\n• 所有日志\n• 进度数据\n\n此操作不可恢复！')) return;
+  const keys = ['ght_preset', 'ght_actual', 'ght_log', 'ght_sections', 'ght_current_pos', 'ght_total_distance'];
+  keys.forEach(k => { try { localStorage.removeItem(k); } catch(e) {} });
+  APP.presetTrack = null;
+  APP.actualTracks = [];
+  APP.logEntries = [];
+  APP.sectionRanges = null;
+  APP.currentPosition = null;
+  APP.totalDistance = 1580;
+  APP.progressPercentage = 0;
+  APP.progressPct = 0;
+  APP.completedDistance = 0;
+  uploadedTrackGroup.clearLayers();
+  renderSidebar();
+  renderAllTracks();
+  location.reload();
+}
+
+window.addLogEntry = addLogEntry;
+window.handleGPXUpload = handleGPXUpload;
+window.handlePhotoUpload = handlePhotoUpload;
+window.parseGPX = parseGPX;
+window.calculateGPXStats = calculateGPXStats;
+window.toggleOwnerMode = toggleOwnerMode;
+window.clearAllData = clearAllData;
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  LOAD FROM LOCALSTORAGE + INITIAL RENDER
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// Load log entries from localStorage
+try {
+  const savedLog = localStorage.getItem('ght_log');
+  if (savedLog) {
+    APP.logEntries = JSON.parse(savedLog);
+    console.log('✅ 已加载日志:', APP.logEntries.length + '条');
+  }
+} catch(e) {
+  console.warn('加载日志失败:', e);
+}
+
+// Load preset track from localStorage
+try {
+  const savedPreset = localStorage.getItem('ght_preset');
+  if (savedPreset) {
+    APP.presetTrack = JSON.parse(savedPreset);
+    console.log('✅ 已加载预设轨迹:', APP.presetTrack.name || '未命名');
+  }
+} catch(e) {
+  console.warn('加载预设轨迹失败:', e);
+}
+
+// Load actual tracks from localStorage
+try {
+  const savedActual = localStorage.getItem('ght_actual');
+  if (savedActual) {
+    APP.actualTracks = JSON.parse(savedActual);
+    console.log('✅ 已加载实际轨迹段:', APP.actualTracks.length + '个');
+  }
+} catch(e) {
+  console.warn('加载实际轨迹失败:', e);
+}
+
+// Load current position from localStorage
+try {
+  const savedPos = localStorage.getItem('ght_current_pos');
+  if (savedPos) {
+    APP.currentPosition = JSON.parse(savedPos);
+  }
+} catch(e) {
+  console.warn('加载当前位置失败:', e);
+}
+
+// Load total distance from localStorage
+try {
+  const savedTotalDist = localStorage.getItem('ght_total_distance');
+  if (savedTotalDist) {
+    APP.totalDistance = parseInt(savedTotalDist);
+    console.log('✅ 已加载总距离:', APP.totalDistance + 'km');
+  }
+} catch(e) {
+  console.warn('加载总距离失败:', e);
+}
+
+// Load section ranges from localStorage
+try {
+  const savedSections = localStorage.getItem('ght_sections');
+  if (savedSections) {
+    APP.sectionRanges = JSON.parse(savedSections);
+    console.log('✅ 已加载路段范围:', APP.sectionRanges.length + '个路段');
+  } else if (APP.presetTrack) {
+    // If no saved sections but preset track exists, recalculate
+    APP.sectionRanges = calculateSectionRanges(APP.presetTrack);
+    console.log('✅ 已重新计算路段范围');
+  }
+} catch(e) {
+  console.warn('加载路段范围失败:', e);
+  if (APP.presetTrack) {
+    APP.sectionRanges = calculateSectionRanges(APP.presetTrack);
+  }
+}
+
+updateOwnerUI();
+updateCurrentPosition();
+renderProvinceLegend(ghtSections[0].province);
+renderSidebar();
+renderAllTracks();
+// Re-render sidebar after progress calculation to show updated stats
+renderSidebar();
+</script>
+</body>
+</html>

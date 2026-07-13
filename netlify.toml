@@ -1,0 +1,28 @@
+# GHT 前台部署配置（Netlify）
+# 把本目录作为静态站点发布；后端走 Render（地址写在 index-notwo.html 的 <meta name="ght-backend">）
+
+[build]
+  publish = "."
+
+# 部署入口指向带后端的页面（本地文件名为 index-notwo.html）
+[[redirects]]
+  from = "/"
+  to = "/index-notwo.html"
+  status = 200
+
+# 阻止敏感文件被公开下载（这些仅供 Render 后台使用）
+[[redirects]]
+  from = "/secrets.json"
+  to = "/404"
+  status = 404
+
+[[redirects]]
+  from = "/config.json"
+  to = "/404"
+  status = 404
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
