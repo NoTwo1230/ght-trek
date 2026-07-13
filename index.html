@@ -96,6 +96,14 @@
   }
   .nav-left .nav-btn:hover { background: rgba(255,255,255,0.04); color: var(--text); }
   .nav-left .nav-btn.active { background: var(--accent-bg); color: var(--accent); border: 1px solid rgba(88,166,255,0.25); }
+  .nav-left .nav-ext {
+    width: 34px; height: 34px; border: none; border-radius: 8px;
+    background: transparent; font-size: 16px; cursor: pointer; margin-bottom: 4px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; text-decoration: none; color: var(--accent);
+    border: 1px solid rgba(88,166,255,0.25);
+  }
+  .nav-left .nav-ext:hover { background: var(--accent-bg); color: var(--accent); }
   .nav-left .nav-btn .badge {
     position: absolute;
     top: 3px; right: 3px;
@@ -1001,6 +1009,7 @@
     <button class="nav-btn active" data-panel="progress" title="进度总览">📊</button>
     <button class="nav-btn" data-panel="livemap" title="全屏地图">🗺️</button>
     <button class="nav-btn" data-panel="log" title="日志 / 动态">📝</button>
+    <a class="nav-ext" href="itinerary.html" target="_blank" rel="noopener" title="计划 vs 实际 · 行程对比 →">📅</a>
     <div class="nav-spacer"></div>
     <button class="nav-donate" data-panel="donate" title="捐助支持">❤️</button>
   </nav>
