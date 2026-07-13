@@ -1,82 +1,85 @@
-# GHT 追踪平台 · 免费部署清单（Netlify 前台 + Supabase 后台）
+# GHT 徒步追踪 — 免费部署清单（Cloudflare 版，全程免卡）
 
-**不需要买域名，也不需要国际银行卡。** 两个平台都免费、都给你子域名：
-- 前台：`https://<你的名>.netlify.app`（静态托管，全球 CDN）
-- 后台：`https://<你的项目>.supabase.co`（Auth + Storage + 数据库，免运维、不休眠、不丢文件）
-
-架构：前台是纯静态页面，挂在 Netlify；所有「密码登录 / 配置持久化 / GPX 备份」都走 Supabase 的 JavaScript SDK（已通过 CDN 引入，无需构建）。前端只持有登录后的会话 JWT，密码只在 Supabase 里。
+> 路线：**Cloudflare Pages 前台 + Cloudflare Worker 后端（KV 存储）**
+> 优点：注册**免银行卡**、**免组织权限**、免费层**不休眠**、**全球 CDN**。
+> 代价：需把后端写成一个 Worker（已写好 `worker/index.js`，前端零改动）。
 
 ---
 
-## 前置条件
-1. 一个 GitHub 账号（Netlify 从 GitHub 拉代码）
-2. 把 `ght-trek/` 整个目录推到 GitHub 仓库
-3. 一个邮箱（用于注册 Supabase 账号，**不需要信用卡**）
+## 架构一览
 
----
-
-## 一、后台（Supabase，免卡）
-
-1. 打开 https://supabase.com → **Start your project** → 用 GitHub / 邮箱注册（**不绑卡**）
-2. 新建一个 Project：填名字 `ght-trek`、设一个数据库密码（记一下）、区域选 **Singapore** 或 **Northeast Asia**
-3. 等约 1–2 分钟建好，进入项目控制台
-4. **SQL Editor** → 新建查询 → 把本仓库 `SUPABASE_SETUP.sql` 的内容整段粘贴 → **Run**
-   → 会建好 `site_config` 表 + `gpx` 存储桶 + 读写权限策略
-5. **Authentication → Users → Add user**：
-   - 邮箱：`owner@ght.app`（须与 `index-notwo.html` 里 `<meta name="supabase-email">` 一致）
-   - 密码：自己设一个强密码（例如 `Ght2026!Himalaya`）
-   - 勾选 **Auto Confirm User**
-6. **Settings → API**：复制两样东西备用：
-   - **Project URL**（形如 `https://xxxx.supabase.co`）
-   - **anon public key**（一长串 `eyJ...`）
-
-> 为什么免卡还安全：前端嵌入的 `anon key` 是公开密钥，真正写数据靠登录后的 JWT；RLS 策略已规定「配置/文件公开读、登录才能写」。
-
----
-
-## 二、前台（Netlify，免卡）
-
-1. 打开 https://netlify.com → 用 GitHub 注册登录
-2. **Add new site → Import from Git** → 选 `ght-trek` 仓库
-3. Build 设置：**Build command 留空**，**Publish directory 填 `.`**
-   （`netlify.toml` 已配好根目录发布 + `/` 重定向到 `index-notwo.html`）
-4. 点 **Deploy** → 记下前台地址，形如 `https://ght-trek.netlify.app`
-
----
-
-## 三、把 Supabase 接上前台（关键一步）
-
-编辑 `index-notwo.html` 头部（第 6–8 行附近），填好刚才复制的两样东西：
-```html
-<meta name="supabase-url" content="https://xxxx.supabase.co">
-<meta name="supabase-anon" content="eyJxxxxxxxxxxxxx">
-<meta name="supabase-email" content="owner@ght.app">
 ```
-保存 → `git push` → Netlify 自动重新部署。
+浏览器 (Cloudflare Pages 托管 index-notwo.html)
+   │  fetch 带 Bearer token
+   ▼
+Cloudflare Worker  (https://ght-api.<你的子域>.workers.dev)
+   │  读/写
+   ▼
+Cloudflare KV 命名空间 GHT
+   ├─ config        → 站点配置 JSON（语言/出发日期/名称…）
+   └─ gpx:<文件名>  → 原始 GPX 文本（主人上传备份）
+```
 
-（主人邮箱若改成别的，三个地方要一致：Supabase 用户邮箱、这里 `supabase-email`、登录时输入的账号。）
-
----
-
-## 四、联调验证
-
-1. 打开前台 `https://<名>.netlify.app`
-2. 右上角 **🔧 数据管理** → 输入你在 Supabase 设的主人密码 → 应解锁出上传区
-3. 上传一个 GPX → Supabase 后台 **Storage → gpx** 桶里应能看到文件
-4. 刷新页面（或换无痕窗口）→ 配置（语言/出发日期）仍生效 = 持久化 OK
-5. 按 **F12** 看 Console → 不应有红色报错
-
----
-
-## 五、安全与维护提醒
-
-- `anon key` 可公开嵌入，但**切勿**把 Supabase 的 **service_role key** 写进前端（那是绕过 RLS 的万能钥匙）
-- 主人密码就是 Supabase 那个用户的密码；忘记就在 Supabase → Authentication → 重置
-- 前台是纯静态，改完代码 `git push` 即自动重新部署
-- 想绑定自己域名可后续再加（需自行购买），免费子域名已足够用
+- 密码只存在 Worker 环境变量 `ADMIN_PWD`，前端只持有登录后下发的 HMAC token。
+- 前台与后台跨域，Worker 已带 `Access-Control-Allow-Origin: *`，无需额外 CORS 配置。
 
 ---
 
-## 备选方案（当初因「没国际卡」才选 Supabase）
-- 若有国际卡且想要「自己跑服务器」：可换回 Node 后台挂 Render（需绑卡，免费层会休眠、磁盘重启会清数据）
-- 若连 Supabase 都不想用：可退化为纯静态（无后台，密码闸退回隐藏按钮，GPX 需 git 提交进仓库）
+## 三步上线
+
+### ① 推代码到 GitHub（你来做，需登录你的账号）
+仓库已 `git init` 并提交。用 GitHub Desktop 选 `ght-trek` 文件夹 → Publish，或终端：
+```bash
+git remote add origin https://github.com/<你>/ght-trek.git
+git push -u origin main
+```
+
+### ② 建前台 Cloudflare Pages
+1. 登录 <https://dash.cloudflare.com>（用邮箱注册，**无需绑卡**）。
+2. 左侧 **Workers & Pages → Create → Pages → Connect to Git** → 选 `ght-trek` 仓库。
+3. 设置：
+   - Framework preset：**None**
+   - Build command：`cp index-notwo.html index.html`
+   - Build output directory：`/`（根目录）
+4. 点 **Save and Deploy**。完成后会得到一个 `https://ght-trek.<你的子域>.pages.dev` 地址。
+
+> 说明：`cp` 这一步把 `index-notwo.html` 复制为部署用的 `index.html`，
+> 这样访客打开根地址就是中文主页面，无需改文件名、也不影响你本地那份 Hybrid 的 `index.html`。
+
+### ③ 建后台 Cloudflare Worker
+1. 左侧 **Workers & Pages → Create → Worker** → 取名 `ght-api` → 点 **Deploy**（先随便部署一次占位）。
+2. 进入该 Worker → **Edit code**，把本仓库 `worker/index.js` 的**全部内容**粘贴进去 → **Deploy**。
+3. 进入该 Worker → **Settings → Variables**：
+   - **KV namespace bindings**：点 Add binding，Variable name 填 `GHT`，绑一个你新建的 KV 命名空间（没有就先去 **Workers & Pages → KV** 建一个，名字随意）。
+   - **Environment Variables**：添加两条（明文即可）：
+     - `ADMIN_PWD` = 你的上传密码（例如 `ght2026`）
+     - `SECRET` = 任意一串随机字符（例如 `a9f3-…` 长一点），用于签发登录 token
+4. 记下 Worker 地址：`https://ght-api.<你的子域>.workers.dev`
+
+### ④ 回填后端地址 + 重新部署
+1. 打开 `index-notwo.html`，找到这一行：
+   ```html
+   <meta name="ght-api" content="">
+   ```
+   把 `content` 填成你的 Worker 地址，例如：
+   ```html
+   <meta name="ght-api" content="https://ght-api.your-sub.workers.dev">
+   ```
+2. 保存 → 推送到 GitHub → Cloudflare Pages 会自动重新部署。
+
+---
+
+## 验证
+打开前台地址，点右上角 **🔧 数据管理** → 输入 `ADMIN_PWD` → 能登录、能上传 GPX、浏览器控制台无 CORS 报错，即成功。
+
+---
+
+## 免费额度（够用）
+- Pages：无限静态请求、自动 HTTPS、全球 CDN。
+- Worker：每天 10 万次请求、10ms CPU/请求（足够个人徒步追踪）。
+- KV：每天 10 万次读、1000 次写（GPX 备份、配置写入完全够）。
+
+## 安全要点
+- **绝不**把 Worker 的 `SECRET` 写进前端 HTML。
+- `ADMIN_PWD` 只在 Worker 环境变量里，前端永远看不到明文。
+- KV 中 `gpx:*` 仅主人登录后可写；`config` 公开可读（仅出发日期等无害信息）。
