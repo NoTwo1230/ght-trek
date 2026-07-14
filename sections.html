@@ -261,7 +261,7 @@
       const status = o.measured ? '<span class="cfc-status meas">完成</span>' : '<span class="cfc-status plan">计划</span>';
       return `<div class="cfc" data-i="${i}" style="--rc:${rc};--rb:${rb}">
         <div class="cfc-img">
-          <img loading="lazy" src="${o.detail}" alt="${esc(o.zh)} 区域地图">
+          <img loading="lazy" src="${o.index}" alt="${esc(o.zh)} 区域地图">
           <span class="cfc-num">${String(o.num).padStart(2,'0')}</span>
           ${status}
           <div class="cfc-cap">
