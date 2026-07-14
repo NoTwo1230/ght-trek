@@ -161,5 +161,46 @@ console.log('=== D. 垭口回退（无导入轨迹标注点） ===');
   check('回退时显示静态 Mirgin La', /Mirgin La/.test(seg1.textContent));
 }
 
+/* ── 测试 E：区域地图整合（卡片地图 + 画廊）── */
+console.log('=== E. 区域地图整合 ===');
+{
+  const dom = makeDom({
+    ght_sections: JSON.stringify(ranges),
+    ght_preset: JSON.stringify(preset),
+    ght_current_pos: curPos,
+    ght_actual: actuals
+  });
+  const w = dom.window, d = w.document;
+
+  const SECT_REGION = {1:'kanchenjunga',2:'makalu',3:'everest',4:'rolwaling',5:'langtang',6:'manaslu',7:'annapurna',8:'dolpo',9:'dolpo',10:'humla'};
+  let allMapsOk = true;
+  for(let i=1;i<=10;i++){
+    const card = d.querySelector(`.day-card[data-id="${i}"]`);
+    const img = card && card.querySelector('.sec-map img');
+    const ok = img && img.getAttribute('src') === `assets/region-maps/${SECT_REGION[i]}_detail.png`;
+    if(!ok) allMapsOk = false;
+  }
+  check('每段卡片均嵌入对应区域地图(detail PNG)', allMapsOk);
+  check('每段卡片地图可点击(openMap)', d.querySelector('.day-card .sec-map') && /openMap\(/.test(d.querySelector('.day-card .sec-map').getAttribute('onclick')||''));
+
+  // 画廊按钮 + openGallery 渲染 13 张
+  check('工具栏含「区域地图总览」按钮', !!d.querySelector('.btn-gallery'));
+  w.openGallery();
+  const grid = d.getElementById('galleryGrid');
+  check('画廊弹出后渲染 13 个区域卡片', grid.children.length === 13);
+  check('画廊首卡为 kanchenjunga', grid.children[0].querySelector('img').getAttribute('src') === 'assets/region-maps/kanchenjunga_detail.png');
+  check('画廊显示书籍页码 p.', /p\.\d+/.test(grid.textContent));
+  check('画廊遮罩已显示', d.getElementById('galleryOverlay').classList.contains('show'));
+  w.closeGallery();
+  check('closeGallery 关闭遮罩', !d.getElementById('galleryOverlay').classList.contains('show'));
+
+  // openMap 放大
+  w.openMap('everest','珠峰-昆布段','Everest-Khumbu');
+  check('openMap 设置 detail 大图', d.getElementById('lbDetail').getAttribute('src').includes('everest_detail.png'));
+  check('openMap 设置 index 全境定位图', d.getElementById('lbIndex').getAttribute('src').includes('everest_index.png'));
+  check('openMap 标题含段名', /珠峰-昆布段/.test(d.getElementById('lbTitle').textContent));
+  check('Lightbox 遮罩已显示', d.getElementById('lbOverlay').classList.contains('show'));
+}
+
 console.log(`\n${fail===0?'✅ ALL SMOKE CHECKS PASSED':'❌ SOME CHECKS FAILED'}  (pass=${pass}, fail=${fail})`);
 process.exit(fail===0?0:1);

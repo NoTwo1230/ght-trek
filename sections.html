@@ -208,6 +208,81 @@
 
   .foot-note { text-align: center; font-size: 11px; color: var(--text-dimmer); padding: 24px 20px 8px; line-height: 1.7; }
 
+  /* 区域地图（来自尼泊尔徒步区域地图生成器，整合进路段卡片） */
+  .sec-map {
+    margin: 13px 0 4px; border: 1px solid var(--border); border-radius: 12px;
+    overflow: hidden; cursor: zoom-in; background: #0c1118; position: relative;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .sec-map:hover { border-color: var(--accent); box-shadow: 0 8px 26px rgba(0,0,0,.45); }
+  .sec-map img { display: block; width: 100%; height: auto; }
+  .sec-map .mp-badge {
+    position: absolute; top: 10px; left: 10px; font-size: 10px; letter-spacing: .5px;
+    color: #c9a84c; background: rgba(8,12,18,.72); border: 1px solid rgba(201,168,76,.35);
+    border-radius: 6px; padding: 3px 8px;
+  }
+  .sec-map figcaption {
+    position: absolute; left: 0; right: 0; bottom: 0; padding: 8px 12px;
+    font-size: 11px; color: #e8e8f0;
+    background: linear-gradient(to top, rgba(8,12,18,.9), rgba(8,12,18,0));
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  /* 顶栏「区域地图总览」按钮 */
+  .btn-gallery {
+    border: 1px solid var(--border-light); background: var(--panel); color: var(--text-dim);
+    border-radius: 8px; padding: 7px 13px; font-size: 12px; cursor: pointer; font-family: inherit;
+    transition: all .2s; white-space: nowrap;
+  }
+  .btn-gallery:hover { color: var(--text); border-color: var(--accent); background: rgba(88,166,255,0.08); }
+
+  /* Lightbox：单段区域地图放大（detail + index 全境定位） */
+  .lb-overlay {
+    position: fixed; inset: 0; z-index: 1000; display: none;
+    background: rgba(4,7,12,.86); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    padding: 28px; overflow: auto;
+  }
+  .lb-overlay.show { display: flex; align-items: flex-start; justify-content: center; }
+  .lb-box {
+    max-width: 1120px; width: 100%; background: var(--panel); border: 1px solid var(--border-light);
+    border-radius: 16px; overflow: hidden; box-shadow: 0 24px 70px rgba(0,0,0,.6);
+  }
+  .lb-head { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+  .lb-head .t { font-weight: 700; font-size: 15px; }
+  .lb-head .x {
+    margin-left: auto; cursor: pointer; color: var(--text-dim); border: 1px solid var(--border);
+    border-radius: 8px; padding: 5px 11px; font-size: 13px; background: transparent; font-family: inherit;
+  }
+  .lb-head .x:hover { color: var(--text); border-color: var(--accent); }
+  .lb-imgs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 16px; }
+  .lb-imgs figure { margin: 0; }
+  .lb-imgs img { width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--border); display: block; background: #0c1118; }
+  .lb-imgs figcaption { font-size: 11px; color: var(--text-dim); margin-top: 6px; text-align: center; }
+
+  /* 区域地图总览画廊 */
+  .gallery-overlay {
+    position: fixed; inset: 0; z-index: 1000; display: none;
+    background: rgba(4,7,12,.9); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    padding: 26px; overflow: auto;
+  }
+  .gallery-overlay.show { display: block; }
+  .gallery-head { display: flex; align-items: center; gap: 12px; max-width: 1180px; margin: 0 auto 18px; }
+  .gallery-head h2 { font-size: 18px; font-weight: 700; }
+  .gallery-head .sub { font-size: 12px; color: var(--text-dim); }
+  .gallery-head .x {
+    margin-left: auto; cursor: pointer; color: var(--text-dim); border: 1px solid var(--border);
+    border-radius: 8px; padding: 7px 14px; font-size: 13px; background: transparent; font-family: inherit;
+  }
+  .gallery-head .x:hover { color: var(--text); border-color: var(--accent); }
+  .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; max-width: 1180px; margin: 0 auto; }
+  .gallery-card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; transition: border-color .2s, transform .15s; }
+  .gallery-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .gallery-card img { width: 100%; height: auto; display: block; background: #0c1118; }
+  .gallery-card .gc-cap { padding: 9px 12px; font-size: 12px; color: var(--text); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .gallery-card .gc-cap .en { color: var(--text-dim); font-size: 11px; }
+  .gallery-card .gc-cap .pg { color: #c9a84c; font-size: 11px; flex-shrink: 0; }
+
+  @media (max-width: 720px){ .lb-imgs { grid-template-columns: 1fr; } }
   @media (max-width: 640px) {
     .stat { min-width: calc(50% - 5px); }
     .topbar .title small { display: none; }
@@ -248,6 +323,7 @@
       <option value="sudurpashchim">远西省</option>
     </select>
   </div>
+  <button class="btn-gallery" onclick="openGallery()">🗺️ 区域地图总览</button>
   <div class="spacer"></div>
   <div class="count-note" id="countNote"></div>
 </div>
@@ -272,6 +348,30 @@ const LS = {
   actual:     'ght_actual'        // JSON, array of uploaded tracks
 };
 function load(k){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch(e){ return null; } }
+
+/* ── 路段 → 尼泊尔徒步区域地图（来自 nepal-map-generator 生成的 PNG）──
+   每段对应一个区域，地图文件位于 assets/region-maps/<region>_{detail,index}.png */
+const SECTION_REGION = {
+  1:'kanchenjunga', 2:'makalu', 3:'everest', 4:'rolwaling', 5:'langtang',
+  6:'manaslu', 7:'annapurna', 8:'dolpo', 9:'dolpo', 10:'humla'
+};
+/* 全部 13 个区域的显示名（含书籍页码，来自生成器）与画廊顺序 */
+const ALL_REGIONS = [
+  ['kanchenjunga','Kanchenjunga 干城章嘉',21],
+  ['makalu','Makalu 马卡鲁',395],
+  ['everest','Everest 珠峰',369],
+  ['rolwaling','Rolwaling 若瓦岭',361],
+  ['langtang','Langtang 郎当',309],
+  ['manaslu','Manaslu 马纳斯鲁',257],
+  ['annapurna','Annapurna 安纳普尔纳',267],
+  ['dolpo','Dolpo 多尔普',195],
+  ['humla','Humla 胡姆拉',123],
+  ['mugu','Mugu 穆古',161],
+  ['darchula','Darchula 达尔楚拉',21],
+  ['bajhang','Bajhang 巴江',89],
+  ['ganesh','Ganesh 加内什',233]
+];
+
 
 /* ── 10 段静态定义（与主 app ghtSections 一致，内联以保证离线可用）── */
 const ghtSections = [
@@ -509,6 +609,15 @@ function secCard(s, cur){
       </div>`;
   }
 
+  // 区域地图（来自尼泊尔徒步区域地图生成器）
+  const region = SECTION_REGION[s.id];
+  const mapFig = region ? `
+    <figure class="sec-map" onclick="openMap('${region}','${esc(s.name)}','${esc(s.nameEn)}')">
+      <span class="mp-badge">REGION · ${esc(s.nameEn.toUpperCase())}</span>
+      <img loading="lazy" src="assets/region-maps/${region}_detail.png" alt="${esc(s.name)} 区域地图">
+      <figcaption>🗺️ 区域地图 · 点击放大（含全境定位）</figcaption>
+    </figure>` : '';
+
   return `
     <article class="${cls.join(' ')}" data-id="${s.id}" data-status="${s.status}" style="border-left-color:${s.color}">
       <div class="day-head">
@@ -517,6 +626,7 @@ function secCard(s, cur){
         ${statusChip(s)}
       </div>
       ${meta}
+      ${mapFig}
       ${detail}
       ${curpos}
     </article>`;
@@ -607,7 +717,61 @@ window.addEventListener('storage', e=>{
   if([LS.sections,LS.preset,LS.currentPos,LS.actual].includes(e.key)) render();
 });
 
+/* ── 区域地图 Lightbox（单段放大：detail + index 全境定位）── */
+function openMap(region, zh, en){
+  const ov = document.getElementById('lbOverlay');
+  document.getElementById('lbTitle').textContent = '🗺️ ' + (zh||'') + ' · ' + (en||region);
+  document.getElementById('lbDetail').src = 'assets/region-maps/' + region + '_detail.png';
+  document.getElementById('lbIndex').src  = 'assets/region-maps/' + region + '_index.png';
+  ov.classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function closeMap(){
+  document.getElementById('lbOverlay').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+/* ── 区域地图总览画廊（整合 nepal-map-gallery 页面）── */
+function openGallery(){
+  const grid = document.getElementById('galleryGrid');
+  if(!grid.dataset.built){
+    grid.innerHTML = ALL_REGIONS.map(([id,label,pg])=>`
+      <div class="gallery-card">
+        <img loading="lazy" src="assets/region-maps/${id}_detail.png" alt="${esc(label)} 区域地图">
+        <div class="gc-cap"><span>${esc(label)}</span><span class="pg">p.${pg}</span></div>
+      </div>`).join('');
+    grid.dataset.built = '1';
+  }
+  document.getElementById('galleryOverlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function closeGallery(){
+  document.getElementById('galleryOverlay').classList.remove('show');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeMap(); closeGallery(); } });
+
 render();
 </script>
+<!-- 区域地图放大 Lightbox（detail + index 全境定位） -->
+<div class="lb-overlay" id="lbOverlay" onclick="if(event.target===this)closeMap()">
+  <div class="lb-box">
+    <div class="lb-head"><span class="t" id="lbTitle"></span><button class="x" onclick="closeMap()">✕ 关闭</button></div>
+    <div class="lb-imgs">
+      <figure><img id="lbDetail" alt="区域详情地图"><figcaption>📍 区域详情（放大）</figcaption></figure>
+      <figure><img id="lbIndex" alt="尼泊尔全境定位"><figcaption>🗺️ 尼泊尔全境定位</figcaption></figure>
+    </div>
+  </div>
+</div>
+
+<!-- 尼泊尔徒步区域地图总览画廊 -->
+<div class="gallery-overlay" id="galleryOverlay" onclick="if(event.target===this)closeGallery()">
+  <div class="gallery-head">
+    <div><h2>🗺️ 尼泊尔徒步区域地图总览</h2><div class="sub">Great Himalaya Trail · 13 个区域 · 点击上方单段卡片地图可放大查看</div></div>
+    <button class="x" onclick="closeGallery()">✕ 关闭</button>
+  </div>
+  <div class="gallery-grid" id="galleryGrid"></div>
+</div>
+
 </body>
 </html>
