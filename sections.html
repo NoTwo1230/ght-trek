@@ -304,11 +304,7 @@
       active=i; layout();
     }
 
-    // hover recenters
-    track.addEventListener('mouseover',e=>{
-      const card=e.target.closest('.cfc'); if(!card)return;
-      const i=+card.dataset.i; if(i!==active) setActive(i);
-    });
+    // 点击切换（不再跟随鼠标滑动）
     // dots
     dotsEl.addEventListener('click',e=>{
       const d=e.target.closest('.cf-dot'); if(!d)return; setActive(+d.dataset.i);
