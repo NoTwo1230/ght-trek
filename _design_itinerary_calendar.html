@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>【设计原型】GHT 行程日历 · 计划 vs 实际</title>
+<style>
+  :root{
+    --bg:#0a0e14; --panel:#0d1219; --panel-alt:#161b22; --panel-bg:rgba(13,18,25,.95);
+    --border:#1c2333; --border-light:#21262d;
+    --text:#e6edf3; --text-dim:#8b949e; --text-dimmer:#7d8590;
+    --accent:#58a6ff; --accent-bg:#1a3a5c; --accent2:#f0883e;
+    --green:#3fb950; --red:#f85149; --yellow:#d29922; --purple:#bc8cff; --cyan:#39d2c0;
+    --radius:14px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  :focus:not(:focus-visible){outline:none;}
+  html,body{height:100%;}
+  body{font-family:'Noto Sans SC',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    background:radial-gradient(1200px 600px at 80% -10%,rgba(88,166,255,.08),transparent 60%),
+               radial-gradient(900px 500px at -10% 110%,rgba(63,185,80,.06),transparent 60%),var(--bg);
+    color:var(--text);-webkit-font-smoothing:antialiased;}
+
+  /* ── 顶部栏 ── */
+  .topbar{position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:14px;
+    padding:14px 20px;background:rgba(10,14,20,.82);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--border);flex-wrap:wrap;}
+  .topbar .title{font-size:17px;font-weight:700;letter-spacing:.3px;display:flex;align-items:center;gap:9px;white-space:nowrap;}
+  .topbar .title .glyph{width:30px;height:30px;border-radius:8px;background:var(--accent-bg);
+    border:1px solid rgba(88,166,255,.25);display:flex;align-items:center;justify-content:center;font-size:16px;}
+  .topbar .title small{font-weight:400;color:var(--text-dim);font-size:12px;}
+  .proto-flag{font-size:10px;letter-spacing:.5px;color:var(--yellow);border:1px solid rgba(210,153,34,.4);
+    background:rgba(210,153,34,.1);padding:2px 8px;border-radius:20px;}
+  .back-link{margin-left:auto;display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:var(--text-dim);
+    border:1px solid var(--border-light);border-radius:8px;padding:7px 13px;font-size:12px;transition:all .2s;}
+  .back-link:hover{color:var(--text);border-color:var(--accent);background:rgba(88,166,255,.08);}
+
+  /* ── 摘要条 ── */
+  .summary{display:flex;flex-wrap:wrap;gap:10px;padding:16px 20px 6px;}
+  .stat{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:11px 16px;min-width:116px;flex:1 1 auto;}
+  .stat .v{font-size:21px;font-weight:700;line-height:1.1;}
+  .stat .v.green{color:var(--green);} .stat .v.blue{color:var(--accent);} .stat .v.red{color:var(--red);}
+  .stat .l{font-size:11px;color:var(--text-dim);margin-top:4px;}
+  .slip-note{width:100%;background:rgba(255,169,77,.12);border:1px solid rgba(255,169,77,.35);
+    color:#FFA94D;border-radius:10px;padding:9px 14px;font-size:12px;line-height:1.5;}
+
+  /* ── 工具栏 ── */
+  .toolbar{position:sticky;top:59px;z-index:90;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    padding:12px 20px;background:rgba(10,14,20,.78);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--border);}
+  .group{display:flex;align-items:center;gap:6px;}
+  .glabel{font-size:11px;color:var(--text-dim);margin-right:2px;}
+  .seg{display:inline-flex;background:var(--panel);border:1px solid var(--border);border-radius:9px;overflow:hidden;}
+  .seg button{border:none;background:transparent;color:var(--text-dim);padding:6px 12px;font-size:12px;
+    cursor:pointer;font-family:inherit;transition:all .15s;}
+  .seg button:hover{color:var(--text);}
+  .seg button.active{background:var(--accent-bg);color:var(--accent);}
+  .spacer{flex:1;}
+  .count-note{font-size:11px;color:var(--text-dim);white-space:nowrap;}
+
+  /* ── 日历 ── */
+  .cal-wrap{padding:14px 20px 60px;max-width:1180px;margin:0 auto;width:100%;}
+  .cal-head{display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;}
+  .cal-nav{display:flex;align-items:center;gap:8px;}
+  .cal-nav button{width:34px;height:34px;border-radius:9px;border:1px solid var(--border);background:var(--panel);
+    color:var(--text);font-size:16px;cursor:pointer;transition:all .15s;}
+  .cal-nav button:hover{border-color:var(--accent);color:var(--accent);}
+  .cal-title{font-size:18px;font-weight:700;min-width:140px;text-align:center;letter-spacing:.5px;}
+  .toggle-mode{display:inline-flex;background:var(--panel);border:1px solid var(--border);border-radius:9px;overflow:hidden;}
+
+  .legend{display:flex;flex-wrap:wrap;gap:10px 16px;margin:0 0 14px;padding:10px 14px;background:var(--panel);
+    border:1px solid var(--border);border-radius:12px;font-size:11.5px;color:var(--text-dim);}
+  .legend .item{display:flex;align-items:center;gap:6px;}
+  .legend .dot{width:9px;height:9px;border-radius:50%;}
+  .legend .bar{width:14px;height:4px;border-radius:2px;}
+
+  .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;}
+  .wd{font-size:11px;color:var(--text-dim);text-align:center;padding:4px 0;font-weight:500;}
+  .cell{position:relative;min-height:104px;background:var(--panel);border:1px solid var(--border);border-radius:11px;
+    padding:7px 7px 8px;display:flex;flex-direction:column;gap:5px;transition:border-color .15s,transform .12s;}
+  .cell:hover{border-color:var(--border-light);}
+  .cell.out{opacity:.32;background:transparent;}
+  .cell.today{border-color:var(--accent);box-shadow:0 0 0 1px rgba(88,166,255,.45);}
+  .cell .dnum{font-size:11px;color:var(--text-dim);font-weight:600;}
+  .cell.today .dnum{color:var(--accent);}
+  .cell .dnum .mo{font-size:9px;opacity:.7;margin-left:2px;}
+
+  .chip{position:relative;border-radius:9px;padding:6px 8px 7px;cursor:pointer;overflow:hidden;
+    background:var(--panel-alt);border:1px solid var(--border-light);transition:transform .12s,border-color .15s,box-shadow .15s;}
+  .chip:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,.35);border-color:var(--accent);}
+  .chip .stripe{position:absolute;left:0;top:0;bottom:0;width:4px;}
+  .chip .crow{display:flex;align-items:center;gap:6px;}
+  .chip .dlab{font-size:11px;font-weight:700;color:var(--text);}
+  .chip .sdot{width:8px;height:8px;border-radius:50%;margin-left:auto;}
+  .chip .route{font-size:10.5px;color:var(--text-dim);line-height:1.35;margin-top:3px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .chip .route .ar{color:var(--accent);margin:0 3px;}
+  .chip .meta{font-size:9.5px;color:var(--text-dimmer);margin-top:3px;display:flex;gap:8px;}
+  .chip.is-rest{background:rgba(63,185,80,.08);border-color:rgba(63,185,80,.25);}
+  .chip.is-delay{background:rgba(210,153,34,.08);border-color:rgba(210,153,34,.25);}
+  .chip .ghost{font-size:9px;color:var(--text-dimmer);margin-top:3px;}
+
+  /* ── 详情抽屉 ── */
+  .scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(2px);z-index:200;
+    opacity:0;pointer-events:none;transition:opacity .25s;}
+  .scrim.open{opacity:1;pointer-events:auto;}
+  .drawer{position:fixed;top:0;right:0;height:100%;width:440px;max-width:92vw;background:var(--panel-bg);
+    border-left:1px solid var(--border-light);z-index:210;transform:translateX(100%);transition:transform .3s cubic-bezier(.16,1,.3,1);
+    display:flex;flex-direction:column;box-shadow:-20px 0 60px rgba(0,0,0,.5);}
+  .drawer.open{transform:translateX(0);}
+  .drawer .dhead{padding:18px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;}
+  .drawer .dclose{margin-left:auto;width:32px;height:32px;border-radius:8px;border:1px solid var(--border);
+    background:var(--panel);color:var(--text-dim);cursor:pointer;font-size:16px;}
+  .drawer .dclose:hover{color:var(--text);border-color:var(--accent);}
+  .drawer .dbody{padding:18px 20px 40px;overflow-y:auto;}
+  .day-badge{display:inline-flex;align-items:center;gap:8px;background:var(--panel-alt);border:1px solid var(--border-light);
+    border-radius:10px;padding:6px 12px;font-weight:700;font-size:14px;}
+  .day-badge .dot{width:10px;height:10px;border-radius:50%;}
+  .chip2{font-size:11px;padding:3px 9px;border-radius:20px;white-space:nowrap;border:1px solid transparent;}
+  .chip2.ahead{background:rgba(63,185,80,.15);color:var(--green);border-color:rgba(63,185,80,.35);}
+  .chip2.behind{background:rgba(248,81,73,.15);color:var(--red);border-color:rgba(248,81,73,.35);}
+  .chip2.ontime{background:rgba(88,166,255,.12);color:var(--accent);border-color:rgba(88,166,255,.3);}
+  .chip2.rest{background:rgba(63,185,80,.12);color:var(--green);border-color:rgba(63,185,80,.3);}
+  .chip2.delay{background:rgba(210,153,34,.14);color:var(--yellow);border-color:rgba(210,153,34,.32);}
+  .chip2.wait{background:rgba(139,148,158,.12);color:var(--text-dim);border-color:rgba(139,148,158,.28);}
+
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px;}
+  .col{border-radius:11px;padding:12px 14px;border:1px solid transparent;}
+  .col.plan{background:rgba(88,166,255,.05);border-color:rgba(88,166,255,.14);}
+  .col.actual{background:rgba(63,185,80,.05);border-color:rgba(63,185,80,.14);}
+  .col-title{font-size:11px;font-weight:700;letter-spacing:.4px;margin-bottom:9px;}
+  .col.plan .col-title{color:var(--accent);} .col.actual .col-title{color:var(--green);}
+  .row{display:flex;align-items:baseline;gap:8px;padding:3px 0;font-size:12.5px;}
+  .row .k{color:var(--text-dim);min-width:48px;flex-shrink:0;font-size:11.5px;}
+  .row .v{color:var(--text);} .row .v.plan{color:var(--text-dim);}
+  .route{font-size:12.5px;color:var(--text);line-height:1.5;}
+  .route .arrow{color:var(--accent);margin:0 5px;}
+  .passes{margin-top:6px;font-size:11px;color:var(--text-dim);line-height:1.6;}
+  .passes .tag{color:var(--purple);}
+  .pending{color:var(--text-dim);font-style:italic;font-size:12px;}
+
+  .cmp{margin-top:16px;border-top:1px dashed var(--border);padding-top:12px;}
+  .cmp-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
+  .cmp-head .lbl{font-size:11px;color:var(--text-dim);}
+  .cmp-head .delta{font-size:12px;font-weight:600;}
+  .cmp-head .delta.green{color:var(--green);} .cmp-head .delta.red{color:var(--red);} .cmp-head .delta.dim{color:var(--text-dim);}
+  .bars{display:flex;flex-direction:column;gap:6px;}
+  .bar-row{display:flex;align-items:center;gap:10px;}
+  .bar-row .bl{font-size:10.5px;color:var(--text-dim);width:34px;flex-shrink:0;}
+  .bar-track{flex:1;height:9px;background:var(--panel-alt);border-radius:6px;overflow:hidden;}
+  .bar-fill{height:100%;border-radius:6px;}
+  .bar-fill.plan{background:linear-gradient(90deg,var(--accent),#79b8ff);}
+  .bar-fill.actual{background:linear-gradient(90deg,var(--green),#56d364);}
+  .bar-row .bv{font-size:11px;color:var(--text);width:64px;text-align:right;flex-shrink:0;}
+  .mismatch{margin-top:8px;font-size:11px;color:var(--red);background:rgba(248,81,73,.1);
+    border:1px solid rgba(248,81,73,.28);border-radius:7px;padding:6px 9px;line-height:1.5;}
+
+  .demo-note{max-width:1180px;margin:0 auto;padding:0 20px 30px;font-size:11px;color:var(--text-dimmer);line-height:1.7;}
+  .demo-note b{color:var(--yellow);}
+
+  @media (max-width:640px){
+    .cols{grid-template-columns:1fr;}
+    .stat{min-width:calc(50% - 5px);}
+    .cal-title{min-width:110px;font-size:16px;}
+    .cell{min-height:88px;}
+    .legend{font-size:10.5px;}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="title">
+    <span class="glyph">📅</span>
+    <span>行程日历<small> · 计划 vs 实际徒步对比</small></span>
+  </div>
+  <span class="proto-flag">DESIGN PROTOTYPE · 设计预览</span>
+  <a class="back-link" href="index.html" title="返回地图追踪页">🗺️ 返回地图</a>
+</header>
+
+<div id="summary" class="summary"></div>
+
+<div class="toolbar">
+  <div class="group">
+    <span class="glabel">位置基准</span>
+    <div class="seg toggle-mode" id="segMode">
+      <button data-mode="plan" class="active">📋 计划日期</button>
+      <button data-mode="actual">📡 实际日期</button>
+    </div>
+  </div>
+  <div class="group">
+    <span class="glabel">筛选</span>
+    <div class="seg" id="segFilter">
+      <button data-filter="all" class="active">全部</button>
+      <button data-filter="done">已记录</button>
+      <button data-filter="todo">未记录</button>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <div class="count-note" id="countNote"></div>
+</div>
+
+<div class="cal-wrap">
+  <div class="cal-head">
+    <div class="cal-nav">
+      <button id="prevM" title="上一月">‹</button>
+      <div class="cal-title" id="calTitle">—</div>
+      <button id="nextM" title="下一月">›</button>
+    </div>
+    <div class="spacer"></div>
+    <div class="count-note" id="spanNote"></div>
+  </div>
+
+  <div class="legend">
+    <span class="item"><span class="dot" style="background:var(--accent)"></span>按计划</span>
+    <span class="item"><span class="dot" style="background:var(--green)"></span>超前</span>
+    <span class="item"><span class="dot" style="background:var(--red)"></span>落后</span>
+    <span class="item"><span class="dot" style="background:var(--text-dimmer)"></span>等待 GPS</span>
+    <span class="item"><span class="dot" style="background:#2e9e54"></span>休息日</span>
+    <span class="item"><span class="dot" style="background:var(--yellow)"></span>天气延误</span>
+    <span class="item"><span class="bar" style="background:var(--accent)"></span>段配色（左条）= 所属 13 区域</span>
+  </div>
+
+  <div class="grid" id="grid"></div>
+</div>
+
+<p class="demo-note">
+  <b>说明：</b>本页面是 <b>UI 设计原型</b>，用于确认日历形式的视觉与交互方向，尚未改写到产品代码（itinerary.html）。
+  其中行程数据为 <b>示例数据</b>（出发日设为 2026-11-15、演示"今天"= 2026-11-28），真实页面会直接读取你浏览器里与地图页共享的 localStorage 数据。
+  切换「实际日期」时，已记录的天会按 GPS 真实日期重新落格，从而直观看到行程漂移（超前→格子上移、落后→下移）。
+</p>
+
+<!-- 详情抽屉 -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <div class="dhead">
+    <span class="day-badge" id="dBadge"></span>
+    <span id="dChip"></span>
+    <button class="dclose" id="dClose" title="关闭">✕</button>
+  </div>
+  <div class="dbody" id="dBody"></div>
+</aside>
+
+<script>
+/* ===== 示例数据（演示用，真实页面从 localStorage 读取） ===== */
+const REGIONS=[
+  {id:'kanchenjunga',zh:'干城章嘉',color:'#c0392b'},
+  {id:'makalu',zh:'马卡鲁',color:'#8e44ad'},
+  {id:'everest',zh:'珠峰',color:'#2e6fcf'},
+  {id:'rolwaling',zh:'罗尔瓦林',color:'#16a085'},
+  {id:'langtang',zh:'朗塘',color:'#27ae60'},
+  {id:'ganesh',zh:'甘尼什',color:'#e67e22'},
+  {id:'manaslu',zh:'马纳斯鲁',color:'#caa015'},
+  {id:'annapurna',zh:'安纳普尔纳',color:'#d6336c'},
+  {id:'dolpo',zh:'朵尔泊',color:'#3b3f94'},
+  {id:'mugu',zh:'穆古',color:'#0e9594'},
+  {id:'humla',zh:'胡姆拉',color:'#6c7bd1'},
+  {id:'bajhang',zh:'巴江',color:'#7cb518'},
+  {id:'darchula',zh:'达尔楚拉',color:'#a0522d'},
+];
+const PLACES=['Taplejung','Mitlung','Sekathum','Ghunsa','Kambachen','Lhonak','Pangpema BC','Lumba Sumba','Sedua','Num',
+  'Tashigaon','Khadbari','Mera La','Hinku','Panckarma','Jiri','Lukla','Namche','Tengboche','Dingboche','Lobuche',
+  'Gorak Shep','EBC','Renjo La','Gokyo','Thame','Jorsale','Phakding','Chehet','Shigati','Bigu','Kyalche','Lapchi',
+  'Tatopani','Syabrubesi','Langtang','Kyanjin','Gosainkunda','Dhunche','Besisahar','Dharapani','Chame','Manang',
+  'Thorong La','Muktinath','Jomsom','Beni','Tatopani','Ghasa','Larjung','Dhaulagiri BC','Italian BC','Hidden Valley','Marpha'];
+
+const START='2026-11-15';
+const DEMO_TODAY='2026-11-28';
+const TOTAL_DAYS=42;
+
+function pad(n){return String(n).padStart(2,'0');}
+function ymd(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+function parseYmd(s){if(!s)return null;const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);}
+function addDays(s,n){const dt=parseYmd(s);if(!dt)return null;dt.setDate(dt.getDate()+n);return ymd(dt);}
+function shortYmd(s){return s?s.slice(5):'—';}
+
+// 生成示例天
+const DAYS=[];
+for(let i=1;i<=TOTAL_DAYS;i++){
+  const regionIdx=Math.floor((i-1)/3)%13;
+  const region=REGIONS[regionIdx];
+  const isRest=(i%7===0);
+  const isDelay=(i===18);
+  const from=PLACES[(i-1)%PLACES.length];
+  const to=PLACES[i%PLACES.length];
+  const plannedDist=+(10+((i*7)%16)).toFixed(1);
+  const plannedGain=1200+((i*37)%1800);
+  const plannedLoss=900+((i*29)%1600);
+  const plannedDate=addDays(START,i-1);
+  // 前 24 天设为已记录，分布 on-track/ahead/behind
+  let actual=null;
+  if(i<=24 && !isRest && !isDelay){
+    const off = i%5===0?1 : (i%5===2?-1 : 0); // 1=落后, -1=超前, 0=按计划
+    const onTrack = off>0?'behind':off<0?'ahead':'on-track';
+    const actDate=addDays(plannedDate,off);
+    actual={
+      date:actDate,
+      distance:+(plannedDist+(off===0?0:(off>0?-1.4:0.9))).toFixed(1),
+      elevGain:plannedGain+((off>0?-200:120)),
+      elevLoss:plannedLoss+(off>0?150:-90),
+      durationStr:(5+ (i%4))+'h'+(10+(i%5)*7)+'m',
+      avgSpeed:(3.1+((i%6)*0.12)).toFixed(1),
+      onTrack,
+      actFrom:from, actTo:(off>0?'半途营地·偏差':to),
+      file:'day'+pad(i)
+    };
+  }
+  DAYS.push({day:i,regionIdx,region,from,to,plannedDate,
+    plannedDistance:plannedDist,plannedElevGain:plannedGain,plannedElevLoss:plannedLoss,
+    passes:(i%3===0)?['垭口 '+(4200+i*11)+'m','垭口 '+(4600+i*9)+'m']:[],
+    isRestDay:isRest,isWeatherDelay:isDelay,actual});
+}
+
+// 统计
+const doneDays=DAYS.filter(d=>d.actual).length;
+const plannedTotal=DAYS.reduce((s,d)=>s+d.plannedDistance,0);
+const actualTotal=DAYS.filter(d=>d.actual).reduce((s,d)=>s+d.actual.distance,0);
+const ahead=DAYS.filter(d=>d.actual&&d.actual.onTrack==='ahead').length;
+const behind=DAYS.filter(d=>d.actual&&d.actual.onTrack==='behind').length;
+const onTrack=DAYS.filter(d=>d.actual&&d.actual.onTrack==='on-track').length;
+const pctDone=Math.round(doneDays/TOTAL_DAYS*100);
+const overallSlip=1;
+
+document.getElementById('summary').innerHTML=`
+  <div class="stat"><div class="v blue">${TOTAL_DAYS}</div><div class="l">📅 总行程(天)</div></div>
+  <div class="stat"><div class="v green">${doneDays} · ${pctDone}%</div><div class="l">📡 已记录轨迹</div></div>
+  <div class="stat"><div class="v">${Math.round(plannedTotal)}km</div><div class="l">📏 计划总距离</div></div>
+  <div class="stat"><div class="v green">${Math.round(actualTotal)}km</div><div class="l">✅ 实际已完成</div></div>
+  <div class="stat"><div class="v green">${ahead}</div><div class="l">🟢 超前天数</div></div>
+  <div class="stat"><div class="v blue">${onTrack}</div><div class="l">🔵 按计划</div></div>
+  <div class="stat"><div class="v red">${behind}</div><div class="l">🔴 落后天数</div></div>
+  <div class="slip-note">⚠️ 行程整体晚 ${overallSlip} 天（实际 GPS 日期相对计划日期的整体偏移 · 演示数据）</div>`;
+
+/* ===== 状态 ===== */
+let MODE='plan';
+let FILTER='all';
+let VIEW=new Date(2026,10,1); // 默认显示 11 月（月份 0-based：10=11月）
+
+function dayKey(d){
+  if(MODE==='actual' && d.actual) return d.actual.date;
+  return d.plannedDate;
+}
+function statusOf(d){
+  if(d.actual) return d.actual.onTrack;
+  if(d.isRestDay) return 'rest';
+  if(d.isWeatherDelay) return 'delay';
+  return 'wait';
+}
+const STATUS_COLOR={ 'on-track':'var(--accent)','ahead':'var(--green)','behind':'var(--red)','wait':'var(--text-dimmer)','rest':'#2e9e54','delay':'var(--yellow)'};
+const STATUS_LABEL={ 'on-track':'按计划','ahead':'超前','behind':'落后','wait':'等待 GPS','rest':'休息','delay':'延误'};
+
+function buildMap(){
+  const map={};
+  DAYS.forEach(d=>{
+    if(FILTER==='done' && !d.actual) return;
+    if(FILTER==='todo' && d.actual) return;
+    const k=dayKey(d);
+    (map[k]=map[k]||[]).push(d);
+  });
+  return map;
+}
+
+function renderCalendar(){
+  const y=VIEW.getFullYear(), m=VIEW.getMonth();
+  const ym=ymd(new Date(y,m,1));
+  document.getElementById('calTitle').textContent=y+' 年 '+(m+1)+' 月';
+  const first=new Date(y,m,1);
+  const startOffset=(first.getDay()+6)%7; // 周一为起点
+  const daysInMonth=new Date(y,m+1,0).getDate();
+  const todayStr=DEMO_TODAY;
+  const map=buildMap();
+
+  const wd=['一','二','三','四','五','六','日'];
+  let html=wd.map(w=>`<div class="wd">${w}</div>`).join('');
+
+  // 前置补白（上月）
+  const prevDays=new Date(y,m,0).getDate();
+  for(let i=startOffset-1;i>=0;i--){
+    const d=prevDays-i;
+    html+=`<div class="cell out"><div class="dnum">${d}</div></div>`;
+  }
+  // 当月
+  for(let d=1;d<=daysInMonth;d++){
+    const cur=ymd(new Date(y,m,d));
+    const isToday=cur===todayStr;
+    const list=map[cur]||[];
+    const cellClass='cell'+(isToday?' today':'');
+    let inner=`<div class="dnum">${d}</div>`;
+    list.forEach(day=>{
+      const st=statusOf(day);
+      const col=day.region.color;
+      const cls=['chip'];
+      if(day.isRestDay)cls.push('is-rest');
+      if(day.isWeatherDelay)cls.push('is-delay');
+      const ghost=(MODE==='actual'&&day.actual&&day.actual.date!==day.plannedDate)
+        ? `<div class="ghost">原计划 ${shortYmd(day.plannedDate)}</div>` : '';
+      inner+=`<div class="${cls.join(' ')}" data-day="${day.day}">
+        <div class="stripe" style="background:${col}"></div>
+        <div class="crow"><span class="dlab">D${day.day}</span><span class="sdot" style="background:${STATUS_COLOR[st]}"></span></div>
+        <div class="route">${esc(day.from)}<span class="ar">→</span>${esc(day.to)}</div>
+        <div class="meta"><span>${day.plannedDistance}km</span><span>${day.region.zh}</span></div>
+        ${ghost}
+      </div>`;
+    });
+    html+=`<div class="${cellClass}">${inner}</div>`;
+  }
+  // 后置补白（下月）凑满整行
+  const total=startOffset+daysInMonth;
+  const tail=(7-(total%7))%7;
+  for(let d=1;d<=tail;d++){
+    html+=`<div class="cell out"><div class="dnum">${d}</div></div>`;
+  }
+  document.getElementById('grid').innerHTML=html;
+
+  // 计数
+  const visible=DAYS.filter(d=>{
+    if(FILTER==='done'&&!d.actual)return false;
+    if(FILTER==='todo'&&d.actual)return false;
+    const k=dayKey(d);
+    const [ky,km,kd]=k.split('-').map(Number);
+    return ky===y&&km-1===m;
+  }).length;
+  document.getElementById('countNote').textContent=`本页显示 ${visible} 天 · 共 ${TOTAL_DAYS} 天`;
+  const firstD=DAYS[0].plannedDate, lastD=DAYS[DAYS.length-1].plannedDate;
+  document.getElementById('spanNote').textContent=`行程跨度：${firstD} → ${lastD}`;
+
+  // 绑定点击
+  document.querySelectorAll('.chip[data-day]').forEach(el=>{
+    el.addEventListener('click',()=>openDrawer(+el.dataset.day));
+  });
+}
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+/* ===== 详情抽屉 ===== */
+function openDrawer(dayNum){
+  const d=DAYS.find(x=>x.day===dayNum);if(!d)return;
+  const st=statusOf(d);
+  const col=d.region.color;
+  let chipCls='wait';
+  if(d.actual)chipCls=d.actual.onTrack;else if(d.isRestDay)chipCls='rest';else if(d.isWeatherDelay)chipCls='delay';
+  document.getElementById('dBadge').innerHTML=`<span class="dot" style="background:${col}"></span><span class="num">Day ${d.day}</span>`;
+  document.getElementById('dChip').innerHTML=`<span class="chip2 ${chipCls}">${STATUS_LABEL[st]}</span> · 第 <b>${d.regionIdx+1}</b> 段 ${esc(d.region.zh)}`;
+  let body=`<div style="font-size:12px;color:var(--text-dim);margin-bottom:10px;">计划日期 <b style="color:var(--text)">${shortYmd(d.plannedDate)}</b>${d.actual?` · 实际日期 <b style="color:var(--green)">${shortYmd(d.actual.date)}</b>`:''}</div>`;
+  const planCol=`<div class="col plan"><div class="col-title">📋 计划</div>
+    <div class="row"><span class="k">路线</span><span class="v route">${esc(d.from)}<span class="arrow">→</span>${esc(d.to)}</span></div>
+    <div class="row"><span class="k">距离</span><span class="v plan">${d.plannedDistance}km</span></div>
+    <div class="row"><span class="k">爬升</span><span class="v plan">${d.plannedElevGain.toLocaleString()}m</span></div>
+    <div class="row"><span class="k">下降</span><span class="v plan">${d.plannedElevLoss.toLocaleString()}m</span></div>
+    ${d.passes.length?`<div class="passes">⛰ 垭口：<span class="tag">${esc(d.passes.join('、'))}</span></div>`:''}
+    ${d.isRestDay?'<div class="passes">🏕️ 休息日</div>':''}${d.isWeatherDelay?'<div class="passes">☁️ 天气延误</div>':''}</div>`;
+  let actCol;
+  if(!d.actual){
+    actCol=`<div class="col actual"><div class="col-title">📡 实际</div><div class="pending">⏳ 等待 GPS 轨迹上传</div></div>`;
+  }else{
+    const a=d.actual;
+    actCol=`<div class="col actual"><div class="col-title">📡 实际</div>
+      <div class="row"><span class="k">路线</span><span class="v route">${esc(a.actFrom)}<span class="arrow">→</span>${esc(a.actTo)}</span></div>
+      <div class="row"><span class="k">距离</span><span class="v">${a.distance}km</span></div>
+      <div class="row"><span class="k">爬升</span><span class="v">${a.elevGain.toLocaleString()}m</span></div>
+      <div class="row"><span class="k">用时</span><span class="v">${a.durationStr} · ${a.avgSpeed}km/h</span></div>
+      <div class="row"><span class="k">文件</span><span class="v" style="font-size:11px;color:var(--text-dim)">${esc(a.file)}</span></div>
+      ${a.actTo!==d.to?`<div class="mismatch">⚠️ 实际终点≠计划终点（只走了一部分/路线有偏差）</div>`:''}</div>`;
+  }
+  body+=`<div class="cols">${planCol}${actCol}</div>`;
+  if(d.actual){
+    const diff=Math.round((d.actual.distance-d.plannedDistance)*10)/10;
+    const dcls=Math.abs(diff)<0.05?'dim':(diff>0?'green':'red');
+    const dsign=Math.abs(diff)<0.05?'±0.0':(diff>0?'+':'')+diff.toFixed(1);
+    const maxV=Math.max(d.plannedDistance,d.actual.distance,0.1);
+    const pw=Math.round(d.plannedDistance/maxV*100),aw=Math.round(d.actual.distance/maxV*100);
+    body+=`<div class="cmp"><div class="cmp-head"><span class="lbl">距离对比（计划 vs 实际）</span><span class="delta ${dcls}">差值 ${dsign} km</span></div>
+      <div class="bars">
+        <div class="bar-row"><span class="bl">计划</span><div class="bar-track"><div class="bar-fill plan" style="width:${pw}%"></div></div><span class="bv">${d.plannedDistance}km</span></div>
+        <div class="bar-row"><span class="bl">实际</span><div class="bar-track"><div class="bar-fill actual" style="width:${aw}%"></div></div><span class="bv">${d.actual.distance}km</span></div>
+      </div></div>`;
+  }
+  document.getElementById('dBody').innerHTML=body;
+  document.getElementById('scrim').classList.add('open');
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('drawer').setAttribute('aria-hidden','false');
+}
+function closeDrawer(){
+  document.getElementById('scrim').classList.remove('open');
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('drawer').setAttribute('aria-hidden','true');
+}
+document.getElementById('scrim').addEventListener('click',closeDrawer);
+document.getElementById('dClose').addEventListener('click',closeDrawer);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDrawer();});
+
+/* ===== 控件 ===== */
+document.getElementById('segMode').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;MODE=b.dataset.mode;
+  [...e.currentTarget.children].forEach(x=>x.classList.toggle('active',x===b));renderCalendar();
+});
+document.getElementById('segFilter').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;FILTER=b.dataset.filter;
+  [...e.currentTarget.children].forEach(x=>x.classList.toggle('active',x===b));renderCalendar();
+});
+document.getElementById('prevM').addEventListener('click',()=>{VIEW.setMonth(VIEW.getMonth()-1);renderCalendar();});
+document.getElementById('nextM').addEventListener('click',()=>{VIEW.setMonth(VIEW.getMonth()+1);renderCalendar();});
+
+renderCalendar();
+</script>
+</body>
+</html>
