@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Cloudflare Worker 后端（免卡、免服务器、不休眠）：部署前在下面填入你的 Worker 地址，例如 https://ght-api.your-sub.workers.dev ；留空 = 本地访客态 -->
+<meta name="ght-api" content="https://ght-api.wangchen19861230.workers.dev">
 <title>GHT 大喜马拉雅高线徒步追踪</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -53,7 +55,7 @@
     overflow: hidden;
   }
 
-  .app { display: flex; height: 100vh; }
+  .app { display: grid; grid-template-rows: 50px 1fr 26px; height: 100vh; min-height: 0; }
 
   /* ── LEFT NAV (icon strip) ── */
   .nav-left {
@@ -96,14 +98,6 @@
   }
   .nav-left .nav-btn:hover { background: rgba(255,255,255,0.04); color: var(--text); }
   .nav-left .nav-btn.active { background: var(--accent-bg); color: var(--accent); border: 1px solid rgba(88,166,255,0.25); }
-  .nav-left .nav-ext {
-    width: 34px; height: 34px; border: none; border-radius: 8px;
-    background: transparent; font-size: 16px; cursor: pointer; margin-bottom: 4px;
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s; text-decoration: none; color: var(--accent);
-    border: 1px solid rgba(88,166,255,0.25);
-  }
-  .nav-left .nav-ext:hover { background: var(--accent-bg); color: var(--accent); }
   .nav-left .nav-btn .badge {
     position: absolute;
     top: 3px; right: 3px;
@@ -663,6 +657,41 @@
   .btn-reset.visible { display: inline-block; }
   .btn-reset:hover { background: rgba(248,81,73,0.15); color: var(--red); }
 
+  /* ── MODAL (数据管理 / password-gated) ── */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 1200;
+    background: rgba(0,0,0,0.62);
+    display: none; align-items: center; justify-content: center;
+    padding: 16px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    width: 100%; max-width: 420px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 12px; box-shadow: 0 24px 64px rgba(0,0,0,0.55);
+    overflow: hidden;
+  }
+  .modal-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    font-weight: 600; color: var(--text); font-size: 14px;
+  }
+  .modal-close {
+    background: transparent; border: none; color: var(--text-dim);
+    cursor: pointer; font-size: 14px; line-height: 1; padding: 4px;
+  }
+  .modal-close:hover { color: var(--text); }
+  .modal-body { padding: 16px; }
+  .pwd-gate { display: flex; flex-direction: column; gap: 10px; }
+  .pwd-hint { font-size: 13px; color: var(--text-dim); margin: 0; line-height: 1.5; }
+  .form-input {
+    width: 100%; padding: 9px 12px; font-size: 14px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-family: inherit;
+  }
+  .form-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(88,166,255,0.15); }
+  .pwd-err { font-size: 12px; color: var(--red); }
+
   /* ── ITINERARY ── */
   .itinerary-header {
     display: grid;
@@ -996,6 +1025,175 @@
   .tag.camp { background: rgba(63,185,80,.15); color: var(--green); }
   .sec-hint { font-size: 10px; color: var(--text-dim); padding: 4px 14px 12px; text-align: center; }
 
+  /* ════════════════════════════════════════════════════
+     NO TWO DASHBOARD LAYOUT
+     ════════════════════════════════════════════════════ */
+  /* ── TOP NAV ── */
+  .topnav {
+    grid-row: 1;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 0 16px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    z-index: 2000;
+  }
+  .topnav .brand { display: flex; align-items: baseline; gap: 8px; font-weight: 800; font-size: 15px; color: var(--text); white-space: nowrap; }
+  .topnav .brand .brand-logo { width: 22px; height: 22px; flex: none; align-self: center; margin-right: 4px; filter: drop-shadow(0 1px 4px rgba(31,111,235,0.4)); }
+  .topnav .brand .sub { font-size: 9px; font-weight: 500; color: var(--text-dim); letter-spacing: 0.4px; }
+  .topnav-tabs { display: flex; gap: 2px; flex: 1; overflow-x: auto; }
+  .tn-tab {
+    padding: 6px 13px; border-radius: 6px; cursor: pointer; white-space: nowrap;
+    font-size: 12px; color: var(--text-dim); background: transparent; border: none;
+    transition: all 0.15s; font-family: inherit;
+  }
+  .tn-tab:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+  .tn-tab.active { color: var(--accent); background: var(--accent-bg); }
+  .tn-ext {
+    display: inline-flex; align-items: center; margin-left: 4px;
+    padding: 6px 13px; border-radius: 6px; cursor: pointer; white-space: nowrap;
+    font-size: 12px; font-family: inherit; text-decoration: none;
+    color: var(--accent); background: transparent; border: 1px solid rgba(88,166,255,0.25);
+    transition: all 0.15s;
+  }
+  .tn-ext:hover { color: #fff; background: var(--accent); }
+  .topnav-right { display: flex; align-items: center; gap: 8px; }
+  .lang-btn, .top-btn {
+    background: var(--bg); border: 1px solid var(--border); color: var(--text-dim);
+    border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; font-family: inherit;
+  }
+  .lang-btn:hover, .top-btn:hover { color: var(--text); border-color: var(--accent); }
+
+  /* ── DASH GRID ── */
+  .dash-grid {
+    grid-row: 2;
+    display: grid;
+    grid-template-columns: 250px 1fr 274px;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .col-left, .col-right {
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: var(--bg);
+  }
+  .col-left { border-right: 1px solid var(--border); }
+  .col-right { border-left: 1px solid var(--border); }
+  .col-left::-webkit-scrollbar, .col-right::-webkit-scrollbar { width: 4px; }
+  .col-left::-webkit-scrollbar-thumb, .col-right::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .col-center { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+  .col-center .map-wrap { flex: 1; min-height: 0; position: relative; }
+  .col-center .elevation-panel { height: 168px; flex-shrink: 0; }
+  .col-center .elevation-panel .elevation-body { flex: 1; min-height: 0; padding: 0 10px 8px; }
+  .col-center .elevation-panel .elevation-body svg { width: 100%; height: 100%; display: block; }
+
+  /* ── CARDS ── */
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .card-h {
+    padding: 8px 12px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+    color: var(--text-dim); text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  /* English subtitle: hidden on the Chinese page; shown as the title only in EN mode */
+  .card-h .en { display: none; }
+  html[lang="en"] .card-h > span:first-child { display: none; }
+  html[lang="en"] .card-h .en { display: inline; font-size: 11px; color: var(--text); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .card-b { padding: 12px; }
+
+  /* progress card */
+  .pc-pct { font-size: 38px; font-weight: 800; color: var(--accent); line-height: 1; }
+  .pc-pct small { font-size: 14px; color: var(--text-dim); font-weight: 500; }
+  .pc-day { font-size: 12px; color: var(--text); margin: 6px 0 10px; }
+  .pc-day b { color: var(--accent); }
+  .pc-bar { height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; }
+  .pc-bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--green)); }
+  .pc-stats { display: flex; gap: 6px; margin-top: 12px; }
+  .pc-stat { flex: 1; text-align: center; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 6px 2px; }
+  .pc-stat .v { font-size: 13px; font-weight: 700; color: var(--text); }
+  .pc-stat .l { font-size: 9px; color: var(--text-dim); margin-top: 2px; }
+
+  /* status list */
+  .st-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 12px; border-top: 1px solid var(--border); }
+  .st-row:first-child { border-top: none; }
+  .st-ico { width: 18px; text-align: center; }
+  .st-k { color: var(--text-dim); }
+  .st-v { margin-left: auto; text-align: right; color: var(--text); font-weight: 500; }
+  .st-v small { display: block; color: var(--text-dim); font-weight: 400; font-size: 10px; }
+
+  /* today 3x2 grid */
+  .tg { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .tg-cell { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 7px 4px; text-align: center; }
+  .tg-cell .v { font-size: 13px; font-weight: 700; color: var(--text); }
+  .tg-cell .l { font-size: 9px; color: var(--text-dim); margin-top: 2px; }
+
+  /* safety 3 cells */
+  /* weather/safety card styles removed with the module (cardSafety) */
+
+  /* exped info */
+  .ei-cover { height: 86px; border-radius: 8px; margin-bottom: 10px; position: relative; overflow: hidden;
+    background: linear-gradient(135deg, #1b2735, #0a0e14 65%), radial-gradient(circle at 72% 22%, rgba(88,166,255,0.28), transparent 52%); }
+  .ei-cover::after { content: '🏔️'; position: absolute; right: 10px; bottom: 4px; font-size: 30px; opacity: 0.55; }
+  .ei-meta { display: grid; grid-template-columns: auto 1fr; gap: 5px 10px; font-size: 11px; }
+  .ei-meta .k { color: var(--text-dim); }
+  .ei-meta .v { color: var(--text); text-align: right; font-weight: 500; }
+
+  /* passes list */
+  .pass-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-top: 1px solid var(--border); font-size: 12px; }
+  .pass-row:first-child { border-top: none; }
+  .pass-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .pass-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pass-elev { color: var(--text-dim); font-size: 11px; }
+  .pass-days { font-size: 10px; padding: 1px 6px; border-radius: 10px; background: rgba(63,185,80,0.15); color: var(--green); white-space: nowrap; }
+  .pass-days.far { background: rgba(139,148,158,0.15); color: var(--text-dim); }
+  .more-link { display: block; text-align: center; font-size: 11px; color: var(--accent); padding: 8px 0 2px; cursor: pointer; }
+
+  /* region progress */
+  .rg-wrap { display: flex; align-items: center; gap: 14px; }
+  .rg-ring { width: 74px; height: 74px; flex-shrink: 0; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 15px; font-weight: 800; color: var(--text); }
+  .rg-ring small { font-size: 8px; color: var(--text-dim); font-weight: 400; }
+  .rg-list { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+  .rg-item { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+  .rg-item .dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+  .rg-item .nm { flex: 1; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rg-item .pc { color: var(--text-dim); font-variant-numeric: tabular-nums; }
+
+  /* gallery */
+  .gal-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 5px; }
+  .gal-cell { aspect-ratio: 1; border-radius: 5px; background: linear-gradient(135deg, #1b2735, #0a0e14); display: flex; align-items: center; justify-content: center; font-size: 15px; opacity: 0.85; transition: opacity 0.15s; }
+  .gal-cell:hover { opacity: 1; }
+
+  /* upload card */
+  .upload-zone { text-align: center; }
+  .upload-zone input[type=file] { display: none; }
+  .upload-hint { font-size: 10px; color: var(--text-dim); margin-top: 6px; line-height: 1.5; }
+  .date-row { font-size: 11px; color: var(--text-dim); margin-top: 10px; text-align: left; padding-top: 10px; border-top: 1px dashed var(--border); }
+  .date-row input { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 3px 6px; border-radius: 5px; font-family: inherit; font-size: 11px; margin-left: 4px; }
+
+  /* ── BOTTOM STATUS BAR ── */
+  .statusbar {
+    grid-row: 3; display: flex; align-items: center; gap: 18px;
+    padding: 0 14px; background: var(--panel); border-top: 1px solid var(--border);
+    font-size: 10px; color: var(--text-dim); white-space: nowrap; overflow: hidden;
+  }
+  .statusbar .live-dot { color: var(--green); display: flex; align-items: center; gap: 4px; }
+  .statusbar .spacer { flex: 1; }
+
+  /* legend → top-left; compass → top-right (zoom/basemap moved to bottom-left) */
+  .map-legend { top: 12px; left: 12px; right: auto; }
+  .map-compass { top: 12px; right: 12px; }
+
+  @media (max-width: 920px) {
+    .dash-grid { grid-template-columns: 1fr; grid-auto-rows: min-content; overflow-y: auto; }
+    .col-left, .col-right { border: none; border-bottom: 1px solid var(--border); }
+    .col-center { min-height: 62vh; }
+    .topnav .brand .sub { display: none; }
+  }
 </style>
 </head>
 
@@ -1003,66 +1201,93 @@
 
 <div class="app">
 
-  <!-- ── LEFT NAV (icon strip) ── -->
-  <nav class="nav-left" aria-label="主导航">
-    <div class="nav-logo" title="GHT 大喜马拉雅高线">⛰</div>
-    <button class="nav-btn active" data-panel="progress" title="进度总览">📊</button>
-    <button class="nav-btn" data-panel="livemap" title="全屏地图">🗺️</button>
-    <button class="nav-btn" data-panel="log" title="日志 / 动态">📝</button>
-    <a class="nav-ext" href="itinerary.html" target="_blank" rel="noopener" title="计划 vs 实际 · 行程对比 →">📅</a>
-    <a class="nav-ext" href="sections.html" target="_blank" rel="noopener" title="路段进度 · 按 已完成/进行中/未完成 分组 →">🏔️</a>
-    <div class="nav-spacer"></div>
-    <button class="nav-donate" data-panel="donate" title="捐助支持">❤️</button>
-  </nav>
+  <!-- ── TOP NAV ── -->
+  <header class="topnav">
+    <div class="brand">
+      <svg class="brand-logo" width="22" height="22" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+        <defs>
+          <linearGradient id="ghtBrandGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#79c0ff"/>
+            <stop offset="1" stop-color="#1f6feb"/>
+          </linearGradient>
+        </defs>
+        <path d="M2 24 L9 14 L15 21 L21 11 L30 24 Z" fill="#27406b"/>
+        <path d="M5 26 L14 8 L20 19 L26 13 L30 26 Z" fill="url(#ghtBrandGrad)"/>
+        <path d="M14 8 L18 15 L10 15 Z" fill="#eaf2ff"/>
+        <path d="M9 26 C13 21 16 19 14 15 C12 12 17 11 20 8" stroke="#f0883e" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      </svg>
+      GHT <span class="sub">大喜马拉雅高线 · GREAT HIMALAYA TRAIL</span>
+    </div>
+    <nav class="topnav-tabs" aria-label="主导航">
+      <button class="tn-tab active" data-view="dashboard">Dashboard</button>
+      <button class="tn-tab" data-view="map">Map</button>
+      <button class="tn-tab" data-view="journal">日志</button>
+      <button class="tn-tab" data-view="about">关于</button>
+      <a class="tn-ext" href="itinerary.html" target="_blank" rel="noopener" title="计划 vs 实际 · 行程对比 →">📅 行程对比 ↗</a>
+      <a class="tn-ext" href="sections.html" target="_blank" rel="noopener" title="路段进度 · 按 已完成/进行中/未完成 分组 →">🏔️ 路段 ↗</a>
+    </nav>
+    <div class="topnav-right">
+      <button class="lang-btn">中文 ▾</button>
+      <button class="top-btn" id="btnDataMgmt" onclick="openDataModal()">🔧 数据管理</button>
+    </div>
+  </header>
 
-  <!-- ── CENTER: MAP + INFO BAR + ELEVATION ── -->
-  <div class="center-col">
-    <div class="map-wrap">
-      <div id="map"></div>
+  <!-- ── DASH GRID ── -->
+  <div class="dash-grid">
 
-      <div class="map-overlay pos-badge" id="currentPosBadge">
-        📍 当前位置: <span class="prov-name">--</span><span class="prov-elev"></span>
-      </div>
+    <!-- LEFT COLUMN -->
+    <aside class="col-left">
+      <section class="card" id="cardProgress"></section>
+      <section class="card" id="cardStatus"></section>
+      <section class="card" id="cardToday"></section>
+    </aside>
 
-      <div class="map-overlay map-legend" id="mapLegend">
-        <div class="legend-head" onclick="toggleLegend()">
-          <span>🏔️ 路段图例</span>
-          <span id="legendToggle">▾</span>
+    <!-- CENTER -->
+    <main class="col-center">
+      <div class="map-wrap">
+        <div id="map"></div>
+        <div class="map-overlay pos-badge" id="currentPosBadge">
+          📍 当前位置: <span class="prov-name">--</span><span class="prov-elev"></span>
         </div>
-        <div class="legend-body" id="legendBody"></div>
+        <div class="map-overlay map-legend" id="mapLegend">
+          <div class="legend-head" onclick="toggleLegend()">
+            <span>🏔️ 路段图例</span>
+            <span id="legendToggle">▾</span>
+          </div>
+          <div class="legend-body" id="legendBody"></div>
+        </div>
+        <div class="map-overlay map-compass" title="正北方向">
+          <span class="compass-n">N</span>
+          <div class="compass-needle"></div>
+        </div>
       </div>
-
-      <div class="map-overlay map-compass" title="正北方向">
-        <span class="compass-n">N</span>
-        <div class="compass-needle"></div>
+      <div class="elevation-panel" id="elevationPanel">
+        <div class="elevation-header">
+          <span>📈 海拔剖面 · 预设轨迹 · <span id="elevLabel">--</span></span>
+          <button id="elevToggle" onclick="toggleElevationProfile()">▲</button>
+        </div>
+        <div class="elevation-body" id="elevationBody"></div>
       </div>
-    </div>
+    </main>
 
-    <div class="info-bar" id="infoBar"></div>
+    <!-- RIGHT COLUMN -->
+    <aside class="col-right">
+      <section class="card" id="cardInfo"></section>
+      <section class="card" id="cardPasses"></section>
+      <section class="card" id="cardRegion"></section>
+      <section class="card" id="cardGallery"></section>
+    </aside>
 
-    <div class="elevation-panel" id="elevationPanel">
-      <div class="elevation-header">
-        <span>📈 海拔剖面 · 预设轨迹 · <span id="elevLabel">--</span></span>
-        <button id="elevToggle" onclick="toggleElevationProfile()">▲</button>
-      </div>
-      <div class="elevation-body" id="elevationBody"></div>
-    </div>
   </div>
 
-  <!-- ── RIGHT PANEL ── -->
-  <div class="panel-right open" id="panelRight">
-    <div class="panel-header">
-      <h3 id="panelTitle">📊 进度仪表盘</h3>
-      <button class="panel-close" onclick="closePanel()">✕</button>
-    </div>
-    <div class="tab-toggle" id="panelTabs" style="display:none;padding:6px 8px;border-bottom:1px solid var(--border);">
-      <button class="tab-btn active" data-tab="log" onclick="openPanel('log')">📝 日志</button>
-    </div>
-    <div class="panel-body" id="sidebarContent"></div>
-    <div style="padding:8px 16px;border-top:1px solid var(--border);text-align:center;">
-      <button class="btn-reset" id="btnReset" onclick="clearAllData()" title="清除所有数据（仅主人模式）">🗑️ 重置数据</button>
-    </div>
-  </div>
+  <!-- ── BOTTOM STATUS BAR ── -->
+  <footer class="statusbar">
+    <span>© 2026 GHT 高线追踪</span>
+    <span class="live-dot">🟢 Live Tracking Active · 实时追踪中</span>
+    <span class="spacer"></span>
+    <span>数据来源: GPX</span>
+    <span>底图: © OpenStreetMap · Esri · OpenTopoMap</span>
+  </footer>
 
 </div>
 
@@ -1537,7 +1762,7 @@ function getItinerarySummary() {
 const APP = {
   currentSection: 1,
   activeTab: 'progress',
-  isOwner: true,
+  isOwner: false,
   presetTrack: null,
   presetRestDays: [],
   actualTracks: [],
@@ -1563,12 +1788,90 @@ const APP = {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  MAP INITIALIZATION
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  I18N (中文 / English)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+let currentLang = 'zh';
+const I18N = {
+  zh: {
+    'nav.dashboard': '仪表盘', 'nav.map': '地图', 'nav.sections': '路段', 'nav.itinerary': '行程', 'nav.journal': '日志', 'nav.about': '关于', 'nav.datamgmt': '数据管理',
+    'brand.sub': '大喜马拉雅高线',
+    'legend.head': '路段图例',
+    'pos.prefix': '📍 当前位置:',
+    'basemap.terrain': '户外图 (Esri 地形 · 默认)', 'basemap.topo': '地形图 (等高线)', 'basemap.dark': '暗色图 (OpenStreetMap)',
+    'prog.done': '已完成 km', 'prog.left': '剩余 km', 'prog.total': '总计 km',
+    'st.camp': '当前营地', 'st.area': '所在区域', 'st.elev': '当前海拔', 'st.pass': '下一垭口', 'st.eta': '预计抵达',
+    'today.dist': '距离', 'today.gain': '爬升', 'today.loss': '下降', 'today.move': '移动时间', 'today.speed': '均速 km/h', 'today.max': '最高海拔',
+    'today.dateLbl': '数据日期：', 'today.nodata': '暂无今日 GPS 数据',
+    'ei.from': '出发地', 'ei.total': '总距离', 'ei.recorded': '已记录', 'ei.gain': '累计爬升', 'ei.max': '最高点', 'ei.passes': '垭口 / 营地', 'ei.end': '预计结束',
+    'pass.none': '暂无垭口数据', 'pass.soon': '近日', 'pass.seg': '段', 'pass.all': '查看全部路段 →',
+    'region.overall': '全程',
+    'gal.all': '查看全部 →',
+    'up.btn': '📤 上传GPS轨迹', 'up.hint': '支持批量多文件 (.gpx/.kml)<br>PeakVisor / Strava / Garmin 均可', 'up.date': '出发日期：', 'up.reset': '🗑️ 重置数据',
+    'view.empty': '暂无内容',
+    'about.text': '本页追踪 <b>大喜马拉雅高线（Great Himalaya Trail）</b> 东段至西段的徒步进度，支持 GPX 轨迹上传、计划/实际双栏对照、各省进度与垭口清单可视化。<br><br>数据来源：主人上传的 GPS 轨迹（GPX），地图底图 © OpenStreetMap · Esri · OpenTopoMap。<br><br>© 2026 GHT 高线追踪',
+    'dm.title': '数据管理', 'dm.pwdHint': '请输入主人密码以管理轨迹数据', 'dm.unlock': '解锁', 'dm.pwdErr': '密码错误', 'dm.connErr': '无法连接服务器（后端未启动？）'
+  },
+  en: {
+    'nav.dashboard': 'Dashboard', 'nav.map': 'Map', 'nav.sections': 'Sections', 'nav.itinerary': 'Itinerary', 'nav.journal': 'Journal', 'nav.about': 'About', 'nav.datamgmt': 'Data',
+    'brand.sub': 'GREAT HIMALAYA TRAIL',
+    'legend.head': 'Section Legend',
+    'pos.prefix': '📍 Current location:',
+    'basemap.terrain': 'Terrain (Esri Topo · default)', 'basemap.topo': 'Topographic (Contours)', 'basemap.dark': 'Dark (OpenStreetMap)',
+    'prog.done': 'Done km', 'prog.left': 'Left km', 'prog.total': 'Total km',
+    'st.camp': 'Current camp', 'st.area': 'Region', 'st.elev': 'Elevation', 'st.pass': 'Next pass', 'st.eta': 'ETA',
+    'today.dist': 'Distance', 'today.gain': 'Ascent', 'today.loss': 'Descent', 'today.move': 'Moving time', 'today.speed': 'Avg km/h', 'today.max': 'Max elev',
+    'today.dateLbl': 'Data date: ', 'today.nodata': 'No GPS data today',
+    'ei.from': 'Start', 'ei.total': 'Total dist', 'ei.recorded': 'Recorded', 'ei.gain': 'Total ascent', 'ei.max': 'Highest point', 'ei.passes': 'Passes / Camps', 'ei.end': 'Est. finish',
+    'pass.none': 'No pass data', 'pass.soon': 'Soon', 'pass.seg': 'seg', 'pass.all': 'All sections →',
+    'region.overall': 'Overall',
+    'gal.all': 'View all →',
+    'up.btn': '📤 Upload GPS track', 'up.hint': 'Batch upload (.gpx/.kml)<br>PeakVisor / Strava / Garmin supported', 'up.date': 'Start date: ', 'up.reset': '🗑️ Reset data',
+    'view.empty': 'No content',
+    'about.text': 'This page tracks the trekking progress of the <b>Great Himalaya Trail</b> from east to west, with GPX upload, planned/actual comparison, province progress and pass checklists.<br><br>Data: owner-uploaded GPS tracks (GPX). Basemap © OpenStreetMap · Esri · OpenTopoMap.<br><br>© 2026 GHT Trail Tracker',
+    'dm.title': 'Data Management', 'dm.pwdHint': 'Enter owner password to manage track data', 'dm.unlock': 'Unlock', 'dm.pwdErr': 'Wrong password', 'dm.connErr': 'Cannot reach server (backend down?)'
+  }
+};
+function t(k, def) {
+  const tbl = I18N[currentLang];
+  if (tbl && tbl[k] != null) return tbl[k];
+  if (I18N.zh[k] != null) return I18N.zh[k];
+  return def != null ? def : k;
+}
+function getProvEN(pid) {
+  const m = { koshi: 'Koshi', bagmati: 'Bagmati', gandaki: 'Gandaki', lumbini: 'Lumbini', karnali: 'Karnali', sudurpashchim: 'Sudurpashchim' };
+  return m[pid] || pid || '—';
+}
+function getProv(pid) { return currentLang === 'en' ? getProvEN(pid) : getProvZH(pid); }
+function applyLang() {
+  document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
+  const lb = document.querySelector('.lang-btn');
+  if (lb) lb.textContent = currentLang === 'zh' ? '中文 ▾' : 'EN ▾';
+  document.querySelectorAll('.tn-tab').forEach(el => { el.textContent = t('nav.' + el.dataset.view); });
+  const sub = document.querySelector('.brand .sub'); if (sub) sub.textContent = t('brand.sub');
+  const lh = document.querySelector('.legend-head > span:first-child'); if (lh) lh.textContent = '🏔️ ' + t('legend.head');
+  document.querySelectorAll('.basemap-btn').forEach((el, i) => { el.title = t(['basemap.terrain', 'basemap.topo', 'basemap.dark'][i]); });
+  const dm = document.getElementById('btnDataMgmt'); if (dm) dm.textContent = '🔧 ' + t('nav.datamgmt');
+  const dmt = document.getElementById('dmTitle'); if (dmt) dmt.textContent = t('dm.title');
+  const dph = document.getElementById('dmPwdHint'); if (dph) dph.textContent = t('dm.pwdHint');
+  const du = document.getElementById('dmUnlock'); if (du) du.textContent = t('dm.unlock');
+  const de = document.getElementById('dmPwdErr'); if (de) de.textContent = t('dm.pwdErr');
+}
+const _langBtn = document.querySelector('.lang-btn');
+if (_langBtn) _langBtn.addEventListener('click', function () {
+  currentLang = currentLang === 'zh' ? 'en' : 'zh';
+  applyLang();
+  const active = document.querySelector('.tn-tab.active');
+  if (active) showView(active.dataset.view);
+});
+applyLang();
+
 const map = L.map('map', {
   center: [28.5, 84.0],
   zoom: 7,
   minZoom: 6,
   maxZoom: 16,
-  zoomControl: true,
+  zoomControl: false,
   attributionControl: true
 });
 
@@ -1593,16 +1896,17 @@ const currentBasemap = { layer: basemaps.terrain };
 
 basemaps.terrain.addTo(map);
 currentBasemap.layer = basemaps.terrain;
+L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
-// ━━ Basemap switcher control (top-right) ━━
+// ━━ Basemap switcher control (top-left, below zoom) ━━
 const BasemapSwitcher = L.Control.extend({
-  options: { position: 'topright' },
+  options: { position: 'bottomleft' },
   onAdd: function() {
     const div = L.DomUtil.create('div', 'basemap-switcher');
     const btns = [
-      { key: 'terrain', icon: '🗺️', title: '户外图 (Esri 地形 · 默认)' },
-      { key: 'topo',    icon: '🥾', title: '地形图 (等高线)' },
-      { key: 'dark',    icon: '🌙', title: '暗色图 (OpenStreetMap)' }
+      { key: 'terrain', icon: '🗺️', title: t('basemap.terrain') },
+      { key: 'topo',    icon: '🥾', title: t('basemap.topo') },
+      { key: 'dark',    icon: '🌙', title: t('basemap.dark') }
     ];
     btns.forEach((b, i) => {
       const btn = L.DomUtil.create('button', 'basemap-btn' + (i === 0 ? ' active' : ''), div);
@@ -1632,7 +1936,7 @@ const BasemapSwitcher = L.Control.extend({
 });
 new BasemapSwitcher().addTo(map);
 
-L.control.scale({ metric: true, imperial: false, position: 'bottomleft', maxWidth: 120 }).addTo(map);
+L.control.scale({ metric: true, imperial: false, position: 'bottomright', maxWidth: 120 }).addTo(map);
 
 // Province layer group
 const provinceLayerGroup = L.layerGroup().addTo(map);
@@ -1687,6 +1991,167 @@ function highlightProvince(provinceId) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function setCard(id, html) { const el = document.getElementById(id); if (el) el.innerHTML = html; }
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  SUPABASE 后端（免卡）：Supabase Auth + Storage + DB
+//  密码只存在于 Supabase，前端仅持有登录后的 session(JWT)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  BACKEND API  (Cloudflare Worker + KV：免卡、免服务器、不休眠)
+//  密码只存在于 Worker 环境变量，前端仅持有登录后下发的 token
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const API = (function () {
+  const TOKEN_KEY = 'ght_token';
+  function metaVal(name) {
+    const m = document.querySelector('meta[name="' + name + '"]');
+    return (m && m.getAttribute('content') || '').trim();
+  }
+  // 后端地址：读 <meta name="ght-api">；为空 = 无后端（本地访客态）
+  function apiBase() { return metaVal('ght-api').replace(/\/+$/, ''); }
+  function hasBackend() { return !!apiBase(); }
+  function getToken() { try { return sessionStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; } }
+  function setToken(t) { try { sessionStorage.setItem(TOKEN_KEY, t || ''); } catch (e) {} }
+  function clearToken() { try { sessionStorage.removeItem(TOKEN_KEY); } catch (e) {} }
+  function authHeader() { const t = getToken(); return t ? { 'Authorization': 'Bearer ' + t } : {}; }
+  async function req(method, path, opts) {
+    opts = opts || {};
+    const headers = Object.assign({}, authHeader(), opts.headers || {});
+    const res = await fetch(apiBase() + path, { method, headers, body: opts.body });
+    let data = null;
+    try { data = await res.json(); } catch (e) { /* non-JSON */ }
+    return { ok: res.ok, status: res.status, data };
+  }
+  function noBackend() { return { ok: false, status: 0, data: null }; }
+  return {
+    getToken, setToken, clearToken, authHeader,
+    login: async (pwd) => {
+      if (!hasBackend()) return noBackend();
+      return req('POST', '/api/login', { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pwd }) });
+    },
+    getConfig: async () => {
+      if (!hasBackend()) return { ok: true, status: 200, data: {} };
+      const r = await req('GET', '/api/config');
+      if (r.status === 404) return { ok: true, status: 200, data: {} }; // 尚未配置
+      return r;
+    },
+    putConfig: async (obj) => {
+      if (!hasBackend()) return noBackend();
+      return req('PUT', '/api/config', { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(obj || {}) });
+    },
+    upload: async (fileList) => {
+      if (!hasBackend()) return noBackend();
+      try {
+        const files = [];
+        for (const f of Array.from(fileList)) {
+          const content = await f.text();           // File/Blob.text() → 原始 GPX 文本
+          files.push({ name: f.name, content });
+        }
+        return req('POST', '/api/upload', { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ files }) });
+      } catch (e) {
+        console.warn('[ght] 读取文件失败', e);
+        return noBackend();
+      }
+    },
+    listTracks: async () => {
+      if (!hasBackend()) return noBackend();
+      return req('GET', '/api/tracks');             // 需鉴权，200 即 token 有效（续期校验）
+    }
+  };
+})();
+
+// 应用服务端配置到 APP（语言 / 出发日期 / 默认底图 / 基础信息）
+async function applyServerConfig() {
+  try {
+    const r = await API.getConfig();
+    if (!r.ok || !r.data) return;
+    const c = r.data;
+    if (c.language && c.language !== currentLang) {
+      currentLang = c.language;
+      applyLang();
+    }
+    if (c.itineraryStartDate != null) APP.itineraryStartDate = c.itineraryStartDate;
+    if (c.expeditionName) APP.expeditionName = c.expeditionName;
+    if (c.startPlaceName) APP.startPlaceName = c.startPlaceName;
+    if (c.totalDistance) APP.totalDistance = c.totalDistance;
+  } catch (e) { /* 离线 / 网络错误，忽略，沿用本地配置 */ }
+}
+
+// 恢复登录态：若 sessionStorage 仍有有效 token，则静默续期（无需重新输密码）
+async function restoreSession() {
+  if (!API.getToken()) return;
+  try {
+    const r = await API.listTracks();   // 该接口需鉴权，200 即 token 有效
+    if (r.ok) {
+      APP.isOwner = true;
+      await applyServerConfig();
+    } else {
+      API.clearToken();                 // token 失效，清掉
+    }
+  } catch (e) {
+    // 后端未启动 / 网络错误：忽略，沿用本地配置（访客态）
+  }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  DATA MANAGEMENT MODAL (password-gated upload)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function openDataModal() {
+  const m = document.getElementById('dataModal');
+  if (!m) return;
+  m.classList.add('open');
+  m.setAttribute('aria-hidden', 'false');
+  const gate = document.getElementById('pwdGate');
+  const area = document.getElementById('uploadArea');
+  const err = document.getElementById('dmPwdErr');
+  if (err) err.hidden = true;
+  if (APP.isOwner) {
+    if (gate) gate.hidden = true;
+    if (area) { area.hidden = false; area.innerHTML = uploadHTML(); }
+  } else {
+    if (gate) gate.hidden = false;
+    if (area) area.hidden = true;
+    const pi = document.getElementById('pwdInput'); if (pi) pi.value = '';
+  }
+  setTimeout(function () { const pi = document.getElementById('pwdInput'); if (pi) pi.focus(); }, 60);
+}
+function closeDataModal() {
+  const m = document.getElementById('dataModal');
+  if (!m) return;
+  m.classList.remove('open');
+  m.setAttribute('aria-hidden', 'true');
+}
+async function unlockData() {
+  const pi = document.getElementById('pwdInput');
+  if (!pi) return;
+  const pwd = pi.value;
+  if (!pwd) return;
+  const err = document.getElementById('dmPwdErr');
+  if (err) err.hidden = true;
+  try {
+    const r = await API.login(pwd);
+    if (r.ok && r.data && r.data.token) {
+      API.setToken(r.data.token);
+      APP.isOwner = true;
+      const gate = document.getElementById('pwdGate');
+      const area = document.getElementById('uploadArea');
+      if (gate) gate.hidden = true;
+      if (area) { area.hidden = false; area.innerHTML = uploadHTML(); }
+      await applyServerConfig();   // 同步出发日期等配置到表单
+      if (typeof applyLang === 'function') applyLang();
+      if (typeof showView === 'function') showView(APP.activeView || 'dashboard');
+    } else {
+      if (err) { err.hidden = false; err.textContent = t('dm.pwdErr'); }
+    }
+  } catch (e) {
+    // 网络错误（后端未启动等）
+    if (err) { err.hidden = false; err.textContent = t('dm.connErr'); }
+  }
+}
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDataModal(); });
+(function () {
+  const m = document.getElementById('dataModal');
+  if (m) m.addEventListener('click', function (e) { if (e.target === m) closeDataModal(); });
+})();
+
+
 function fitRoute() {
   if (APP.presetTrack && APP.presetTrack.trackPoints && typeof map !== 'undefined' && APP.presetTrack.trackPoints.length) {
     try {
@@ -1703,72 +2168,31 @@ const VIEW_TITLES = {
   about: ['ℹ️ 关于本程', 'ABOUT']
 };
 
-const panelTitles = {
-  progress: '📊 进度仪表盘',
-  sections: '🏔️ 路段详情',
-  itinerary: '📅 行程安排',
-  log: '📝 日志',
-  donate: '❤️ 捐助'
-};
-
-function openPanel(tab) {
-  if (tab === 'livemap') { closePanel(); return; }
-  APP.activeTab = tab;
-  const titleEl = document.getElementById('panelTitle');
-  if (titleEl) titleEl.textContent = panelTitles[tab] || '';
-  document.getElementById('panelRight').classList.add('open');
-
-  document.querySelectorAll('.nav-left .nav-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.panel === tab);
-  });
-
-  const tabsEl = document.getElementById('panelTabs');
-  const showTabs = (tab === 'itinerary' || tab === 'log');
-  if (tabsEl) {
-    tabsEl.style.display = showTabs ? 'flex' : 'none';
-    tabsEl.querySelectorAll('.tab-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.tab === tab);
-    });
-  }
-
-  const content = document.getElementById('sidebarContent');
-  if (!content) return;
-  switch (tab) {
-    case 'progress': content.innerHTML = renderProgress(); break;
-    case 'sections': content.innerHTML = renderSections(); break;
-    case 'itinerary': content.innerHTML = renderItinerary(); break;
-    case 'log': content.innerHTML = renderLog(); break;
-    case 'donate': content.innerHTML = renderDonate(); break;
-  }
-
-  renderInfoBar();
-  bindSectionClickHandlers();
+function showView(view) {
+  APP.activeView = view;
+  document.querySelectorAll('.tn-tab').forEach(t => t.classList.toggle('active', t.dataset.view === view));
+  if (view === 'dashboard') { renderDashboard(); fitRoute(); return; }
+  if (view === 'map') { fitRoute(); return; }
+  const card = document.getElementById('cardPasses');
+  if (!card) return;
+  let html = '';
+  if (view === 'sections') html = renderSections();
+  else if (view === 'itinerary') html = renderItinerary();
+  else if (view === 'journal') html = renderLog();
+  else if (view === 'about') html = aboutHTML();
+  const title = VIEW_TITLES[view] || ['视图', 'VIEW'];
+  card.innerHTML = '<div class="card-h"><span>' + title[0] + '</span><span class="en">' + title[1] + '</span></div><div class="card-b">' +
+    (html || '<div style="color:var(--text-dim);font-size:11px;padding:8px;">' + t('view.empty') + '</div>') + '</div>';
 }
 
-function closePanel() {
-  const panel = document.getElementById('panelRight');
-  if (panel) panel.classList.remove('open');
-  document.querySelectorAll('.nav-left .nav-btn').forEach(b => b.classList.remove('active'));
-}
-
-// Nav button clicks
-document.querySelectorAll('.nav-left .nav-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const tab = btn.dataset.panel;
-    if (tab === 'livemap') {
-      closePanel();
-      document.querySelectorAll('.nav-left .nav-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      return;
-    }
-    const panel = document.getElementById('panelRight');
-    if (panel.classList.contains('open') && APP.activeTab === tab) {
-      closePanel();
-    } else {
-      openPanel(tab);
-    }
-  });
+// Top nav clicks
+document.querySelectorAll('.tn-tab').forEach(btn => {
+  btn.addEventListener('click', () => showView(btn.dataset.view));
 });
+
+// 向后兼容：旧处理函数中的 openPanel/closePanel 调用统一映射到 Dashboard 重渲染
+function openPanel(tab) { if (tab) APP.activeTab = tab; renderDashboard(); }
+function closePanel() { /* 新版无侧栏抽屉，no-op */ }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  ELEVATION PROFILE
@@ -1903,7 +2327,7 @@ function updateCurrentPosition() {
     ? ' · ⛰️ ' + Math.round(APP.currentPosition.elev).toLocaleString() + 'm' : '';
 
   document.getElementById('currentPosBadge').innerHTML =
-    '📍 当前位置: <span class="prov-name">' + (sectionNameEn || sectionName || '—') + '</span><span class="prov-elev">' + elevStr + '</span>';
+    t('pos.prefix') + ' <span class="prov-name">' + (sectionNameEn || sectionName || '—') + '</span><span class="prov-elev">' + elevStr + '</span>';
   // NOTE: 不在此处写 APP.progressPct —— 总进度只由 updateProgress()(已记录距离/总距离) 驱动，
   // 否则未上传轨迹时会被误算成「当前段序号/总段数」(1/10=10%)。
 }
@@ -1922,13 +2346,234 @@ function updateProgressDOM() {
     const inProgressCount = APP.sectionRanges.filter(r => r.status === 'in-progress').length;
     detail.textContent = completedCount + '✅ ' + (inProgressCount > 0 ? '+' + inProgressCount + '🔵 ' : '') + '/ ' + APP.sectionRanges.length + ' 段';
   }
-  renderInfoBar();
+  renderDashboard();
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  RENDER FUNCTIONS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 地图下方信息栏：进度% + Day 计数 + 整体滑移 + 关键指标 + 最近记录 + 下一阶段
+// ════════════════════════════════════════════════════
+//  NO TWO DASHBOARD — 三栏模块渲染
+// ════════════════════════════════════════════════════
+function getProvZH(pid) {
+  const m = { koshi: 'Koshi 省', bagmati: '巴格马蒂省', gandaki: '甘达基省', lumbini: '蓝毗尼省', karnali: '格尔纳利省', sudurpashchim: '远西省' };
+  return m[pid] || pid || '—';
+}
+
+function currentSectionInfo() {
+  let name = '', nameEn = '';
+  if (APP.sectionRanges && APP.sectionRanges.length) {
+    const inProg = APP.sectionRanges.findIndex(r => r.status === 'in-progress');
+    if (inProg >= 0) { name = APP.sectionRanges[inProg].parkName || ''; nameEn = APP.sectionRanges[inProg].parkNameEn || ''; }
+    else { const c = APP.sectionRanges.filter(r => r.status === 'completed').length; const idx = Math.min(c, APP.sectionRanges.length - 1); name = APP.sectionRanges[idx].parkName || ''; nameEn = APP.sectionRanges[idx].parkNameEn || ''; }
+  } else if (ghtSections[APP.currentSection - 1]) { name = ghtSections[APP.currentSection - 1].name; nameEn = ghtSections[APP.currentSection - 1].nameEn; }
+  return { name, nameEn };
+}
+
+function currentSectionIdx() {
+  let idx = APP.currentSection - 1;
+  if (APP.sectionRanges && APP.sectionRanges.length) {
+    const inProg = APP.sectionRanges.findIndex(r => r.status === 'in-progress');
+    idx = inProg >= 0 ? inProg : Math.min(APP.sectionRanges.filter(r => r.status === 'completed').length, APP.sectionRanges.length - 1);
+  }
+  return idx;
+}
+
+function getNextPass() {
+  if (!APP.presetTrack || !APP.presetTrack.waypoints || !APP.presetTrack.waypoints.length) return null;
+  const pts = APP.presetTrack.trackPoints; if (!pts || !pts.length) return null;
+  let curIdx = -1;
+  if (APP.currentPosition) { let best = Infinity; for (let i = 0; i < pts.length; i++) { const d = haversine(APP.currentPosition.lat, APP.currentPosition.lon, pts[i].lat, pts[i].lon); if (d < best) { best = d; curIdx = i; } } }
+  const passes = APP.presetTrack.waypoints.filter(w => w._type === 'pass' || w._type === 'peak');
+  let bestPass = null, bestIdx = Infinity;
+  passes.forEach(w => {
+    let bi = -1, bd = Infinity;
+    for (let i = 0; i < pts.length; i++) { const d = haversine(pts[i].lat, pts[i].lon, w.lat, w.lon); if (d < bd) { bd = d; bi = i; } }
+    if (bi > curIdx && bi < bestIdx) { bestIdx = bi; bestPass = w; }
+  });
+  return bestPass;
+}
+
+function fmtNum(n, d) { return (n == null || isNaN(n)) ? '—' : Number(n).toLocaleString(undefined, { maximumFractionDigits: d == null ? 0 : d }); }
+
+// ── A. 征途总进度 ──
+function progressCardHTML() {
+  const pct = APP.progressPercentage || APP.progressPct || 0;
+  const totalKm = APP.totalDistance || 0;
+  const doneKm = (APP.completedDistance / 1000) || 0;
+  const days = APP.itinerary || [];
+  const totalDays = days.length;
+  const doneDays = days.filter(d => d.actual).length;
+  return '<div class="card-h"><span>征途总进度</span><span class="en">EXPEDITION PROGRESS</span></div>' +
+    '<div class="card-b">' +
+    '<div class="pc-pct">' + pct.toFixed(1) + '<small>%</small></div>' +
+    '<div class="pc-day">Day <b>' + doneDays + '</b> / ' + totalDays + '</div>' +
+    '<div class="pc-bar"><i style="width:' + Math.min(100, pct) + '%"></i></div>' +
+    '<div class="pc-stats">' +
+    '<div class="pc-stat"><div class="v">' + fmtNum(doneKm, 0) + '</div><div class="l">' + t('prog.done') + '</div></div>' +
+    '<div class="pc-stat"><div class="v">' + fmtNum(totalKm - doneKm, 0) + '</div><div class="l">' + t('prog.left') + '</div></div>' +
+    '<div class="pc-stat"><div class="v">' + fmtNum(totalKm, 0) + '</div><div class="l">' + t('prog.total') + '</div></div>' +
+    '</div></div>';
+}
+
+// ── B. 当前状态 ──
+function currentStatusHTML() {
+  const sec = currentSectionInfo();
+  const prov = getProv(ghtSections[currentSectionIdx()] ? ghtSections[currentSectionIdx()].province : '');
+  const elev = (APP.currentPosition && APP.currentPosition.elev != null) ? Math.round(APP.currentPosition.elev)
+    : (APP.maxElev || (APP.presetTrack && APP.presetTrack.stats ? APP.presetTrack.stats.maxElev : null));
+  const np = getNextPass();
+  const nextDay = (APP.itinerary || []).find(d => !d.actual);
+  let eta = '—';
+  if (nextDay) {
+    if (nextDay.date) eta = nextDay.date;
+    else if (APP.itineraryStartDate) {
+      const base = new Date(APP.itineraryStartDate + 'T00:00:00');
+      base.setDate(base.getDate() + (nextDay.day - 1));
+      eta = base.toISOString().slice(0, 10);
+    }
+  }
+  const row = (ico, k, v, sub) => '<div class="st-row"><span class="st-ico">' + ico + '</span><span class="st-k">' + k + '</span><span class="st-v">' + v + (sub ? '<small>' + sub + '</small>' : '') + '</span></div>';
+  return '<div class="card-h"><span>当前状态</span><span class="en">CURRENT STATUS</span></div>' +
+    '<div class="card-b">' +
+    row('🏕️', t('st.camp'), sec.nameEn || sec.name || '—', sec.name || '') +
+    row('🗺️', t('st.area'), prov, '') +
+    row('🔺', t('st.elev'), elev != null ? fmtNum(elev) + 'm' : '—', '') +
+    row('⛰️', t('st.pass'), np ? (np.name || np.desc || '未命名') : '—', np && np.elev != null ? fmtNum(np.elev) + 'm' : '') +
+    row('⏱️', t('st.eta'), eta, '') +
+    '</div>';
+}
+
+// ── C. 今日摘要 ──
+function todaySummaryHTML() {
+  const last = [...(APP.actualTracks || [])].reverse().find(t => t.stats);
+  const s = last ? last.stats : null;
+  const cell = (v, l) => '<div class="tg-cell"><div class="v">' + (v == null ? '—' : v) + '</div><div class="l">' + l + '</div></div>';
+  return '<div class="card-h"><span>今日摘要</span><span class="en">TODAY\'S SUMMARY</span></div>' +
+    '<div class="card-b"><div class="tg">' +
+    cell(s ? fmtNum(s.distance, 1) + 'km' : '—', t('today.dist')) +
+    cell(s ? '+' + fmtNum(s.elevGain) + 'm' : '—', t('today.gain')) +
+    cell(s ? fmtNum(s.elevLoss) + 'm' : '—', t('today.loss')) +
+    cell(s && s.durationStr ? s.durationStr : '—', t('today.move')) +
+    cell(s && s.avgSpeed ? s.avgSpeed + '' : '—', t('today.speed')) +
+    cell(s ? fmtNum(s.maxElev) + 'm' : '—', t('today.max')) +
+    '</div>' +
+    (s && s.date ? '<div style="font-size:10px;color:var(--text-dim);margin-top:8px;text-align:center;">' + t('today.dateLbl') + s.date + (last.dayNum ? ' · Day ' + last.dayNum : '') + '</div>' : '<div style="font-size:10px;color:var(--text-dim);margin-top:8px;text-align:center;">' + t('today.nodata') + '</div>') +
+    '</div>';
+}
+
+// ── D. 远征概况 ──
+function expedInfoHTML() {
+  const totalKm = APP.totalDistance || 0;
+  const doneKm = (APP.completedDistance / 1000) || 0;
+  const gain = getCumulativeElevGain() || (APP.presetTrack && APP.presetTrack.stats ? APP.presetTrack.stats.elevGain : 0);
+  const maxElev = (APP.maxElev) || (APP.presetTrack && APP.presetTrack.stats ? APP.presetTrack.stats.maxElev : null);
+  const wps = (APP.presetTrack && APP.presetTrack.waypoints) || [];
+  const nPasses = wps.filter(w => w._type === 'pass' || w._type === 'peak').length;
+  const nCamps = wps.filter(w => w._type === 'camp').length;
+  let endDate = '—';
+  if (APP.itineraryStartDate && APP.itinerary.length) {
+    const base = new Date(APP.itineraryStartDate + 'T00:00:00');
+    base.setDate(base.getDate() + APP.itinerary.length - 1);
+    endDate = base.toISOString().slice(0, 10);
+  }
+  const meta = (k, v) => '<div class="k">' + k + '</div><div class="v">' + v + '</div>';
+  return '<div class="card-h"><span>远征概况</span><span class="en">EXPEDITION INFO</span></div>' +
+    '<div class="card-b"><div class="ei-cover"></div>' +
+    '<div class="ei-meta">' +
+    meta(t('ei.from'), APP.startPlaceName || '—') +
+    meta(t('ei.total'), fmtNum(totalKm) + ' km') +
+    meta(t('ei.recorded'), fmtNum(doneKm, 1) + ' km') +
+    meta(t('ei.gain'), gain ? '+' + fmtNum(gain) + 'm' : '—') +
+    meta(t('ei.max'), maxElev ? fmtNum(maxElev) + 'm' : '—') +
+    meta(t('ei.passes'), nPasses + ' / ' + nCamps) +
+    meta(t('ei.end'), endDate) +
+    '</div></div>';
+}
+
+// ── F. 即将翻越垭口 ──
+function passesHTML() {
+  const wps = (APP.presetTrack && APP.presetTrack.waypoints) || [];
+  const passes = wps.filter(w => w._type === 'pass' || w._type === 'peak');
+  let rows = '';
+  if (!passes.length) {
+    rows = '<div style="font-size:11px;color:var(--text-dim);padding:8px 0;">' + t('pass.none') + '</div>';
+  } else {
+    const curIdx = currentSectionIdx();
+    passes.slice(0, 6).forEach((w, i) => {
+      const far = i >= 3;
+      rows += '<div class="pass-row"><span class="pass-dot" style="background:var(--accent)"></span>' +
+        '<span class="pass-name">' + (w.name || w.desc || '未命名') + '</span>' +
+        '<span class="pass-elev">' + (w.elev != null ? fmtNum(w.elev) + 'm' : '') + '</span>' +
+        '<span class="pass-days' + (far ? ' far' : '') + '">' + (i === 0 ? t('pass.soon') : '+' + i + t('pass.seg')) + '</span></div>';
+    });
+  }
+  return '<div class="card-h"><span>即将翻越</span><span class="en">UPCOMING PASSES</span></div>' +
+    '<div class="card-b">' + rows + '<a class="more-link" href="sections.html" target="_blank" rel="noopener">' + t('pass.all') + '</a></div>';
+}
+
+// ── G. 各省进度 ──
+function regionHTML() {
+  const provMap = {};
+  ghtSections.forEach((sec, i) => {
+    const pid = sec.province;
+    if (!provMap[pid]) provMap[pid] = { name: getProv(pid), color: '#4DABF7', total: 0, sum: 0 };
+    const r = (APP.sectionRanges && APP.sectionRanges[i]) ? APP.sectionRanges[i] : null;
+    const cov = r ? (r.status === 'completed' ? 1 : (r.coverage || 0)) : 0;
+    provMap[pid].total += 1;
+    provMap[pid].sum += cov;
+    if (sec.color) provMap[pid].color = sec.color;
+  });
+  const overall = Math.min(100, APP.progressPercentage || APP.progressPct || 0);
+  let list = '';
+  Object.keys(provMap).forEach(pid => {
+    const p = provMap[pid];
+    const pc = Math.round((p.sum / p.total) * 100);
+    list += '<div class="rg-item"><span class="dot" style="background:' + p.color + '"></span>' +
+      '<span class="nm">' + p.name + '</span><span class="pc">' + pc + '%</span></div>';
+  });
+  return '<div class="card-h"><span>各省进度</span><span class="en">REGION PROGRESS</span></div>' +
+    '<div class="card-b"><div class="rg-wrap">' +
+    '<div class="rg-ring" style="background:conic-gradient(var(--accent) ' + overall + '%, rgba(255,255,255,0.08) 0);"><span>' + overall.toFixed(0) + '%</span><small>' + t('region.overall') + '</small></div>' +
+    '<div class="rg-list">' + list + '</div></div></div>';
+}
+
+// ── H. 远征相册 ──
+function galleryHTML() {
+  const emojis = ['🏔️', '⛺', '🌄', '🥾', '❄️', '🌿', '🌌', '🔥'];
+  let cells = '';
+  for (let i = 0; i < 8; i++) cells += '<div class="gal-cell">' + emojis[i] + '</div>';
+  return '<div class="card-h"><span>远征相册</span><span class="en">GALLERY</span></div>' +
+    '<div class="card-b"><div class="gal-grid">' + cells + '</div>' +
+    '<span class="more-link" onclick="showView(\'journal\')">' + t('gal.all') + '</span></div>';
+}
+
+// ── I. 上传 / 管理 ──
+function uploadHTML() {
+  return '<div class="upload-zone">' +
+    '<input type="file" id="gpxUpload" accept=".gpx,.kml,.geojson" multiple onchange="handleGPXUpload(event)">' +
+    '<button class="btn primary" style="width:100%;" onclick="document.getElementById(\'gpxUpload\').click()">' + t('up.btn') + '</button>' +
+    '<div class="upload-hint">' + t('up.hint') + '</div>' +
+    '<div class="date-row">' + t('up.date') + '<input type="date" value="' + (APP.itineraryStartDate || '') + '" onchange="setItineraryStartDate(this.value)"></div>' +
+    (APP.isOwner ? '<div style="margin-top:10px;text-align:center;"><button class="btn-reset visible" id="btnReset" onclick="clearAllData()" style="font-size:11px;">' + t('up.reset') + '</button></div>' : '') +
+    '</div>';
+}
+
+function aboutHTML() {
+  return '<div style="font-size:12px;line-height:1.7;color:var(--text);">' + t('about.text') + '</div>';
+}
+
+function renderDashboard() {
+  setCard('cardProgress', progressCardHTML());
+  setCard('cardStatus', currentStatusHTML());
+  setCard('cardToday', todaySummaryHTML());
+  setCard('cardInfo', expedInfoHTML());
+  setCard('cardPasses', passesHTML());
+  setCard('cardRegion', regionHTML());
+  setCard('cardGallery', galleryHTML());
+  if (typeof bindSectionClickHandlers === 'function') { try { bindSectionClickHandlers(); } catch (e) {} }
+}
 
 function renderInfoBar() {
   const el = document.getElementById('infoBar');
@@ -2501,6 +3146,10 @@ function saveItinerary() {
 function setItineraryStartDate(v) {
   APP.itineraryStartDate = v || null;
   saveItinerary();
+  // 主人态：同步出发日期到服务端配置
+  if (APP.isOwner) {
+    API.putConfig({ itineraryStartDate: APP.itineraryStartDate }).catch(() => {});
+  }
   // 重渲染当前面板以刷新日期显示（renderItinerary 会重跑 matchItineraryToActuals）
   openPanel(APP.activeTab || 'progress');
 }
@@ -3642,9 +4291,20 @@ function hideLoader() {
   if (APP.loaderTimeout) { clearTimeout(APP.loaderTimeout); APP.loaderTimeout = null; }
 }
 
+// 把原始 GPX 文件备份到服务器（仅主人态、且持有有效 token 时）
+function uploadRawFiles(files) {
+  if (!APP.isOwner || !API.getToken()) return;
+  API.upload(files).catch(e => {
+    console.warn('[ght] 服务器轨迹备份失败（不影响本地使用）', e);
+  });
+}
+
 function handleGPXUpload(event) {
   const files = Array.from(event.target.files);
   if (files.length === 0) return;
+
+  // 主人态：把原始 GPX 备份到服务器（不影响本地解析流程，失败静默）
+  uploadRawFiles(files);
 
   showLoader();
 
@@ -3995,8 +4655,7 @@ function addLogEntry() {
 //  OWNER MODE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function updateOwnerUI() {
-  // 已取消密码：始终为主人模式，重置按钮常驻可见
-  document.getElementById('btnReset').classList.add('visible');
+  // 主人模式由密码解锁控制（APP.isOwner），不再默认开启；重置/编辑按钮的可见性由各自渲染逻辑按 isOwner 决定
 }
 
 function clearAllData() {
@@ -4124,9 +4783,35 @@ if (APP.presetTrack) {
   if (eb) eb.textContent = '▼';
 }
 
-openPanel('progress');
+// 先用本地默认配置同步渲染首页
+renderDashboard();
 renderAllTracks();
 renderLegend();
+
+// 后台静默恢复登录态并同步服务端配置；语言/日期若有变化则局部重渲染
+restoreSession().then(() => {
+  renderDashboard();
+}).catch(() => {});
 </script>
+
+  <!-- ── DATA MANAGEMENT MODAL ── -->
+  <div class="modal-overlay" id="dataModal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="数据管理">
+      <div class="modal-head">
+        <span id="dmTitle">数据管理</span>
+        <button class="modal-close" onclick="closeDataModal()" aria-label="关闭">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="pwd-gate" id="pwdGate">
+          <p class="pwd-hint" id="dmPwdHint">请输入主人密码以管理轨迹数据</p>
+          <input type="password" id="pwdInput" class="form-input" placeholder="密码" autocomplete="off" onkeydown="if(event.key==='Enter')unlockData()">
+          <button class="btn primary" id="dmUnlock" onclick="unlockData()">解锁</button>
+          <div class="pwd-err" id="dmPwdErr" hidden>密码错误</div>
+        </div>
+        <div class="upload-area" id="uploadArea" hidden></div>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>

@@ -9,7 +9,7 @@
 ## 架构一览
 
 ```
-浏览器 (Cloudflare Pages 托管 index-notwo.html)
+浏览器 (Cloudflare Pages 托管 index.html)
    │  fetch 带 Bearer token
    ▼
 Cloudflare Worker  (https://ght-api.<你的子域>.workers.dev)
@@ -39,12 +39,12 @@ git push -u origin main
 2. 左侧 **Workers & Pages → Create → Pages → Connect to Git** → 选 `ght-trek` 仓库。
 3. 设置：
    - Framework preset：**None**
-   - Build command：`cp index-notwo.html index.html`
+   - Build command：**留空**（不填，仓库里已是单个 `index.html`，无需复制）
    - Build output directory：`/`（根目录）
 4. 点 **Save and Deploy**。完成后会得到一个 `https://ght-trek.<你的子域>.pages.dev` 地址。
 
-> 说明：`cp` 这一步把 `index-notwo.html` 复制为部署用的 `index.html`，
-> 这样访客打开根地址就是中文主页面，无需改文件名、也不影响你本地那份 Hybrid 的 `index.html`。
+> 说明：项目里现在只有一个 `index.html`（前台主页面），直接被 Pages 托管，无需构建步骤。
+> 如果之前配置过 `cp index-notwo.html index.html`，请务必**清空 Build command**，否则会因找不到源文件而构建失败。
 
 ### ③ 建后台 Cloudflare Worker
 1. 左侧 **Workers & Pages → Create → Worker** → 取名 `ght-api` → 点 **Deploy**（先随便部署一次占位）。
@@ -57,7 +57,7 @@ git push -u origin main
 4. 记下 Worker 地址：`https://ght-api.<你的子域>.workers.dev`
 
 ### ④ 回填后端地址 + 重新部署
-1. 打开 `index-notwo.html`，找到这一行：
+1. 打开 `index.html`，找到这一行：
    ```html
    <meta name="ght-api" content="">
    ```
