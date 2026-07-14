@@ -5,3 +5,6 @@ node_modules/
 worker/.wrangler/
 .dev.vars
 worker/.dev.vars
+
+# Region-map SVGs kept local-only (not pushed to GitHub)
+assets/region-maps/*.svg
