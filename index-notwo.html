@@ -1221,10 +1221,10 @@
     <nav class="topnav-tabs" aria-label="主导航">
       <button class="tn-tab active" data-view="dashboard">Dashboard</button>
       <button class="tn-tab" data-view="map">Map</button>
-      <button class="tn-tab" data-view="sections">路段</button>
       <button class="tn-tab" data-view="journal">日志</button>
       <button class="tn-tab" data-view="about">关于</button>
       <a class="tn-ext" href="itinerary.html" target="_blank" rel="noopener" title="计划 vs 实际 · 行程对比 →">📅 行程对比 ↗</a>
+      <a class="tn-ext" href="sections.html" target="_blank" rel="noopener" title="路段进度 · 按 已完成/进行中/未完成 分组 →">🏔️ 路段 ↗</a>
     </nav>
     <div class="topnav-right">
       <button class="lang-btn">中文 ▾</button>
@@ -2510,7 +2510,7 @@ function passesHTML() {
     });
   }
   return '<div class="card-h"><span>即将翻越</span><span class="en">UPCOMING PASSES</span></div>' +
-    '<div class="card-b">' + rows + '<span class="more-link" onclick="showView(\'sections\')">' + t('pass.all') + '</span></div>';
+    '<div class="card-b">' + rows + '<a class="more-link" href="sections.html" target="_blank" rel="noopener">' + t('pass.all') + '</a></div>';
 }
 
 // ── G. 各省进度 ──
