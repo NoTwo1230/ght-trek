@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GHT 行程安排 · 计划 vs 实际</title>
+<title>GHT 行程日历 · 计划 vs 实际</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap">
 <style>
@@ -97,7 +97,7 @@
     color: #FFA94D; border-radius: 10px; padding: 9px 14px; font-size: 12px; line-height: 1.5;
   }
 
-  /* ── 工具栏（筛选 / 排序）── */
+  /* ── 工具栏（位置基准 / 筛选）── */
   .toolbar {
     position: sticky; top: 59px; z-index: 90;
     display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
@@ -122,65 +122,118 @@
   .spacer { flex: 1; }
   .count-note { font-size: 11px; color: var(--text-dim); white-space: nowrap; }
 
-  /* ── 列表 ── */
-  .list { padding: 16px 20px 60px; display: flex; flex-direction: column; gap: 14px; max-width: 1100px; margin: 0 auto; width: 100%; }
-
-  .day-card {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-left: 4px solid var(--accent);
-    border-radius: 14px;
-    padding: 16px 18px;
-    transition: border-color .2s, transform .15s, box-shadow .2s;
+  /* ── 日历 ── */
+  .cal-wrap { padding: 14px 20px 60px; max-width: 1180px; margin: 0 auto; width: 100%; }
+  .cal-head { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
+  .cal-nav { display: flex; align-items: center; gap: 8px; }
+  .cal-nav button {
+    width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--border);
+    background: var(--panel); color: var(--text); font-size: 16px; cursor: pointer; transition: all .15s;
   }
-  .day-card:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,0,0,0.35); border-color: var(--border-light); }
-  .day-card.is-rest { border-left-color: var(--green); }
-  .day-card.is-delay { border-left-color: var(--yellow); }
-  .day-card.is-today { box-shadow: 0 0 0 1px rgba(88,166,255,0.4); }
+  .cal-nav button:hover { border-color: var(--accent); color: var(--accent); }
+  .cal-title { font-size: 18px; font-weight: 700; min-width: 140px; text-align: center; letter-spacing: .5px; }
 
-  .day-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 10px 16px; margin: 0 0 14px;
+    padding: 10px 14px; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; font-size: 11.5px; color: var(--text-dim);
+  }
+  .legend .item { display: flex; align-items: center; gap: 6px; }
+  .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+  .legend .bar { width: 16px; height: 4px; border-radius: 2px; }
+
+  .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+  .wd { font-size: 11px; color: var(--text-dim); text-align: center; padding: 4px 0; font-weight: 500; }
+  .cell {
+    position: relative; min-height: 104px; background: var(--panel);
+    border: 1px solid var(--border); border-radius: 11px; padding: 7px;
+    display: flex; flex-direction: column; gap: 5px; transition: border-color .15s;
+  }
+  .cell:hover { border-color: var(--border-light); }
+  .cell.out { opacity: .32; background: transparent; }
+  .cell.today { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(88,166,255,0.45); }
+  .cell .dnum { font-size: 11px; color: var(--text-dim); font-weight: 600; }
+  .cell.today .dnum { color: var(--accent); }
+
+  /* 日历中的「天」块（按钮，可点/可键盘） */
+  .chip {
+    position: relative; display: flex; flex-direction: column; gap: 2px;
+    width: 100%; text-align: left; font: inherit; color: var(--text);
+    border: 1px solid var(--border-light); border-radius: 9px; padding: 6px 8px 7px 11px;
+    background: var(--panel-alt); cursor: pointer; overflow: hidden;
+    transition: transform .12s, border-color .15s, box-shadow .15s;
+  }
+  .chip:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,.35); border-color: var(--accent); }
+  .chip .stripe { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; }
+  .chip .crow { display: flex; align-items: center; gap: 6px; }
+  .chip .dlab { font-size: 11px; font-weight: 700; }
+  .chip .sdot { width: 8px; height: 8px; border-radius: 50%; margin-left: auto; }
+  .chip .route { font-size: 10.5px; color: var(--text-dim); line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chip .route .ar { color: var(--accent); margin: 0 3px; }
+  .chip .meta { display: flex; gap: 8px; font-size: 9.5px; color: var(--text-dimmer); }
+  .chip .badge { margin-left: auto; background: var(--accent-bg); color: var(--accent); font-size: 9px; font-weight: 700; border-radius: 10px; padding: 1px 6px; }
+  .chip .ghost { font-size: 9px; color: var(--text-dimmer); }
+  .chip.is-rest { background: rgba(63,185,80,.08); border-color: rgba(63,185,80,.25); }
+  .chip.is-delay { background: rgba(210,153,34,.08); border-color: rgba(210,153,34,.25); }
+
+  /* ── 详情抽屉 ── */
+  .scrim {
+    position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 200;
+    opacity: 0; pointer-events: none; transition: opacity .25s;
+  }
+  .scrim.open { opacity: 1; pointer-events: auto; }
+  .drawer {
+    position: fixed; top: 0; right: 0; height: 100%; width: 460px; max-width: 92vw;
+    background: var(--panel-bg); border-left: 1px solid var(--border-light); z-index: 210;
+    transform: translateX(100%); transition: transform .3s cubic-bezier(.16,1,.3,1);
+    display: flex; flex-direction: column; box-shadow: -20px 0 60px rgba(0,0,0,.5);
+  }
+  .drawer.open { transform: translateX(0); }
+  .drawer .dhead { padding: 16px 18px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .drawer .dhead .num { font-size: 15px; font-weight: 700; }
+  .drawer .dclose {
+    margin-left: auto; width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--panel); color: var(--text-dim); cursor: pointer; font-size: 16px;
+  }
+  .drawer .dclose:hover { color: var(--text); border-color: var(--accent); }
+  .drawer .dbody { padding: 16px 18px 40px; overflow-y: auto; }
+  .dv-sep { border: none; border-top: 1px dashed var(--border); margin: 16px 0; }
+
+  /* 抽屉内单天详情 */
+  .dd-h { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+  .dd-sub { font-size: 12px; color: var(--text-dim); }
   .day-badge {
     display: inline-flex; align-items: center; gap: 8px;
     background: var(--panel-alt); border: 1px solid var(--border-light);
-    border-radius: 10px; padding: 6px 12px; font-weight: 700; font-size: 14px;
+    border-radius: 10px; padding: 5px 11px; font-weight: 700; font-size: 13px;
   }
   .day-badge .dot { width: 10px; height: 10px; border-radius: 50%; }
   .day-badge .num { color: var(--text); }
-  .sec-name { font-size: 12px; color: var(--text-dim); }
-  .sec-name b { color: var(--text); font-weight: 500; }
+  .chip2 { font-size: 11px; padding: 3px 9px; border-radius: 20px; white-space: nowrap; border: 1px solid transparent; }
+  .chip2.ahead { background: rgba(63,185,80,.15); color: var(--green); border-color: rgba(63,185,80,.35); }
+  .chip2.behind { background: rgba(248,81,73,.15); color: var(--red); border-color: rgba(248,81,73,.35); }
+  .chip2.ontime { background: rgba(88,166,255,.12); color: var(--accent); border-color: rgba(88,166,255,.3); }
+  .chip2.rest { background: rgba(63,185,80,.12); color: var(--green); border-color: rgba(63,185,80,.3); }
+  .chip2.delay { background: rgba(210,153,34,.14); color: var(--yellow); border-color: rgba(210,153,34,.32); }
+  .chip2.wait { background: rgba(139,148,158,.12); color: var(--text-dim); border-color: rgba(139,148,158,.28); }
 
-  .chip {
-    font-size: 11px; padding: 3px 9px; border-radius: 20px; white-space: nowrap; border: 1px solid transparent;
-  }
-  .chip.ahead { background: rgba(63,185,80,0.15); color: var(--green); border-color: rgba(63,185,80,0.35); }
-  .chip.behind { background: rgba(248,81,73,0.15); color: var(--red); border-color: rgba(248,81,73,0.35); }
-  .chip.ontime { background: rgba(88,166,255,0.12); color: var(--accent); border-color: rgba(88,166,255,0.3); }
-  .chip.rest { background: rgba(63,185,80,0.12); color: var(--green); border-color: rgba(63,185,80,0.3); }
-  .chip.delay { background: rgba(210,153,34,0.14); color: var(--yellow); border-color: rgba(210,153,34,0.32); }
-  .chip.today { background: var(--accent-bg); color: var(--accent); border-color: rgba(88,166,255,0.3); }
-  .chip.wait { background: rgba(139,148,158,0.12); color: var(--text-dim); border-color: rgba(139,148,158,0.28); }
-
-  /* 计划 / 实际 双栏 */
-  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  .col {
-    border-radius: 11px; padding: 12px 14px;
-    border: 1px solid transparent;
-  }
-  .col.plan { background: rgba(88,166,255,0.05); border-color: rgba(88,166,255,0.14); }
-  .col.actual { background: rgba(63,185,80,0.05); border-color: rgba(63,185,80,0.14); }
+  /* 计划 / 实际 双栏（抽屉内） */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px; }
+  .col { border-radius: 11px; padding: 12px 14px; border: 1px solid transparent; }
+  .col.plan { background: rgba(88,166,255,.05); border-color: rgba(88,166,255,.14); }
+  .col.actual { background: rgba(63,185,80,.05); border-color: rgba(63,185,80,.14); }
   .col-title { font-size: 11px; font-weight: 700; letter-spacing: .4px; margin-bottom: 9px; display: flex; align-items: center; gap: 6px; }
   .col.plan .col-title { color: var(--accent); }
   .col.actual .col-title { color: var(--green); }
-
   .row { display: flex; align-items: baseline; gap: 8px; padding: 3px 0; font-size: 12.5px; }
-  .row .k { color: var(--text-dim); min-width: 56px; flex-shrink: 0; font-size: 11.5px; }
+  .row .k { color: var(--text-dim); min-width: 48px; flex-shrink: 0; font-size: 11.5px; }
   .row .v { color: var(--text); }
   .row .v.plan { color: var(--text-dim); }
   .route { font-size: 12.5px; color: var(--text); line-height: 1.5; }
   .route .arrow { color: var(--accent); margin: 0 5px; }
   .passes { margin-top: 6px; font-size: 11px; color: var(--text-dim); line-height: 1.6; }
   .passes .tag { color: var(--purple); }
-  .mismatch { margin-top: 8px; font-size: 11px; color: var(--red); background: rgba(248,81,73,0.1); border: 1px solid rgba(248,81,73,0.28); border-radius: 7px; padding: 6px 9px; line-height: 1.5; }
+  .mismatch { margin-top: 8px; font-size: 11px; color: var(--red); background: rgba(248,81,73,.1); border: 1px solid rgba(248,81,73,.28); border-radius: 7px; padding: 6px 9px; line-height: 1.5; }
   .pending { color: var(--text-dim); font-style: italic; font-size: 12px; }
 
   /* 对比条 */
@@ -201,20 +254,22 @@
   .bar-row .bv { font-size: 11px; color: var(--text); width: 64px; text-align: right; flex-shrink: 0; }
 
   /* 空状态 */
-  .empty { max-width: 520px; margin: 80px auto; text-align: center; color: var(--text-dim); padding: 0 20px; }
+  .empty { max-width: 520px; margin: 60px auto; text-align: center; color: var(--text-dim); padding: 0 20px; }
   .empty .ico { font-size: 54px; margin-bottom: 16px; }
   .empty h2 { color: var(--text); font-size: 17px; margin-bottom: 10px; font-weight: 600; }
   .empty p { font-size: 13px; line-height: 1.8; }
   .empty a { color: var(--accent); text-decoration: none; border-bottom: 1px solid rgba(88,166,255,0.4); }
   .empty code { background: var(--panel-alt); padding: 1px 6px; border-radius: 5px; font-size: 12px; color: var(--cyan); }
 
-  /* 进度环（列表底部总览）*/
   .foot-note { text-align: center; font-size: 11px; color: var(--text-dimmer); padding: 24px 20px 8px; line-height: 1.7; }
 
   @media (max-width: 640px) {
     .cols { grid-template-columns: 1fr; }
     .stat { min-width: calc(50% - 5px); }
     .topbar .title small { display: none; }
+    .cal-title { min-width: 110px; font-size: 16px; }
+    .cell { min-height: 88px; }
+    .legend { font-size: 10.5px; }
   }
 </style>
 </head>
@@ -222,8 +277,8 @@
 
 <header class="topbar">
   <div class="title">
-    <span class="glyph">📋</span>
-    <span>行程安排<small> · 计划 vs 实际徒步对比</small></span>
+    <span class="glyph">📅</span>
+    <span>行程日历<small> · 计划 vs 实际徒步对比</small></span>
   </div>
   <a class="back-link" href="index.html" title="返回地图追踪页">🗺️ 返回地图</a>
 </header>
@@ -232,10 +287,10 @@
 
 <div class="toolbar">
   <div class="group">
-    <span class="glabel">排序</span>
-    <div class="seg" id="segSort">
-      <button data-sort="asc" class="active">Day 升序</button>
-      <button data-sort="desc">Day 降序</button>
+    <span class="glabel">位置基准</span>
+    <div class="seg" id="segMode">
+      <button data-mode="plan" class="active">📋 计划日期</button>
+      <button data-mode="actual">📡 实际日期</button>
     </div>
   </div>
   <div class="group">
@@ -250,10 +305,44 @@
   <div class="count-note" id="countNote"></div>
 </div>
 
-<main id="list" class="list"></main>
+<div class="cal-wrap">
+  <div class="cal-head">
+    <div class="cal-nav">
+      <button id="prevM" title="上一月">‹</button>
+      <div class="cal-title" id="calTitle">—</div>
+      <button id="nextM" title="下一月">›</button>
+    </div>
+    <div class="spacer"></div>
+    <div class="count-note" id="spanNote"></div>
+  </div>
+
+  <div class="legend">
+    <span class="item"><span class="dot" style="background:var(--accent)"></span>按计划</span>
+    <span class="item"><span class="dot" style="background:var(--green)"></span>超前</span>
+    <span class="item"><span class="dot" style="background:var(--red)"></span>落后</span>
+    <span class="item"><span class="dot" style="background:var(--text-dimmer)"></span>等待 GPS</span>
+    <span class="item"><span class="dot" style="background:#2e9e54"></span>休息日</span>
+    <span class="item"><span class="dot" style="background:var(--yellow)"></span>天气延误</span>
+    <span class="item"><span class="bar" style="background:linear-gradient(90deg,#c0392b,#a0522d)"></span>左条色 = 所属 13 区域</span>
+  </div>
+
+  <div class="grid" id="grid"></div>
+</div>
 
 <div class="foot-note" id="footNote"></div>
 
+<!-- 详情抽屉 -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <div class="dhead">
+    <span class="day-badge" id="dBadge"></span>
+    <button class="dclose" id="dClose" title="关闭">✕</button>
+  </div>
+  <div class="dbody" id="dBody"></div>
+</aside>
+
+<!-- 13 区域配色（与首页/路段页统一） -->
+<script src="sections-data.js"></script>
 <script>
 /* ════════════════════════════════════════════════════════════
    数据层：读取与主 app 完全相同的 localStorage 键，复刻核心匹配逻辑。
@@ -272,6 +361,14 @@ function loadRaw(k){ try { const v = localStorage.getItem(k); return v==null ? '
 
 const SECTION_COLORS = ['#FF6B6B','#FFA94D','#FFD43B','#69DB7C','#38D9A9','#4DABF7','#748FFC','#DA77F2','#F783AC','#63E6BE'];
 const SECTION_NAMES  = ['干城章嘉保护区','马卡鲁-巴润国家公园','萨加玛塔国家公园','高里香卡保护区','郎当国家公园','马纳斯鲁保护区','安纳普尔纳保护区','道拉吉里-多尔普东','谢伊-佛克松多国家公园','拉拉国家公园'];
+
+/* 段配色：优先用 13 区域 GHT_SECTIONS（与首页一致），缺失时回退旧 10 段数组 */
+const SEC = (typeof window !== 'undefined' && window.GHT_SECTIONS) ? window.GHT_SECTIONS : [];
+function regionOf(id){
+  const r = SEC[(id||1)-1];
+  if (r) return r;
+  return { zh: (SECTION_NAMES[(id||1)-1] || ('第'+id+'段')), color: (SECTION_COLORS[(id||1)-1] || '#888') };
+}
 
 /* ── 日期工具（YYYY-MM-DD）── */
 function pad(n){ return String(n).padStart(2,'0'); }
@@ -362,15 +459,29 @@ function buildDays(){
 }
 
 function getPlannedDate(startDate, dayNum){ return startDate ? addDays(startDate, dayNum-1) : null; }
-function fmtPlannedShort(startDate, dayNum){ const d=getPlannedDate(startDate,dayNum); return d?shortYmd(d):'—'; }
-
-/* ════════════════════════════════════════════════════════════
-   渲染
-   ════════════════════════════════════════════════════════════ */
-let STATE = { sort:'asc', filter:'all' };
+function fmtPlannedShort(startDate, dayNum){ const d=getPlannedDate(startDate, dayNum); return d?shortYmd(d):'—'; }
 
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
+/* ── 状态 ── */
+function statusOf(d){
+  if(d.actual) return d.actual.onTrack;          // 'ahead' | 'behind' | 'on-track'
+  if(d.isRestDay) return 'rest';
+  if(d.weatherDelay) return 'delay';
+  return 'wait';
+}
+const STATUS = {
+  'on-track': { c:'var(--accent)',       t:'按计划' },
+  'ahead':    { c:'var(--green)',        t:'超前'   },
+  'behind':   { c:'var(--red)',          t:'落后'   },
+  'wait':     { c:'var(--text-dimmer)',  t:'等待 GPS' },
+  'rest':     { c:'#2e9e54',             t:'休息'   },
+  'delay':    { c:'var(--yellow)',       t:'延误'   }
+};
+
+/* ════════════════════════════════════════════════════════════
+   摘要
+   ════════════════════════════════════════════════════════════ */
 function renderSummary(data){
   const { planned, overallSlip } = data;
   const totalDays = planned.length;
@@ -393,167 +504,247 @@ function renderSummary(data){
     <div class="stat"><div class="v green">${actualTotal}km</div><div class="l">✅ 实际已完成</div></div>
     <div class="stat"><div class="v green">${ahead}</div><div class="l">🟢 超前天数</div></div>
     <div class="stat"><div class="v blue">${onTrack}</div><div class="l">🔵 按计划</div></div>
-    <div class="stat"><div class="v red">${behind}</div><div class="l">🔴 未达标</div></div>
+    <div class="stat"><div class="v red">${behind}</div><div class="l">🔴 落后天数</div></div>
     ${slip}`;
 }
 
-function deltaTag(planV, actV){
-  if(actV==null) return '';
-  const diff = Math.round((actV-planV)*10)/10;
-  if(Math.abs(diff)<0.05) return `<span class="delta dim">±0.0</span>`;
-  if(diff>0) return `<span class="delta green">+${diff.toFixed(1)}</span>`;
-  return `<span class="delta red">${diff.toFixed(1)}</span>`;
+/* ════════════════════════════════════════════════════════════
+   日历渲染
+   ════════════════════════════════════════════════════════════ */
+let DATA = null;
+let viewY, viewM;                 // 当前显示的年/月（0-based）
+let MODE = 'plan';                // 'plan' | 'actual'
+let FILTER = 'all';               // 'all' | 'done' | 'todo'
+let MAP = {};                     // dateKey -> [day,...]
+
+function dayKey(d){
+  if(MODE==='actual' && d.actual && d.actual.date) return d.actual.date;
+  return getPlannedDate(DATA.startDate, d.day) || null;
+}
+function buildMap(){
+  const m = {};
+  DATA.planned.forEach(d=>{
+    if(FILTER==='done' && !d.actual) return;
+    if(FILTER==='todo' && d.actual) return;
+    const k = dayKey(d);
+    if(!k) return;
+    (m[k] = m[k] || []).push(d);
+  });
+  return m;
 }
 
-function cmpBars(planV, actV){
-  const maxV = Math.max(planV||0, actV||0, 0.1);
-  const pw = Math.round((planV/maxV)*100);
-  const aw = Math.round((actV/maxV)*100);
-  return `
-    <div class="bars">
-      <div class="bar-row"><span class="bl">计划</span><div class="bar-track"><div class="bar-fill plan" style="width:${pw}%"></div></div><span class="bv">${planV!=null?planV.toFixed(1):'—'}km</span></div>
-      <div class="bar-row"><span class="bl">实际</span><div class="bar-track"><div class="bar-fill actual" style="width:${aw}%"></div></div><span class="bv">${actV!=null?actV.toFixed(1):'—'}km</span></div>
-    </div>`;
-}
+function renderCalendar(){
+  if(!DATA.planned.length) return;
+  MAP = buildMap();
+  const y = viewY, mo = viewM;
+  document.getElementById('calTitle').textContent = y + ' 年 ' + (mo+1) + ' 月';
 
-function dayCard(day, data){
-  const secIdx = (day.sectionId||1)-1;
-  const color = SECTION_COLORS[secIdx] || '#888';
-  const secName = SECTION_NAMES[secIdx] || '';
-  const plannedShort = fmtPlannedShort(data.startDate, day.day);
-  const today = ymd(new Date());
-  const isToday = getPlannedDate(data.startDate, day.day) === today;
+  const first = new Date(y, mo, 1);
+  const startOffset = (first.getDay() + 6) % 7;     // 周一为起点
+  const daysInMonth = new Date(y, mo+1, 0).getDate();
+  const todayStr = ymd(new Date());
+  const wd = ['一','二','三','四','五','六','日'];
+  let html = wd.map(w=>`<div class="wd">${w}</div>`).join('');
 
-  let statusChip = '';
-  if(day.actual){
-    statusChip = day.actual.onTrack==='ahead' ? '<span class="chip ahead">🟢 超前</span>'
-      : day.actual.onTrack==='behind' ? '<span class="chip behind">🔴 落后</span>'
-      : '<span class="chip ontime">🔵 按计划</span>';
-  } else if(day.isRestDay){
-    statusChip = '<span class="chip rest">🏕️ 休息</span>';
-  } else if(day.weatherDelay){
-    statusChip = '<span class="chip delay">☁️ 延误</span>';
-  } else {
-    statusChip = '<span class="chip wait">⏳ 等待 GPS</span>';
+  // 前置补白（上月）
+  const prevDays = new Date(y, mo, 0).getDate();
+  for(let i=startOffset-1; i>=0; i--){
+    html += `<div class="cell out"><div class="dnum">${prevDays-i}</div></div>`;
   }
+  // 当月
+  for(let d=1; d<=daysInMonth; d++){
+    const cur = ymd(new Date(y, mo, d));
+    const isToday = cur === todayStr;
+    const list = MAP[cur] || [];
+    let inner = `<div class="dnum">${d}</div>`;
+    if(list.length){
+      if(list.length === 1){
+        const day = list[0];
+        const region = regionOf(day.sectionId);
+        const st = statusOf(day);
+        const cls = ['chip'];
+        if(day.isRestDay) cls.push('is-rest');
+        if(day.weatherDelay) cls.push('is-delay');
+        const planDate = getPlannedDate(DATA.startDate, day.day);
+        const ghost = (MODE==='actual' && day.actual && day.actual.date !== planDate)
+          ? `<div class="ghost">原计划 ${esc(shortYmd(planDate))}</div>` : '';
+        inner += `<button class="chip ${cls.join(' ')}" data-key="${cur}">
+          <span class="stripe" style="background:${region.color}"></span>
+          <span class="crow"><span class="dlab">D${day.day}</span><span class="sdot" style="background:${STATUS[st].c}"></span></span>
+          <span class="route">${esc(day.from)}<span class="ar">→</span>${esc(day.to)}</span>
+          <span class="meta"><span>${((+day.plannedDistance)||0).toFixed(1)}km</span><span>${esc(region.zh)}</span></span>
+          ${ghost}</button>`;
+      } else {
+        // 多天重叠（方案 A）：紧凑块 + 角标，点开看全部
+        const region = regionOf(list[0].sectionId);
+        const dn = list.map(x=>x.day);
+        inner += `<button class="chip" data-key="${cur}">
+          <span class="stripe" style="background:${region.color}"></span>
+          <span class="crow"><span class="dlab">D${Math.min(...dn)}–D${Math.max(...dn)}</span><span class="badge">${list.length}</span></span>
+          <span class="route" style="color:var(--text-dim)">${list.length} 天重叠 ↗</span></button>`;
+      }
+    }
+    html += `<div class="cell${isToday?' today':''}">${inner}</div>`;
+  }
+  // 后置补白（下月）
+  const total = startOffset + daysInMonth;
+  const tail = (7 - (total % 7)) % 7;
+  for(let d=1; d<=tail; d++){
+    html += `<div class="cell out"><div class="dnum">${d}</div></div>`;
+  }
+  document.getElementById('grid').innerHTML = html;
 
-  const cls = ['day-card'];
-  if(day.isRestDay) cls.push('is-rest');
-  if(day.weatherDelay) cls.push('is-delay');
-  if(isToday) cls.push('is-today');
+  // 计数与跨度
+  const visible = Object.keys(MAP)
+    .filter(k=>{ const [ky,km,kd]=k.split('-').map(Number); return ky===y && km-1===mo; })
+    .reduce((s,k)=>s+MAP[k].length, 0);
+  document.getElementById('countNote').textContent = `本页显示 ${visible} 天 · 共 ${DATA.planned.length} 天`;
+  const fd = getPlannedDate(DATA.startDate, DATA.planned[0].day);
+  const ld = getPlannedDate(DATA.startDate, DATA.planned[DATA.planned.length-1].day);
+  document.getElementById('spanNote').textContent = `行程跨度：${fd||'?'} → ${ld||'?+'}`;
 
-  // 计划栏
+  // 绑定点击
+  document.querySelectorAll('.chip[data-key]').forEach(el=>{
+    el.addEventListener('click', ()=> openDrawer(el.dataset.key, MAP[el.dataset.key]));
+  });
+}
+
+/* ════════════════════════════════════════════════════════════
+   详情抽屉：单天 or 多天重叠
+   ════════════════════════════════════════════════════════════ */
+function dayDetail(d){
+  const region = regionOf(d.sectionId);
+  const st = statusOf(d);
+  const col = region.color;
+  const stInfo = STATUS[st];
+  const planDate = getPlannedDate(DATA.startDate, d.day);
+  const chipCls = st === 'on-track' ? 'ontime' : st;
+
+  const head = `<div class="dd-h">
+    <span class="day-badge"><span class="dot" style="background:${col}"></span><span class="num">Day ${d.day}</span></span>
+    <span class="chip2 ${chipCls}">${stInfo.t}</span>
+    <span class="dd-sub">第 <b>${d.sectionId}</b> 段 · ${esc(region.zh)}</span>
+  </div>`;
+  const meta = `<div class="dd-sub" style="margin:2px 0 8px">计划 ${planDate||'—'}${d.actual&&d.actual.date?` · 实际 ${esc(shortYmd(d.actual.date))}`:''}</div>`;
+
   const planCol = `
-    <div class="col plan">
-      <div class="col-title">📋 计划</div>
-      <div class="row"><span class="k">日期</span><span class="v plan">${plannedShort}</span></div>
-      <div class="row" style="align-items:flex-start;"><span class="k">路线</span><span class="v route">${esc(day.from)}<span class="arrow">→</span>${esc(day.to)}</span></div>
-      <div class="row"><span class="k">距离</span><span class="v plan">${(+day.plannedDistance||0).toFixed(1)}km</span></div>
-      <div class="row"><span class="k">爬升</span><span class="v plan">${(+day.plannedElevGain||0).toLocaleString()}m</span></div>
-      <div class="row"><span class="k">下降</span><span class="v plan">${(+day.plannedElevLoss||0).toLocaleString()}m</span></div>
-      ${day.passes&&day.passes.length?`<div class="passes">⛰ 垭口：<span class="tag">${esc(day.passes.join('、'))}</span></div>`:''}
+    <div class="col plan"><div class="col-title">📋 计划</div>
+      <div class="row"><span class="k">路线</span><span class="v route">${esc(d.from)}<span class="arrow">→</span>${esc(d.to)}</span></div>
+      <div class="row"><span class="k">距离</span><span class="v plan">${(+d.plannedDistance||0).toFixed(1)}km</span></div>
+      <div class="row"><span class="k">爬升</span><span class="v plan">${(+d.plannedElevGain||0).toLocaleString()}m</span></div>
+      <div class="row"><span class="k">下降</span><span class="v plan">${(+d.plannedElevLoss||0).toLocaleString()}m</span></div>
+      ${d.passes&&d.passes.length?`<div class="passes">⛰ 垭口：<span class="tag">${esc(d.passes.join('、'))}</span></div>`:''}
+      ${d.isRestDay?'<div class="passes">🏕️ 休息日</div>':''}${d.weatherDelay?'<div class="passes">☁️ 天气延误</div>':''}
     </div>`;
 
-  // 实际栏
   let actCol;
-  if(!day.actual){
-    if(day.isRestDay) actCol = `<div class="col actual"><div class="col-title">📡 实际</div><div class="pending">🏕️ 休息 · 未行进</div></div>`;
-    else if(day.weatherDelay) actCol = `<div class="col actual"><div class="col-title">📡 实际</div><div class="pending">☁️ 天气延误 · 未行进</div></div>`;
-    else actCol = `<div class="col actual"><div class="col-title">📡 实际</div><div class="pending">⏳ 等待 GPS 轨迹上传</div></div>`;
+  if(!d.actual){
+    let msg = d.isRestDay ? '🏕️ 休息 · 未行进' : d.weatherDelay ? '☁️ 天气延误 · 未行进' : '⏳ 等待 GPS 轨迹上传';
+    actCol = `<div class="col actual"><div class="col-title">📡 实际</div><div class="pending">${msg}</div></div>`;
   } else {
-    const a = day.actual;
-    const endMismatch = a.actTo && day.to && a.actTo!==day.to;
-    actCol = `
-      <div class="col actual">
-        <div class="col-title">📡 实际</div>
-        <div class="row"><span class="k">日期</span><span class="v">${a.date?shortYmd(a.date):'—'}</span></div>
-        <div class="row" style="align-items:flex-start;"><span class="k">路线</span><span class="v route">${esc(a.actFrom)}<span class="arrow">→</span>${esc(a.actTo)}</span></div>
-        <div class="row"><span class="k">距离</span><span class="v">${a.distance.toFixed(1)}km</span></div>
-        <div class="row"><span class="k">爬升</span><span class="v">${(+a.elevGain||0).toLocaleString()}m</span></div>
-        <div class="row"><span class="k">用时</span><span class="v">${a.durationStr||'—'}${a.avgSpeed?` · ${a.avgSpeed}km/h`:''}</span></div>
-        <div class="row"><span class="k">文件</span><span class="v" style="font-size:11px;color:var(--text-dim);">${esc(a.file)}</span></div>
-        ${endMismatch?`<div class="mismatch">⚠️ 实际终点≠计划终点（只走了一部分/路线有偏差）</div>`:''}
-      </div>`;
+    const a = d.actual;
+    actCol = `<div class="col actual"><div class="col-title">📡 实际</div>
+      <div class="row"><span class="k">日期</span><span class="v">${esc(shortYmd(a.date))}</span></div>
+      <div class="row"><span class="k">路线</span><span class="v route">${esc(a.actFrom)}<span class="arrow">→</span>${esc(a.actTo)}</span></div>
+      <div class="row"><span class="k">距离</span><span class="v">${a.distance.toFixed(1)}km</span></div>
+      <div class="row"><span class="k">爬升</span><span class="v">${(+a.elevGain||0).toLocaleString()}m</span></div>
+      <div class="row"><span class="k">用时</span><span class="v">${a.durationStr||'—'}${a.avgSpeed?` · ${a.avgSpeed}km/h`:''}</span></div>
+      <div class="row"><span class="k">文件</span><span class="v" style="font-size:11px;color:var(--text-dim)">${esc(a.file)}</span></div>
+      ${a.actTo&&d.to&&a.actTo!==d.to?`<div class="mismatch">⚠️ 实际终点≠计划终点（只走了一部分/路线有偏差）</div>`:''}
+    </div>`;
   }
 
-  // 对比条（仅在有实际数据时显示）
-  let cmp = '';
-  if(day.actual){
-    const planV = +day.plannedDistance||0, actV = +day.actual.distance||0;
-    cmp = `
-      <div class="cmp">
-        <div class="cmp-head">
-          <span class="lbl">距离对比（计划 vs 实际）</span>
-          <span>差值 ${deltaTag(planV,actV)} km</span>
-        </div>
-        ${cmpBars(planV, actV)}
-      </div>`;
+  let body = `<div class="cols">${planCol}${actCol}</div>`;
+  if(d.actual){
+    const planV = +d.plannedDistance||0, actV = +d.actual.distance||0;
+    const diff = Math.round((actV-planV)*10)/10;
+    const dcls = Math.abs(diff)<0.05 ? 'dim' : (diff>0?'green':'red');
+    const dsign = Math.abs(diff)<0.05 ? '±0.0' : (diff>0?'+':'')+diff.toFixed(1);
+    const maxV = Math.max(planV, actV, 0.1);
+    const pw = Math.round(planV/maxV*100), aw = Math.round(actV/maxV*100);
+    body += `<div class="cmp"><div class="cmp-head"><span class="lbl">距离对比（计划 vs 实际）</span><span class="delta ${dcls}">差值 ${dsign} km</span></div>
+      <div class="bars">
+        <div class="bar-row"><span class="bl">计划</span><div class="bar-track"><div class="bar-fill plan" style="width:${pw}%"></div></div><span class="bv">${planV.toFixed(1)}km</span></div>
+        <div class="bar-row"><span class="bl">实际</span><div class="bar-track"><div class="bar-fill actual" style="width:${aw}%"></div></div><span class="bv">${actV.toFixed(1)}km</span></div>
+      </div></div>`;
   }
-
-  return `
-    <article class="${cls.join(' ')}" data-day="${day.day}">
-      <div class="day-head">
-        <span class="day-badge"><span class="dot" style="background:${color}"></span><span class="num">Day ${day.day}</span></span>
-        <span class="sec-name">第 <b>${day.sectionId}</b> 段 · ${esc(secName)}</span>
-        ${isToday?'<span class="chip today">今天</span>':''}
-        ${statusChip}
-      </div>
-      <div class="cols">${planCol}${actCol}</div>
-      ${cmp}
-    </article>`;
+  return head + meta + body;
 }
 
-function render(){
-  const data = buildDays();
-  const summaryEl = document.getElementById('summary');
-  const listEl = document.getElementById('list');
-  const countEl = document.getElementById('countNote');
-  const footEl = document.getElementById('footNote');
+function openDrawer(key, list){
+  if(!list || !list.length) return;
+  const multi = list.length > 1;
+  document.getElementById('dBadge').innerHTML = multi
+    ? `<span class="num">${key} · ${list.length} 天重叠</span>`
+    : `<span class="num">${key}</span>`;
+  document.getElementById('dBody').innerHTML = list.map(d=>dayDetail(d)).join('<hr class="dv-sep">');
+  document.getElementById('scrim').classList.add('open');
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('drawer').setAttribute('aria-hidden','false');
+}
+function closeDrawer(){
+  document.getElementById('scrim').classList.remove('open');
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('drawer').setAttribute('aria-hidden','true');
+}
 
-  if(!data.planned.length){
+/* ════════════════════════════════════════════════════════════
+   入口 render
+   ════════════════════════════════════════════════════════════ */
+function render(){
+  DATA = buildDays();
+  const summaryEl = document.getElementById('summary');
+  const gridEl = document.getElementById('grid');
+
+  if(!DATA.planned.length){
     summaryEl.innerHTML = '';
-    listEl.innerHTML = `
-      <div class="empty">
+    gridEl.innerHTML = `
+      <div class="empty" style="grid-column:1/-1;">
         <div class="ico">🗺️</div>
         <h2>尚未生成行程安排</h2>
         <p>行程会根据<b>真实的预设轨迹（GPX 分段）</b>自动生成。<br>
         请先在 <a href="index.html">地图追踪页</a> 导入预设轨迹，或上传实际徒步 GPS 文件。<br>
         <span style="color:var(--text-dim);">本页读取与地图页相同的本地数据，不会凭空生成占位计划。</span></p>
       </div>`;
-    countEl.textContent = '';
-    footEl.textContent = '';
+    document.getElementById('countNote').textContent = '';
+    document.getElementById('spanNote').textContent = '';
+    document.getElementById('footNote').textContent = '';
     return;
   }
 
-  summaryEl.innerHTML = renderSummary(data);
+  summaryEl.innerHTML = renderSummary(DATA);
 
-  let days = data.planned.slice();
-  if(STATE.filter==='done') days = days.filter(d=>d.actual);
-  else if(STATE.filter==='todo') days = days.filter(d=>!d.actual);
-  days.sort((a,b)=> STATE.sort==='asc' ? a.day-b.day : b.day-a.day);
-
-  listEl.innerHTML = days.map(d=>dayCard(d,data)).join('');
-  countEl.textContent = `显示 ${days.length} / ${data.planned.length} 天` + (data.unmatched.length?` · ⚠️ ${data.unmatched.length} 个轨迹无法匹配到日程`:'');
+  // 默认显示出发日所在月份
+  if(viewY === undefined){
+    const sd = DATA.startDate ? parseYmd(DATA.startDate) : new Date();
+    viewY = sd.getFullYear(); viewM = sd.getMonth();
+  }
+  renderCalendar();
 
   const startPlace = loadRaw(LS.startPlace);
-  footEl.innerHTML = `数据来源：本浏览器本地存储（与地图页共享）。` +
-    (data.startDate?` 出发日期：<code>${esc(data.startDate)}</code>。`:' 未设置出发日期（日程日期显示为「—」）。') +
+  document.getElementById('footNote').innerHTML = `数据来源：本浏览器本地存储（与地图页共享）。` +
+    (DATA.startDate ? ` 出发日期：<code>${esc(DATA.startDate)}</code>。` : ' 未设置出发日期（日程日期显示为「—」）。') +
     ` 在地图页上传/编辑后，刷新本页即可同步。`;
 }
 
-/* ── 工具栏事件 ── */
-document.getElementById('segSort').addEventListener('click', e=>{
-  const b=e.target.closest('button'); if(!b) return;
-  STATE.sort=b.dataset.sort;
-  [...e.currentTarget.children].forEach(x=>x.classList.toggle('active',x===b));
-  render();
+/* ── 控件事件 ── */
+document.getElementById('segMode').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  MODE = b.dataset.mode;
+  [...e.currentTarget.children].forEach(x=>x.classList.toggle('active', x===b));
+  if(viewY!==undefined) renderCalendar();
 });
 document.getElementById('segFilter').addEventListener('click', e=>{
-  const b=e.target.closest('button'); if(!b) return;
-  STATE.filter=b.dataset.filter;
-  [...e.currentTarget.children].forEach(x=>x.classList.toggle('active',x===b));
-  render();
+  const b = e.target.closest('button'); if(!b) return;
+  FILTER = b.dataset.filter;
+  [...e.currentTarget.children].forEach(x=>x.classList.toggle('active', x===b));
+  if(viewY!==undefined) renderCalendar();
 });
+document.getElementById('prevM').addEventListener('click', ()=>{ viewM--; if(viewM<0){ viewM=11; viewY--; } renderCalendar(); });
+document.getElementById('nextM').addEventListener('click', ()=>{ viewM++; if(viewM>11){ viewM=0; viewY++; } renderCalendar(); });
+document.getElementById('scrim').addEventListener('click', closeDrawer);
+document.getElementById('dClose').addEventListener('click', closeDrawer);
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeDrawer(); });
 
 /* 跨标签页同步：地图页更新后本页自动刷新 */
 window.addEventListener('storage', e=>{
