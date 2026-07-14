@@ -371,39 +371,6 @@
   .pos-badge .prov-name { font-weight: 600; color: var(--accent); }
   .pos-badge .prov-elev { color: var(--text-dim); font-size: 11px; margin-left: 6px; }
 
-  /* ── MAP LEGEND (section color key) ── */
-  .map-legend {
-    top: 12px; right: 12px;
-    width: 196px;
-    padding: 0;
-    overflow: hidden;
-    font-size: 11px;
-  }
-  .map-legend .legend-head {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 8px 10px; cursor: pointer;
-    font-weight: 600; color: var(--text);
-    border-bottom: 1px solid var(--border);
-  }
-  .map-legend .legend-head:hover { color: var(--accent); }
-  .map-legend .legend-body {
-    max-height: 290px; overflow-y: auto; padding: 5px 8px;
-    transition: max-height 0.25s ease, padding 0.25s ease;
-  }
-  .map-legend.collapsed .legend-body { max-height: 0; padding-top: 0; padding-bottom: 0; }
-  .map-legend.collapsed .legend-head { border-bottom: none; }
-  .map-legend .legend-body::-webkit-scrollbar { width: 3px; }
-  .map-legend .legend-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-  .legend-row {
-    display: flex; align-items: center; gap: 8px;
-    padding: 4px 3px; border-radius: 4px; cursor: default;
-  }
-  .legend-row .swatch { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; box-shadow: 0 0 0 1px rgba(0,0,0,0.3); }
-  .legend-row .lg-name { color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .legend-row .lg-en { color: var(--text-dim); font-size: 9px; margin-left: auto; padding-left: 6px; }
-  .legend-row:hover { background: rgba(255,255,255,0.05); }
-  .legend-empty { padding: 10px; font-size: 11px; color: var(--text-dim); text-align: center; }
-
   /* ── COMPASS / NORTH INDICATOR ── */
   .map-compass {
     bottom: 58px; left: 12px;
@@ -1153,21 +1120,6 @@
   .pass-days.far { background: rgba(139,148,158,0.15); color: var(--text-dim); }
   .more-link { display: block; text-align: center; font-size: 11px; color: var(--accent); padding: 8px 0 2px; cursor: pointer; }
 
-  /* region progress */
-  .rg-wrap { display: flex; align-items: center; gap: 14px; }
-  .rg-ring { width: 74px; height: 74px; flex-shrink: 0; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 15px; font-weight: 800; color: var(--text); }
-  .rg-ring small { font-size: 8px; color: var(--text-dim); font-weight: 400; }
-  .rg-list { flex: 1; display: flex; flex-direction: column; gap: 5px; }
-  .rg-item { display: flex; align-items: center; gap: 6px; font-size: 11px; }
-  .rg-item .dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
-  .rg-item .nm { flex: 1; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .rg-item .pc { color: var(--text-dim); font-variant-numeric: tabular-nums; }
-
-  /* gallery */
-  .gal-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 5px; }
-  .gal-cell { aspect-ratio: 1; border-radius: 5px; background: linear-gradient(135deg, #1b2735, #0a0e14); display: flex; align-items: center; justify-content: center; font-size: 15px; opacity: 0.85; transition: opacity 0.15s; }
-  .gal-cell:hover { opacity: 1; }
-
   /* upload card */
   .upload-zone { text-align: center; }
   .upload-zone input[type=file] { display: none; }
@@ -1249,13 +1201,6 @@
         <div class="map-overlay pos-badge" id="currentPosBadge">
           📍 当前位置: <span class="prov-name">--</span><span class="prov-elev"></span>
         </div>
-        <div class="map-overlay map-legend" id="mapLegend">
-          <div class="legend-head" onclick="toggleLegend()">
-            <span>🏔️ 路段图例</span>
-            <span id="legendToggle">▾</span>
-          </div>
-          <div class="legend-body" id="legendBody"></div>
-        </div>
         <div class="map-overlay map-compass" title="正北方向">
           <span class="compass-n">N</span>
           <div class="compass-needle"></div>
@@ -1274,8 +1219,6 @@
     <aside class="col-right">
       <section class="card" id="cardInfo"></section>
       <section class="card" id="cardPasses"></section>
-      <section class="card" id="cardRegion"></section>
-      <section class="card" id="cardGallery"></section>
     </aside>
 
   </div>
@@ -1796,7 +1739,6 @@ const I18N = {
   zh: {
     'nav.dashboard': '仪表盘', 'nav.map': '地图', 'nav.sections': '路段', 'nav.itinerary': '行程', 'nav.journal': '日志', 'nav.about': '关于', 'nav.datamgmt': '数据管理',
     'brand.sub': '大喜马拉雅高线',
-    'legend.head': '路段图例',
     'pos.prefix': '📍 当前位置:',
     'basemap.terrain': '户外图 (Esri 地形 · 默认)', 'basemap.topo': '地形图 (等高线)', 'basemap.dark': '暗色图 (OpenStreetMap)',
     'prog.done': '已完成 km', 'prog.left': '剩余 km', 'prog.total': '总计 km',
@@ -1805,17 +1747,14 @@ const I18N = {
     'today.dateLbl': '数据日期：', 'today.nodata': '暂无今日 GPS 数据',
     'ei.from': '出发地', 'ei.total': '总距离', 'ei.recorded': '已记录', 'ei.gain': '累计爬升', 'ei.max': '最高点', 'ei.passes': '垭口 / 营地', 'ei.end': '预计结束',
     'pass.none': '暂无垭口数据', 'pass.soon': '近日', 'pass.seg': '段', 'pass.all': '查看全部路段 →',
-    'region.overall': '全程',
-    'gal.all': '查看全部 →',
     'up.btn': '📤 上传GPS轨迹', 'up.hint': '支持批量多文件 (.gpx/.kml)<br>PeakVisor / Strava / Garmin 均可', 'up.date': '出发日期：', 'up.reset': '🗑️ 重置数据',
     'view.empty': '暂无内容',
-    'about.text': '本页追踪 <b>大喜马拉雅高线（Great Himalaya Trail）</b> 东段至西段的徒步进度，支持 GPX 轨迹上传、计划/实际双栏对照、各省进度与垭口清单可视化。<br><br>数据来源：主人上传的 GPS 轨迹（GPX），地图底图 © OpenStreetMap · Esri · OpenTopoMap。<br><br>© 2026 GHT 高线追踪',
+    'about.text': '本页追踪 <b>大喜马拉雅高线（Great Himalaya Trail）</b> 东段至西段的徒步进度，支持 GPX 轨迹上传、计划/实际双栏对照与垭口清单可视化。<br><br>数据来源：主人上传的 GPS 轨迹（GPX），地图底图 © OpenStreetMap · Esri · OpenTopoMap。<br><br>© 2026 GHT 高线追踪',
     'dm.title': '数据管理', 'dm.pwdHint': '请输入主人密码以管理轨迹数据', 'dm.unlock': '解锁', 'dm.pwdErr': '密码错误', 'dm.connErr': '无法连接服务器（后端未启动？）'
   },
   en: {
     'nav.dashboard': 'Dashboard', 'nav.map': 'Map', 'nav.sections': 'Sections', 'nav.itinerary': 'Itinerary', 'nav.journal': 'Journal', 'nav.about': 'About', 'nav.datamgmt': 'Data',
     'brand.sub': 'GREAT HIMALAYA TRAIL',
-    'legend.head': 'Section Legend',
     'pos.prefix': '📍 Current location:',
     'basemap.terrain': 'Terrain (Esri Topo · default)', 'basemap.topo': 'Topographic (Contours)', 'basemap.dark': 'Dark (OpenStreetMap)',
     'prog.done': 'Done km', 'prog.left': 'Left km', 'prog.total': 'Total km',
@@ -1824,11 +1763,9 @@ const I18N = {
     'today.dateLbl': 'Data date: ', 'today.nodata': 'No GPS data today',
     'ei.from': 'Start', 'ei.total': 'Total dist', 'ei.recorded': 'Recorded', 'ei.gain': 'Total ascent', 'ei.max': 'Highest point', 'ei.passes': 'Passes / Camps', 'ei.end': 'Est. finish',
     'pass.none': 'No pass data', 'pass.soon': 'Soon', 'pass.seg': 'seg', 'pass.all': 'All sections →',
-    'region.overall': 'Overall',
-    'gal.all': 'View all →',
     'up.btn': '📤 Upload GPS track', 'up.hint': 'Batch upload (.gpx/.kml)<br>PeakVisor / Strava / Garmin supported', 'up.date': 'Start date: ', 'up.reset': '🗑️ Reset data',
     'view.empty': 'No content',
-    'about.text': 'This page tracks the trekking progress of the <b>Great Himalaya Trail</b> from east to west, with GPX upload, planned/actual comparison, province progress and pass checklists.<br><br>Data: owner-uploaded GPS tracks (GPX). Basemap © OpenStreetMap · Esri · OpenTopoMap.<br><br>© 2026 GHT Trail Tracker',
+    'about.text': 'This page tracks the trekking progress of the <b>Great Himalaya Trail</b> from east to west, with GPX upload and planned/actual comparison, with pass checklists.<br><br>Data: owner-uploaded GPS tracks (GPX). Basemap © OpenStreetMap · Esri · OpenTopoMap.<br><br>© 2026 GHT Trail Tracker',
     'dm.title': 'Data Management', 'dm.pwdHint': 'Enter owner password to manage track data', 'dm.unlock': 'Unlock', 'dm.pwdErr': 'Wrong password', 'dm.connErr': 'Cannot reach server (backend down?)'
   }
 };
@@ -1849,7 +1786,6 @@ function applyLang() {
   if (lb) lb.textContent = currentLang === 'zh' ? '中文 ▾' : 'EN ▾';
   document.querySelectorAll('.tn-tab').forEach(el => { el.textContent = t('nav.' + el.dataset.view); });
   const sub = document.querySelector('.brand .sub'); if (sub) sub.textContent = t('brand.sub');
-  const lh = document.querySelector('.legend-head > span:first-child'); if (lh) lh.textContent = '🏔️ ' + t('legend.head');
   document.querySelectorAll('.basemap-btn').forEach((el, i) => { el.title = t(['basemap.terrain', 'basemap.topo', 'basemap.dark'][i]); });
   const dm = document.getElementById('btnDataMgmt'); if (dm) dm.textContent = '🔧 ' + t('nav.datamgmt');
   const dmt = document.getElementById('dmTitle'); if (dmt) dmt.textContent = t('dm.title');
@@ -2513,42 +2449,6 @@ function passesHTML() {
     '<div class="card-b">' + rows + '<a class="more-link" href="sections.html" target="_blank" rel="noopener">' + t('pass.all') + '</a></div>';
 }
 
-// ── G. 各省进度 ──
-function regionHTML() {
-  const provMap = {};
-  ghtSections.forEach((sec, i) => {
-    const pid = sec.province;
-    if (!provMap[pid]) provMap[pid] = { name: getProv(pid), color: '#4DABF7', total: 0, sum: 0 };
-    const r = (APP.sectionRanges && APP.sectionRanges[i]) ? APP.sectionRanges[i] : null;
-    const cov = r ? (r.status === 'completed' ? 1 : (r.coverage || 0)) : 0;
-    provMap[pid].total += 1;
-    provMap[pid].sum += cov;
-    if (sec.color) provMap[pid].color = sec.color;
-  });
-  const overall = Math.min(100, APP.progressPercentage || APP.progressPct || 0);
-  let list = '';
-  Object.keys(provMap).forEach(pid => {
-    const p = provMap[pid];
-    const pc = Math.round((p.sum / p.total) * 100);
-    list += '<div class="rg-item"><span class="dot" style="background:' + p.color + '"></span>' +
-      '<span class="nm">' + p.name + '</span><span class="pc">' + pc + '%</span></div>';
-  });
-  return '<div class="card-h"><span>各省进度</span><span class="en">REGION PROGRESS</span></div>' +
-    '<div class="card-b"><div class="rg-wrap">' +
-    '<div class="rg-ring" style="background:conic-gradient(var(--accent) ' + overall + '%, rgba(255,255,255,0.08) 0);"><span>' + overall.toFixed(0) + '%</span><small>' + t('region.overall') + '</small></div>' +
-    '<div class="rg-list">' + list + '</div></div></div>';
-}
-
-// ── H. 远征相册 ──
-function galleryHTML() {
-  const emojis = ['🏔️', '⛺', '🌄', '🥾', '❄️', '🌿', '🌌', '🔥'];
-  let cells = '';
-  for (let i = 0; i < 8; i++) cells += '<div class="gal-cell">' + emojis[i] + '</div>';
-  return '<div class="card-h"><span>远征相册</span><span class="en">GALLERY</span></div>' +
-    '<div class="card-b"><div class="gal-grid">' + cells + '</div>' +
-    '<span class="more-link" onclick="showView(\'journal\')">' + t('gal.all') + '</span></div>';
-}
-
 // ── I. 上传 / 管理 ──
 function uploadHTML() {
   return '<div class="upload-zone">' +
@@ -2570,8 +2470,6 @@ function renderDashboard() {
   setCard('cardToday', todaySummaryHTML());
   setCard('cardInfo', expedInfoHTML());
   setCard('cardPasses', passesHTML());
-  setCard('cardRegion', regionHTML());
-  setCard('cardGallery', galleryHTML());
   if (typeof bindSectionClickHandlers === 'function') { try { bindSectionClickHandlers(); } catch (e) {} }
 }
 
@@ -3975,53 +3873,12 @@ function renderAllTracks() {
     drawElevationProfile();
   }
 
-  // 7. Refresh map legend
-  renderLegend();
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  HIKING PERSON
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ── 标注点：创建 / 预计算归属 / 按需显示 ──
-// ── MAP LEGEND (section color key) ──
-function renderLegend() {
-  const body = document.getElementById('legendBody');
-  if (!body) return;
-  let rows = [];
-  if (APP.sectionRanges && APP.sectionRanges.length) {
-    rows = APP.sectionRanges.map((r, i) => ({
-      color: r.parkColor || getSectionLineStyle(i, r.status || 'upcoming').color,
-      name: r.parkName || ('第' + (i + 1) + '段'),
-      en: r.parkNameEn || ''
-    }));
-  } else {
-    rows = ghtSections.map((s, i) => ({
-      color: getSectionLineStyle(i, 'upcoming').color,
-      name: s.name,
-      en: s.nameEn
-    }));
-  }
-  if (!rows.length) {
-    body.innerHTML = '<div class="legend-empty">上传预设轨迹后显示路段颜色</div>';
-    return;
-  }
-  body.innerHTML = rows.map((r, i) =>
-    `<div class="legend-row"${APP.sectionRanges && APP.sectionRanges.length ? ` onclick="focusSection(${i})" title="点击在地图聚焦"` : ''}>
-       <span class="swatch" style="background:${r.color}"></span>
-       <span class="lg-name">${r.name}</span>
-       ${r.en ? `<span class="lg-en">${r.en}</span>` : ''}
-     </div>`
-  ).join('');
-}
-
-function toggleLegend() {
-  const el = document.getElementById('mapLegend');
-  if (!el) return;
-  el.classList.toggle('collapsed');
-  const t = document.getElementById('legendToggle');
-  if (t) t.textContent = el.classList.contains('collapsed') ? '▸' : '▾';
-}
-
 function createWaypointMarker(wp) {
   const desc = wp.desc || wp.name || '';
   const tooltip = '<div style="min-width:140px;line-height:1.5">' +
@@ -4786,7 +4643,6 @@ if (APP.presetTrack) {
 // 先用本地默认配置同步渲染首页
 renderDashboard();
 renderAllTracks();
-renderLegend();
 
 // 后台静默恢复登录态并同步服务端配置；语言/日期若有变化则局部重渲染
 restoreSession().then(() => {
