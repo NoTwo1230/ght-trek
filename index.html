@@ -1170,7 +1170,6 @@
     </div>
     <nav class="topnav-tabs" aria-label="主导航">
       <button class="tn-tab active" data-view="dashboard">Dashboard</button>
-      <button class="tn-tab" data-view="map">Map</button>
       <button class="tn-tab" data-view="journal">日志</button>
       <button class="tn-tab" data-view="about">关于</button>
       <a class="tn-ext" href="itinerary.html" target="_blank" rel="noopener" title="计划 vs 实际 · 行程对比 →">📅 行程对比 ↗</a>
@@ -1254,6 +1253,26 @@ const nepalProvinces = nepalProvinceData;
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  DATA: GHT Sections (10 sections, East → West)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ── 13-region entry anchors (GHT corridor, east → west) ──
+// Used to split an uploaded GPX into 13 segments. Runs at load (top-level) so entries
+// are attached to window.GHT_SECTIONS before calculateSectionRanges() is first called.
+const REGION_ENTRIES = {
+  'kanchenjunga': [27.35, 87.95],
+  'makalu':       [27.60, 87.70],
+  'everest':      [27.85, 86.73],
+  'rolwaling':    [27.88, 86.35],
+  'langtang':     [28.05, 85.45],
+  'ganesh':       [28.12, 85.20],
+  'manaslu':      [28.30, 85.15],
+  'annapurna':    [28.40, 84.70],
+  'dolpo':        [28.70, 83.80],
+  'mugu':         [29.20, 82.90],
+  'humla':        [29.60, 82.40],
+  'bajhang':      [29.55, 81.60],
+  'darchula':     [29.70, 80.75]
+};
+(window.GHT_SECTIONS || []).forEach(r => { if (!r.entry && REGION_ENTRIES[r.id]) r.entry = REGION_ENTRIES[r.id]; });
+
 const ghtSections = [
   {
     id: 1, name: '干城章嘉段', nameEn: 'Kanchenjunga', province: 'koshi',
@@ -1371,11 +1390,12 @@ function nearestWaypointLabel(waypoints, pt, maxDist) {
   return null;
 }
 
-// Which national park a point is closest to (by entry coordinate)
+// Which 13-region a point is closest to (by entry anchor)
 function findParkIndexForPoint(lat, lon) {
   let best = -1, bestD = Infinity;
-  nationalParks.forEach((p, i) => {
-    const d = haversine(lat, lon, p.entryLat, p.entryLon);
+  (window.GHT_SECTIONS || []).forEach((p, i) => {
+    if (!p.entry) return;
+    const d = haversine(lat, lon, p.entry[0], p.entry[1]);
     if (d < bestD) { bestD = d; best = i; }
   });
   return best;
@@ -1441,7 +1461,7 @@ function buildItineraryFromSegments(valid, restDays) {
     days.push({
       day: seg.dayNum,
       sectionId: parkIdx >= 0 ? parkIdx + 1 : 0,
-      sectionName: parkIdx >= 0 ? nationalParks[parkIdx].name : '',
+      sectionName: parkIdx >= 0 ? (window.GHT_SECTIONS[parkIdx] ? window.GHT_SECTIONS[parkIdx].zh : '') : '',
       from: fromName,
       to: toName,
       fromLat: startPt ? startPt.lat : null,
@@ -1739,7 +1759,7 @@ const APP = {
 let currentLang = 'zh';
 const I18N = {
   zh: {
-    'nav.dashboard': '仪表盘', 'nav.map': '地图', 'nav.sections': '路段', 'nav.itinerary': '行程', 'nav.journal': '日志', 'nav.about': '关于', 'nav.datamgmt': '数据管理',
+    'nav.dashboard': '仪表盘', 'nav.sections': '路段', 'nav.itinerary': '行程', 'nav.journal': '日志', 'nav.about': '关于', 'nav.datamgmt': '数据管理',
     'brand.sub': '大喜马拉雅高线',
     'pos.prefix': '📍 当前位置:',
     'basemap.terrain': '户外图 (Esri 地形 · 默认)', 'basemap.topo': '地形图 (等高线)', 'basemap.dark': '暗色图 (OpenStreetMap)',
@@ -1755,7 +1775,7 @@ const I18N = {
     'dm.title': '数据管理', 'dm.pwdHint': '请输入主人密码以管理轨迹数据', 'dm.unlock': '解锁', 'dm.pwdErr': '密码错误', 'dm.connErr': '无法连接服务器（后端未启动？）'
   },
   en: {
-    'nav.dashboard': 'Dashboard', 'nav.map': 'Map', 'nav.sections': 'Sections', 'nav.itinerary': 'Itinerary', 'nav.journal': 'Journal', 'nav.about': 'About', 'nav.datamgmt': 'Data',
+    'nav.dashboard': 'Dashboard', 'nav.sections': 'Sections', 'nav.itinerary': 'Itinerary', 'nav.journal': 'Journal', 'nav.about': 'About', 'nav.datamgmt': 'Data',
     'brand.sub': 'GREAT HIMALAYA TRAIL',
     'pos.prefix': '📍 Current location:',
     'basemap.terrain': 'Terrain (Esri Topo · default)', 'basemap.topo': 'Topographic (Contours)', 'basemap.dark': 'Dark (OpenStreetMap)',
@@ -2109,10 +2129,17 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape') clos
 
 
 function fitRoute() {
-  if (APP.presetTrack && APP.presetTrack.trackPoints && typeof map !== 'undefined' && APP.presetTrack.trackPoints.length) {
+  if (typeof map === 'undefined') return;
+  let pts = [];
+  if (APP.presetTrack && APP.presetTrack.trackPoints && APP.presetTrack.trackPoints.length) {
+    pts = APP.presetTrack.trackPoints.map(p => [p.lat, p.lon]);
+  } else if (typeof ghtSections !== 'undefined' && ghtSections.length) {
+    // fallback: fit the whole GHT corridor from static section trail data
+    ghtSections.forEach(s => { if (s.trail) s.trail.forEach(c => pts.push([c[0], c[1]])); });
+  }
+  if (pts.length) {
     try {
-      const pts = APP.presetTrack.trackPoints;
-      map.fitBounds(L.latLngBounds(pts.map(p => [p.lat, p.lon])), { padding: [40, 40], maxZoom: 12 });
+      map.fitBounds(L.latLngBounds(pts), { padding: [40, 40], maxZoom: 12 });
     } catch(e) {}
   }
 }
@@ -2128,7 +2155,6 @@ function showView(view) {
   APP.activeView = view;
   document.querySelectorAll('.tn-tab').forEach(t => t.classList.toggle('active', t.dataset.view === view));
   if (view === 'dashboard') { renderDashboard(); fitRoute(); return; }
-  if (view === 'map') { fitRoute(); return; }
   const card = document.getElementById('cardPasses');
   if (!card) return;
   let html = '';
@@ -2206,7 +2232,7 @@ function drawElevationProfile() {
       const midIdx = Math.floor((range.startIndex + range.endIndex) / 2);
       const frac = midIdx / (points.length - 1);
       const x = pad.left + frac * pw;
-      const color = range.parkColor || sectionColors[idx] || '#888';
+      const color = range.regionColor || sectionColors[idx] || '#888';
       sectionLabels += `<text x="${x.toFixed(1)}" y="${h - 2}" text-anchor="middle" font-size="9" fill="${color}" opacity="0.8">${idx+1}</text>`;
     });
   }
@@ -2295,13 +2321,13 @@ function drawElevationProfile() {
     // Find the in-progress section, or the last completed one
     const inProg = APP.sectionRanges.findIndex(r => r.status === 'in-progress');
     if (inProg >= 0) {
-      sectionName = APP.sectionRanges[inProg].parkName || '';
-      sectionNameEn = APP.sectionRanges[inProg].parkNameEn || '';
+      sectionName = APP.sectionRanges[inProg].regionZh || '';
+      sectionNameEn = APP.sectionRanges[inProg].regionEn || '';
     } else {
       const completed = APP.sectionRanges.filter(r => r.status === 'completed').length;
       const idx = Math.min(completed, APP.sectionRanges.length - 1);
-      sectionName = APP.sectionRanges[idx].parkName || '';
-      sectionNameEn = APP.sectionRanges[idx].parkNameEn || '';
+      sectionName = APP.sectionRanges[idx].regionZh || '';
+      sectionNameEn = APP.sectionRanges[idx].regionEn || '';
     }
   } else {
     const section = ghtSections[APP.currentSection - 1];
@@ -2352,8 +2378,8 @@ function currentSectionInfo() {
   let name = '', nameEn = '';
   if (APP.sectionRanges && APP.sectionRanges.length) {
     const inProg = APP.sectionRanges.findIndex(r => r.status === 'in-progress');
-    if (inProg >= 0) { name = APP.sectionRanges[inProg].parkName || ''; nameEn = APP.sectionRanges[inProg].parkNameEn || ''; }
-    else { const c = APP.sectionRanges.filter(r => r.status === 'completed').length; const idx = Math.min(c, APP.sectionRanges.length - 1); name = APP.sectionRanges[idx].parkName || ''; nameEn = APP.sectionRanges[idx].parkNameEn || ''; }
+    if (inProg >= 0) { name = APP.sectionRanges[inProg].regionZh || ''; nameEn = APP.sectionRanges[inProg].regionEn || ''; }
+    else { const c = APP.sectionRanges.filter(r => r.status === 'completed').length; const idx = Math.min(c, APP.sectionRanges.length - 1); name = APP.sectionRanges[idx].regionZh || ''; nameEn = APP.sectionRanges[idx].regionEn || ''; }
   } else if (ghtSections[APP.currentSection - 1]) { name = ghtSections[APP.currentSection - 1].name; nameEn = ghtSections[APP.currentSection - 1].nameEn; }
   return { name, nameEn };
 }
@@ -2598,23 +2624,23 @@ function renderProgress() {
       const label = status === 'completed' ? '✅' : status === 'in-progress' ? '🔵' : '⚪';
       const coverageText = range.coverage ? ` (${(range.coverage * 100).toFixed(0)}%)` : '';
       const secDist = range.sectionActualDist ? Math.round(range.sectionActualDist) : '?';
-      const parkName = range.parkNameEn || ('Section ' + (idx + 1));
-      const parkNameZh = range.parkName || '';
+      const parkName = range.regionEn || ('Section ' + (idx + 1));
+      const parkNameZh = range.regionZh || '';
       return `<div class="section-item ${cssStatus === 'current' ? 'active' : ''} ${cssStatus === 'done' ? 'completed' : ''}" data-section="${idx + 1}">
-        <div class="section-indicator ${cssStatus}" style="background:${range.parkColor || '#888'}"></div>
+        <div class="section-indicator ${cssStatus}" style="background:${range.regionColor || '#888'}"></div>
         <div class="section-info">
           <div class="name">${label} ${parkName} <span style="font-size:10px;color:var(--text-dim)">${parkNameZh}</span>${coverageText}</div>
-          <div class="detail">📏 ${secDist}km${range.parkHighlights ? ' · ' + range.parkHighlights[0] : ''}</div>
+          <div class="detail">📏 ${secDist}km${range.regionHighlights && range.regionHighlights.length ? ' · ' + range.regionHighlights[0] : ''}</div>
         </div>
       </div>`;
     }).join('');
   } else {
-    sec = nationalParks.map((p, idx) => {
+    sec = (window.GHT_SECTIONS || []).map((p, idx) => {
       return `<div class="section-item" data-section="${idx + 1}">
         <div class="section-indicator upcoming" style="background:${p.color}"></div>
         <div class="section-info">
-          <div class="name">⚪ ${p.nameEn} <span style="font-size:10px;color:var(--text-dim)">${p.name}</span></div>
-          <div class="detail">📌 ${p.highlights.join(' · ')}</div>
+          <div class="name">⚪ ${p.en} <span style="font-size:10px;color:var(--text-dim)">${p.zh}</span></div>
+          <div class="detail">📌 ${p.scenery || ''}</div>
         </div>
       </div>`;
     }).join('');
@@ -2642,7 +2668,7 @@ function renderProgress() {
     </div>
     <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);margin-bottom:12px;">
       <span id="progressPct">${APP.progressPct.toFixed(1)}%</span>
-      <span id="progressDetail">${completedCount}✅ ${inProgressCount > 0 ? '+' + inProgressCount + '🔵' : ''} / ${(APP.sectionRanges ? APP.sectionRanges.length : nationalParks.length)} 段</span>
+      <span id="progressDetail">${completedCount}✅ ${inProgressCount > 0 ? '+' + inProgressCount + '🔵' : ''} / ${(APP.sectionRanges ? APP.sectionRanges.length : (window.GHT_SECTIONS || []).length)} 段</span>
     </div>
 
     ${autoShiftNote}
@@ -2718,7 +2744,7 @@ function sectionElevSVG(range) {
     return x.toFixed(1) + ',' + y.toFixed(1);
   }).join(' ');
   const area = pad + ',' + (H - pad) + ' ' + ptsStr + ' ' + (W - pad) + ',' + (H - pad);
-  const color = range.parkColor || '#888';
+  const color = range.regionColor || '#888';
   return `<div class="elev-box">
       <div class="cap">📈 高程剖面</div>
       <svg width="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="display:block">
@@ -2769,14 +2795,14 @@ function focusSection(idx) {
   }
 }
 
-// 无数据回退：点击保护区聚焦其入口坐标
-function focusPark(idx) {
-  const p = nationalParks[idx];
-  if (p && typeof map !== 'undefined' && p.entryLat != null) {
+// 无数据回退：点击区域聚焦其入口坐标
+function focusRegion(idx) {
+  const p = (window.GHT_SECTIONS || [])[idx];
+  if (p && p.entry && typeof map !== 'undefined') {
     document.querySelectorAll('.sec-card').forEach(c => c.classList.remove('active'));
     const card = document.querySelector('.sec-card[data-idx="' + idx + '"]');
     if (card) card.classList.add('active');
-    map.setView([p.entryLat, p.entryLon], 10);
+    map.setView([p.entry[0], p.entry[1]], 10);
   }
 }
 
@@ -2787,11 +2813,11 @@ function renderSections() {
     APP.sectionRanges.forEach((range, idx) => {
       const status = range.status || 'upcoming';
       const statusIcon = status === 'completed' ? '✅' : status === 'in-progress' ? '🔵' : '⚪';
-      const color = range.parkColor || '#888';
+      const color = range.regionColor || '#888';
       const plannedKm = range.sectionActualDist ? Math.round(range.sectionActualDist) : 0;
       const cov = range.coverage || 0;
       const actualKm = Math.round(plannedKm * cov);
-      const highlights = range.parkHighlights || [];
+      const highlights = range.regionHighlights || [];
 
       const wps = (APP.presetTrack ? sectionWaypoints(range) : []);
       const wpRows = wps.length ? wps.map(w => {
@@ -2805,8 +2831,8 @@ function renderSections() {
 
       html += `<div class="sec-card" data-idx="${idx}" style="border-left-color:${color}" onclick="focusSection(${idx})">
         <div class="sec-head">
-          <div class="sec-title">${statusIcon} ${range.parkNameEn || ('Section ' + (idx + 1))}
-            <small>${range.parkName || ''}</small></div>
+          <div class="sec-title">${statusIcon} ${range.regionEn || ('Section ' + (idx + 1))}
+            <small>${range.regionZh || ''}</small></div>
           <div class="sec-meta">计划 ${plannedKm}km<br>已走 ${actualKm}km</div>
         </div>
         <div class="sec-bar"><i style="width:${Math.round(cov * 100)}%;background:${color}"></i></div>
@@ -2820,13 +2846,13 @@ function renderSections() {
     });
   } else {
     // 无数据：静态保护区列表（可点击聚焦入口坐标）
-    nationalParks.forEach((p, idx) => {
-      html += `<div class="sec-card" data-idx="${idx}" style="border-left-color:${p.color};opacity:.6;" onclick="focusPark(${idx})">
+    (window.GHT_SECTIONS || []).forEach((p, idx) => {
+      html += `<div class="sec-card" data-idx="${idx}" style="border-left-color:${p.color};opacity:.6;" onclick="focusRegion(${idx})">
         <div class="sec-head">
-          <div class="sec-title">⚪ ${p.nameEn} <small>${p.name}</small></div>
+          <div class="sec-title">⚪ ${p.en} <small>${p.zh}</small></div>
         </div>
         <div class="sec-detail" style="max-height:none;padding-bottom:12px;">
-          <div style="font-size:11px;color:var(--text-dim);line-height:1.7;">📌 ${p.highlights.join(' · ')}</div>
+          <div style="font-size:11px;color:var(--text-dim);line-height:1.7;">📌 ${p.scenery || ''}</div>
         </div>
       </div>`;
     });
@@ -3641,42 +3667,42 @@ function findClosestDistanceIndex(distances, targetDist) {
 function calculateSectionRanges(presetTrack) {
   if (!presetTrack || !presetTrack.distances || presetTrack.distances.length === 0) return [];
 
+  const regions = (window.GHT_SECTIONS || []).filter(r => r.entry && r.entry.length === 2);
+  if (!regions.length) return [];
+
   const pts = presetTrack.trackPoints;
   const dists = presetTrack.distances;
-  const totalDist = dists[dists.length - 1];
 
-  // Find the track point index closest to each national park entry point
-  const parkEntryIndices = nationalParks.map(park => {
+  // Find the track point index closest to each region's entry anchor
+  const entries = regions.map(region => {
     let minDist = Infinity, bestIdx = 0;
     for (let i = 0; i < pts.length; i++) {
-      const d = haversine(pts[i].lat, pts[i].lon, park.entryLat, park.entryLon);
+      const d = haversine(pts[i].lat, pts[i].lon, region.entry[0], region.entry[1]);
       if (d < minDist) { minDist = d; bestIdx = i; }
     }
-    return { park, entryIdx: bestIdx, entryDist: minDist };
+    return { region, entryIdx: bestIdx, entryDist: minDist };
   });
 
-  // Filter: only include parks whose entry point is within reasonable distance of the track (< 15km)
-  // and sort by entry index to ensure correct order along the route
-  const validParks = parkEntryIndices
-    .filter(e => e.entryDist < 15000)
-    .sort((a, b) => a.entryIdx - b.entryIdx);
-
-  if (validParks.length === 0) return [];
+  // Always keep all 13 regions so the segment count stays 13; sort by track index
+  // (GHT_SECTIONS is already ordered east → west by num). Anchors far from the track
+  // simply collapse to a tiny/empty slice and render as "upcoming".
+  entries.sort((a, b) => a.entryIdx - b.entryIdx);
 
   const sectionRanges = [];
-  for (let i = 0; i < validParks.length; i++) {
-    const { park, entryIdx } = validParks[i];
+  for (let i = 0; i < entries.length; i++) {
+    const { region, entryIdx } = entries[i];
     const startIndex = entryIdx;
-    const endIndex = (i < validParks.length - 1) ? validParks[i + 1].entryIdx : pts.length - 1;
-    const startDist = dists[startIndex];
-    const endDist = dists[endIndex];
+    const endIndex = (i < entries.length - 1) ? entries[i + 1].entryIdx : pts.length - 1;
+    const startDist = dists[startIndex] || 0;
+    const endDist = dists[endIndex] || 0;
 
     sectionRanges.push({
       sectionId: i + 1,
-      parkName: park.name,
-      parkNameEn: park.nameEn,
-      parkColor: park.color,
-      parkHighlights: park.highlights,
+      regionId: region.id,
+      regionZh: region.zh,
+      regionEn: region.en,
+      regionColor: region.color,
+      regionHighlights: region.scenery ? [region.scenery] : [],
       startIndex, endIndex,
       startDist, endDist,
       sectionActualDist: (endDist - startDist) / 1000,
@@ -3687,8 +3713,23 @@ function calculateSectionRanges(presetTrack) {
   return sectionRanges;
 }
 
+function persistRegionMeasured() {
+  // 把首页算好的「每段完成状态」持久化为 ght_region_measured（与 sectionRanges 的 13 区域一一对应）。
+  // 该键以 ght_ 开头，会被 clearAllData() 一并清除 → 重置后 sections 页面自动回到「计划」。
+  try {
+    const rm = {};
+    (window.GHT_SECTIONS || []).forEach(r => { rm[r.id] = false; });
+    if (APP.sectionRanges && APP.actualTracks && APP.actualTracks.length) {
+      APP.sectionRanges.forEach(r => {
+        if (r.regionId && rm.hasOwnProperty(r.regionId) && (r.status === 'completed' || r.status === 'in-progress')) rm[r.regionId] = true;
+      });
+    }
+    localStorage.setItem('ght_region_measured', JSON.stringify(rm));
+  } catch (e) {}
+}
+
 function checkAllSectionsCompletion() {
-  if (!APP.sectionRanges || !APP.actualTracks.length) return;
+  if (!APP.sectionRanges || !APP.actualTracks.length) { persistRegionMeasured(); return; }
 
   APP.sectionRanges.forEach(range => {
     let totalCovered = 0;
@@ -3724,6 +3765,7 @@ function checkAllSectionsCompletion() {
       range.status = 'upcoming';
     }
   });
+  persistRegionMeasured();
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -3764,10 +3806,10 @@ const nationalParks = [
     highlights: ['Nara La垭口', '拉拉湖', '远西秘境'] },
 ];
 
-const sectionColors = nationalParks.map(p => p.color);
+const sectionColors = (window.GHT_SECTIONS || []).map(r => r.color);
 
 function getSectionLineStyle(idx, status) {
-  const color = nationalParks[idx] ? nationalParks[idx].color : '#888';
+  const color = (window.GHT_SECTIONS[idx] && window.GHT_SECTIONS[idx].color) || '#888';
   if (status === 'completed') return { color, weight: 6, opacity: 1.0 };
   if (status === 'in-progress') return { color, weight: 5, opacity: 0.95, dashArray: '8 4' };
   return { color, weight: 4, opacity: 0.75 };
@@ -3823,8 +3865,8 @@ function renderAllTracks() {
         const slice = APP.presetTrack.trackPoints.slice(range.startIndex, range.endIndex + 1);
         if (slice.length < 2) return;
         const style = getSectionLineStyle(idx, range.status);
-        const popupHtml = '<b>📍 ' + (range.parkNameEn || ('Section ' + (idx + 1))) + '</b><br>' +
-          (range.parkName ? '<span style="font-size:11px;color:#888">' + range.parkName + '</span><br>' : '') +
+        const popupHtml = '<b>📍 ' + (range.regionEn || ('Section ' + (idx + 1))) + '</b><br>' +
+          (range.regionZh ? '<span style="font-size:11px;color:#888">' + range.regionZh + '</span><br>' : '') +
           '状态: ' + (range.status === 'completed' ? '✅ 已完成' : range.status === 'in-progress' ? '🔵 进行中' : '⚪ 未开始') +
           (range.coverage ? '<br>覆盖: ' + (range.coverage * 100).toFixed(0) + '%' : '') +
           '<br>距离: ~' + Math.round((range.endDist - range.startDist) / 1000) + 'km';
@@ -3884,7 +3926,7 @@ function renderAllTracks() {
         const d = haversine(midPt.lat, midPt.lon, rp.lat, rp.lon);
         if (d < bestDist) { bestDist = d; bestIdx = si; }
       });
-      sectionColor = APP.sectionRanges[bestIdx].parkColor || '#3fb950';
+      sectionColor = APP.sectionRanges[bestIdx].regionColor || '#3fb950';
     }
 
     const segs = splitByBreaks(track.trackPoints);

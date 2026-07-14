@@ -239,6 +239,12 @@
   <script>
   (function(){
     const data = window.GHT_SECTIONS || [];
+    // 完成状态由首页实际轨迹动态决定；重置后 ght_region_measured 被清空 → 全部回到「计划」
+    data.forEach(r => { r.measured = false; });
+    try {
+      const rm = JSON.parse(localStorage.getItem('ght_region_measured') || '{}');
+      data.forEach(r => { if (rm[r.id]) r.measured = true; });
+    } catch (e) {}
     const track = document.getElementById('track');
     const dotsEl = document.getElementById('cfDots');
     let filter='all';
