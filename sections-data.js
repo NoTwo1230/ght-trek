@@ -466,4 +466,4 @@ window.GHT_SECTIONS = [
     "index": "assets/region-maps/darchula_index.png"
   }
 ];
-window.GHT_SECTIONS_SUMMARY = {measuredKm:649.0, plannedKm:1170, nRegions:13, measuredRegions:5};
+window.GHT_SECTIONS_SUMMARY = {measuredKm:0, plannedKm:1819, nRegions:13, measuredRegions:0};
