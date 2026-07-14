@@ -75,10 +75,6 @@
   .cfc-status{position:absolute;top:9px;right:9px;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;z-index:3}
   .cfc-status.meas{background:rgba(63,185,80,.2);color:var(--green);border:1px solid rgba(63,185,80,.55)}
   .cfc-status.plan{background:rgba(210,153,34,.18);color:var(--amber);border:1px solid rgba(210,153,34,.55)}
-  .cfc-cap{position:absolute;left:0;right:0;bottom:0;padding:34px 11px 9px;z-index:3;
-    background:linear-gradient(transparent,rgba(0,0,0,.86));display:flex;flex-direction:column;gap:1px;pointer-events:none}
-  .cfc-cap .zh{font-size:16px;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7);line-height:1.15}
-  .cfc-cap .en{font-size:8.5px;letter-spacing:1.2px;color:rgba(255,255,255,.72);font-weight:500}
   .cfc-view{position:absolute;left:11px;right:11px;bottom:9px;z-index:4;cursor:pointer;
     border:1px solid var(--rb);background:rgba(10,14,20,.55);color:#fff;backdrop-filter:blur(4px);
     border-radius:9px;padding:7px;font-size:11.5px;font-weight:600;font-family:inherit;
@@ -264,10 +260,6 @@
           <img loading="lazy" src="${o.index}" alt="${esc(o.zh)} 区域地图">
           <span class="cfc-num">${String(o.num).padStart(2,'0')}</span>
           ${status}
-          <div class="cfc-cap">
-            <span class="zh">${esc(o.zh)}</span>
-            <span class="en">${esc(o.en)}</span>
-          </div>
           <button class="cfc-view" data-i="${i}">查看大图 ↗</button>
         </div>
       </div>`;
