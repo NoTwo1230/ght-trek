@@ -2241,6 +2241,15 @@ function drawElevationProfile() {
   });
   if (minE === Infinity) { container.innerHTML = ''; return; }
   const range = maxE - minE || 1;
+  const trueMin = minE, trueMax = maxE;   // 真实海拔上下限（minE 稍后被向下取整用于绘图网格）
+  // 累计爬升：沿轨迹累加所有「上升段」的正高差
+  let climb = 0, prevE = null;
+  for (let i = 0; i < points.length; i++) {
+    const e = points[i].elev;
+    if (e == null) continue;
+    if (prevE != null && e > prevE) climb += (e - prevE);
+    prevE = e;
+  }
   minE = Math.floor(minE / 500) * 500;
 
   // Build elevation path
@@ -2304,7 +2313,9 @@ function drawElevationProfile() {
     gridLines += `<text x="${pad.left - 4}" y="${gy.toFixed(1) + 3}" text-anchor="end" font-size="8" fill="var(--text-dim)">${e}</text>`;
   }
 
-  document.getElementById('elevLabel').textContent = (points[0].elev || '?') + 'm → ' + (points[points.length-1].elev || '?') + 'm';
+  const fmtM = v => Math.round(v).toLocaleString() + 'm';
+  document.getElementById('elevLabel').textContent =
+    '最高 ' + fmtM(trueMax) + ' · 最低 ' + fmtM(trueMin) + ' · 累计爬升 ' + fmtM(climb);
 
   container.innerHTML = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="100%" preserveAspectRatio="none">
     <rect width="${w}" height="${h}" fill="transparent"/>
