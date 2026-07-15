@@ -3919,15 +3919,28 @@ const sectionColors = (window.GHT_SECTIONS || []).map(r => r.color);
 //  协调色 TRACK_FILL_DONE 选用暖阳金，与暗色地形底图及全部 13 个鲜艳区域边框均和谐；
 //  如需更换，只改这一个常量即可。
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-const TRACK_FILL_DONE = '#FFCE6B';
-const TRACK_FILL_OPACITY = 0.82;
+const TRACK_FILL_DONE = '#FFCE6B';       // 已完成/进行中 内层填充（金色）
+const TRACK_FILL_OPACITY = 0.9;
+const TRACK_DASH = '#ffffff';            // 计划段中间虚线颜色
 
-// 返回某段「边框 + 内部」两层样式
+// 返回某段「外发光 + 边框 + 内层」样式（2026-07-15 调整）
+//  · 计划段   ：区域色实线边框 + 白色虚线中心线（一眼看出未走）
+//  · 已完成段 ：金色填充内层 + 更粗/更亮的区域色边框 + 白色外发光（边框明显）
 function getSectionStyle(color, status) {
   const isDone = status === 'completed' || status === 'in-progress';
+  if (isDone) {
+    return {
+      glow:   { color: '#ffffff', weight: 18, opacity: 0.12 },
+      border: { color: color, weight: 9, opacity: 1.0, dashArray: undefined },
+      inner:  { color: TRACK_FILL_DONE, weight: 5, opacity: TRACK_FILL_OPACITY, dashArray: undefined },
+      dashed: null
+    };
+  }
   return {
-    border:  { color: color, weight: 6, opacity: 0.95, dashArray: status === 'in-progress' ? '10 6' : undefined },
-    interior:{ color: isDone ? TRACK_FILL_DONE : 'rgba(13,17,23,0)', weight: 3, opacity: isDone ? TRACK_FILL_OPACITY : 0 }
+    glow:   null,
+    border: { color: color, weight: 6, opacity: 0.95, dashArray: undefined },
+    inner:  null,
+    dashed: { color: TRACK_DASH, weight: 3, opacity: 0.85, dashArray: '5 9' }
   };
 }
 
@@ -3948,23 +3961,40 @@ function splitByBreaks(points) {
   return segments;
 }
 
-// 绘制一段「透明线段 + 区域色边框」；已完成则内部填充协调色
+// 绘制一段轨迹：计划=区域色边框+白色虚线中心；已完成=金色填充+醒目边框+白光晕
 function drawSectionSegment(points, color, status, layerGroup, popupHtml) {
   const segs = splitByBreaks(points);
   const style = getSectionStyle(color, status);
   segs.forEach(seg => {
     const coords = seg.map(p => [p.lat, p.lon]);
-    // 边框（区域色，较粗）= 透明线段的轮廓
+    // 外发光（仅已完成段，让边框更醒目）
+    if (style.glow) {
+      L.polyline(coords, {
+        color: style.glow.color, weight: style.glow.weight,
+        opacity: style.glow.opacity, lineCap: 'round', lineJoin: 'round'
+      }).addTo(layerGroup);
+    }
+    // 边框（区域色）= 轨迹轮廓
     const border = L.polyline(coords, {
       color: style.border.color, weight: style.border.weight,
       opacity: style.border.opacity, dashArray: style.border.dashArray,
       lineCap: 'round', lineJoin: 'round'
     }).addTo(layerGroup);
-    // 内部填充：计划=透明（露出暗底）；已完成=协调色
-    L.polyline(coords, {
-      color: style.interior.color, weight: style.interior.weight,
-      opacity: style.interior.opacity, lineCap: 'round', lineJoin: 'round'
-    }).addTo(layerGroup);
+    // 内层填充：已完成=金色；计划段为 null
+    if (style.inner) {
+      L.polyline(coords, {
+        color: style.inner.color, weight: style.inner.weight,
+        opacity: style.inner.opacity, lineCap: 'round', lineJoin: 'round'
+      }).addTo(layerGroup);
+    }
+    // 计划段中间虚线（白色）
+    if (style.dashed) {
+      L.polyline(coords, {
+        color: style.dashed.color, weight: style.dashed.weight,
+        opacity: style.dashed.opacity, dashArray: style.dashed.dashArray,
+        lineCap: 'round', lineJoin: 'round'
+      }).addTo(layerGroup);
+    }
     if (popupHtml) border.bindPopup(popupHtml);
   });
 }
