@@ -1441,6 +1441,46 @@ function findParkIndexForPoint(lat, lon) {
   return best;
 }
 
+// 行程/日志的路段归属：与地图保持一致 —— 按预设轨迹几何(东→西强制顺序)判定，
+// 而非「起点离哪个锚点最近」(那种方式在路段边界会把第一天错判成马卡鲁)。
+// 做法：在预设轨迹上找离该点最近的点索引，定位其所属 sectionRange 后返回该 range。
+// 若无预设轨迹则退回旧的最近锚点逻辑(此时行程本就无从生成，影响极小)。
+function sectionForPoint(pt) {
+  if (!pt) return null;
+  const ranges = (APP.sectionRanges && APP.sectionRanges.length)
+    ? APP.sectionRanges
+    : (APP.presetTrack ? calculateSectionRanges(APP.presetTrack) : []);
+  if (!ranges.length) {
+    const fi = findParkIndexForPoint(pt.lat, pt.lon);
+    return fi >= 0 && window.GHT_SECTIONS[fi]
+      ? { sectionId: fi + 1, regionZh: window.GHT_SECTIONS[fi].zh, regionId: window.GHT_SECTIONS[fi].id }
+      : null;
+  }
+  const pts = APP.presetTrack ? APP.presetTrack.trackPoints : null;
+  if (pts && pts.length) {
+    let best = Infinity, bi = -1;
+    const step = Math.max(1, Math.floor(pts.length / 500));
+    for (let i = 0; i < pts.length; i += step) {
+      const d = haversine(pt.lat, pt.lon, pts[i].lat, pts[i].lon);
+      if (d < best) { best = d; bi = i; }
+    }
+    if (bi >= 0) {
+      for (const r of ranges) {
+        if (bi >= r.startIndex && bi <= r.endIndex) return r;
+      }
+      // 落在区间缝隙时取中点最近者
+      let br = ranges[0], bd = Infinity;
+      for (const r of ranges) {
+        const mid = (r.startIndex + r.endIndex) / 2;
+        const dd = Math.abs(mid - bi);
+        if (dd < bd) { bd = dd; br = r; }
+      }
+      return br;
+    }
+  }
+  return null;
+}
+
 // 判断标注点是否靠近某段轨迹（用于把相邻文件中的营地/垭口正确归属到那一天）
 function ptNearSegment(wpt, pts, radius) {
   if (!wpt || !pts || !pts.length) return false;
@@ -1496,12 +1536,12 @@ function buildItineraryFromSegments(valid, restDays) {
     const toName = nearestWaypointLabel(allWpts, endPt, 6000)
       || fmtCoordLabel(endPt);
 
-    const parkIdx = findParkIndexForPoint(startPt.lat, startPt.lon);
+    const sec = sectionForPoint(startPt);
 
     days.push({
       day: seg.dayNum,
-      sectionId: parkIdx >= 0 ? parkIdx + 1 : 0,
-      sectionName: parkIdx >= 0 ? (window.GHT_SECTIONS[parkIdx] ? window.GHT_SECTIONS[parkIdx].zh : '') : '',
+      sectionId: sec ? sec.sectionId : 0,
+      sectionName: sec ? sec.regionZh : '',
       from: fromName,
       to: toName,
       fromLat: startPt ? startPt.lat : null,
@@ -4758,13 +4798,14 @@ function addActualTrack(gpxData, stats) {
   }
 
   if (dailyStats && dailyStats.date) {
-    // 按当日轨迹首点最近的区域锚点，自动归类到对应路段（sectionId = 锚点索引+1）
+    // 自动归类到对应路段：与地图一致，按预设轨迹几何顺序判定
+    // （不再用单锚点最近距离，否则东端起点会被错判成马卡鲁等相邻路段）。
     let logSectionId = null;
     try {
       const sp = gpxData.trackPoints && gpxData.trackPoints[0];
       if (sp) {
-        const idx = findParkIndexForPoint(sp.lat, sp.lon);
-        if (idx >= 0) logSectionId = idx + 1;
+        const r = sectionForPoint(sp);
+        if (r && r.sectionId) logSectionId = r.sectionId;
       }
     } catch (e) {}
     APP.logEntries = APP.logEntries.filter(e => e.date !== dailyStats.date);
@@ -4948,6 +4989,27 @@ try {
 // 注意：预设轨迹（presetSegments）只作为「计划路线」加载，不会自动变成「已记录」。
 // 「已记录 / 已完成」只在用户上传实际徒步轨迹（ght_actual 有数据）后才会同步填充。
 // 刷新后行程已用分段重建，需将已记录的 GPS 重新关联到行程日
+
+// 迁移：修复前旧行程可能把第一天错判成相邻路段(如马卡鲁)。
+// 这里用新逻辑(与地图一致的轨迹几何顺序)按每天起点重算 sectionId/sectionName，
+// 使已存 localStorage 的行程在无重新上传的情况下也能自动纠正。
+if (APP.itinerary.length && (APP.sectionRanges && APP.sectionRanges.length || APP.presetTrack)) {
+  try {
+    let changed = false;
+    APP.itinerary.forEach(d => {
+      if (d.fromLat != null && d.fromLon != null) {
+        const r = sectionForPoint({ lat: d.fromLat, lon: d.fromLon });
+        if (r && r.sectionId && r.sectionId !== d.sectionId) {
+          d.sectionId = r.sectionId;
+          if (r.regionZh) d.sectionName = r.regionZh;
+          changed = true;
+        }
+      }
+    });
+    if (changed) saveItinerary();
+  } catch (e) {}
+}
+
 try { matchItineraryToActuals(); } catch(e) {}
 
 // Load current position

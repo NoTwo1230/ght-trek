@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="ght-api" content="https://ght-api.wangchen19861230.workers.dev">
-<title>GHT 远征日志 · 按路段分组</title>
+<title>GHT 远征日志 · 时间线</title>
 <script src="sections-data.js"></script>
 <style>
   :root{
@@ -64,17 +64,10 @@
   .filters .spacer{flex:1}
   .filters .hint{font-size:11px;color:var(--text-faint)}
 
-  /* 分组信息流 */
+  /* 信息流（平铺，不再按路段分组） */
   .feed{max-width:920px;margin:8px auto 50px;padding:18px 22px 0}
-  .sgroup{margin-bottom:30px}
-  .sg-head{display:flex;align-items:center;gap:11px;padding:9px 0 11px 14px;
-    border-left:3px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:14px}
-  .sg-dot{width:11px;height:11px;border-radius:50%;flex:none;box-shadow:0 0 0 3px rgba(255,255,255,.05)}
-  .sg-name{font-size:16px;font-weight:800;letter-spacing:.4px}
-  .sg-en{font-size:10.5px;font-weight:600;color:var(--text-faint);letter-spacing:2px}
-  .sg-count{margin-left:auto;font-size:11px;color:var(--text-dim);background:var(--panel);
-    border:1px solid var(--border);border-radius:20px;padding:3px 11px}
-  .sg-entries{display:flex;flex-direction:column;gap:14px}
+  .entry{margin-bottom:14px}
+  .entry:last-child{margin-bottom:0}
 
   .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--r);padding:15px 17px;transition:.2s;overflow:hidden}
   .card:hover{border-color:rgba(255,255,255,.18);background:var(--panel-2)}
@@ -140,8 +133,8 @@
 
   <div class="page-head">
     <h1>📝 远征日志</h1>
-    <div class="en">JOURNAL · 按路段分组 · 东段 → 西段</div>
-    <p class="sub">从 Phungling 到 Darchula 的全程纪实。GPS 自动同步徒步数据，沿途随笔按 13 个路段归类。山里信号不稳，只发文字、不传照片。</p>
+    <div class="en">JOURNAL · 时间线 · 最新在前</div>
+    <p class="sub">从 Phungling 到 Darchula 的全程纪实。沿途随笔按时间倒序排列，最新发布在最上方。山里信号不稳，只发文字、不传照片。</p>
   </div>
 
   <div class="stats" id="stats">
@@ -153,10 +146,9 @@
 
   <div class="filters">
     <span class="chip active" data-filter="all">全部</span>
-    <span class="chip" data-filter="gps">📡 GPS 自动</span>
     <span class="chip" data-filter="text">✍️ 手写随笔</span>
     <span class="spacer"></span>
-    <span class="hint">按路段从上到下排列</span>
+    <span class="hint">最新在前</span>
   </div>
 
   <div class="composer" id="composer"></div>
@@ -277,52 +269,16 @@
     </div>`;
   }
 
-  function renderGroups(filter) {
+  function renderFeed(filter) {
     const feed = document.getElementById('feed');
-    const groups = {};
-    const ungrouped = [];
-    logEntries.forEach(e => {
-      if (e.sectionId && e.sectionId >= 1 && e.sectionId <= SECTIONS.length) {
-        (groups[e.sectionId] = groups[e.sectionId] || []).push(e);
-      } else ungrouped.push(e);
-    });
-
-    const pass = (e) => filter === 'all' || (filter === 'gps' ? !!e.dailyStats : !e.dailyStats);
-
-    let html = '';
-    SECTIONS.forEach(sec => {
-      const shown = (groups[sec.num] || []).filter(pass);
-      if (!shown.length) return;
-      html += `<section class="sgroup" data-section="${sec.num}">
-        <div class="sg-head" style="border-left-color:${sec.color}">
-          <span class="sg-dot" style="background:${sec.color}"></span>
-          <span class="sg-name" style="color:${sec.color}">${sec.zh}</span>
-          <span class="sg-en">${(sec.en || '').toUpperCase()}</span>
-          <span class="sg-count">${shown.length} 篇</span>
-        </div>
-        <div class="sg-entries">${shown.map(e => entryCard(e, sec)).join('')}</div>
-      </section>`;
-    });
-
-    if (ungrouped.length) {
-      const shown = ungrouped.filter(pass);
-      if (shown.length) {
-        html += `<section class="sgroup" data-section="0">
-          <div class="sg-head" style="border-left-color:var(--text-faint)">
-            <span class="sg-dot" style="background:var(--text-faint)"></span>
-            <span class="sg-name" style="color:var(--text-dim)">未分组</span>
-            <span class="sg-en">UNGROUPED</span>
-            <span class="sg-count">${shown.length} 篇</span>
-          </div>
-          <div class="sg-entries">${shown.map(e => entryCard(e, { color: 'var(--accent)' })).join('')}</div>
-        </section>`;
-      }
+    const pass = (e) => filter === 'all' || (filter === 'text' ? !e.dailyStats : !!e.dailyStats);
+    const shown = logEntries.filter(pass);
+    if (!shown.length) {
+      feed.innerHTML = `<div class="empty">暂无日志。<br>主人可在此页面发布随笔。</div>`;
+      return;
     }
-
-    if (!html) {
-      html = `<div class="empty">暂无日志。<br>主人可在此页面发布随笔（发布时可选择所属路段）。</div>`;
-    }
-    feed.innerHTML = html;
+    // 平铺：新 → 旧（load() 已按日期倒序），不再按路段分组
+    feed.innerHTML = shown.map(e => entryCard(e, { color: 'var(--accent)' })).join('');
   }
 
   function renderStats() {
@@ -371,11 +327,8 @@
       if (ub) ub.addEventListener('click', unlockJournal);
       return;
     }
-    const opts = SECTIONS.map(s => `<option value="${s.num}">${s.zh}</option>`).join('');
     box.innerHTML = `
       <div class="composer-box">
-        <label>所属路段（选填，不选则归入「未分组」）</label>
-        <select id="jSec"><option value="">未分组</option>${opts}</select>
         <textarea id="jText" rows="3" placeholder="记点什么…（山里信号不稳，先记着）"></textarea>
         <button class="btn-pub" id="jPub">发布</button>
       </div>`;
@@ -401,32 +354,27 @@
     const ta = document.getElementById('jText');
     const text = (ta ? ta.value : '').trim();
     if (!text) return;
-    const sel = document.getElementById('jSec');
-    const secVal = sel ? sel.value : '';
-    const sectionId = secVal ? parseInt(secVal, 10) : null;
     const today = fmtNepalDate(new Date());
     const entry = { date: today, text };
-    if (sectionId) entry.sectionId = sectionId;
     logEntries.push(entry);
     logEntries.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     saveLogEntries();
     if (ta) ta.value = '';
-    if (sel) sel.value = '';
     renderStats();
-    renderGroups(document.querySelector('.filters .chip.active')?.dataset.filter || 'all');
+    renderFeed(document.querySelector('.filters .chip.active')?.dataset.filter || 'all');
   }
 
   // ── 启动 ──
   load();
   renderStats();
-  renderGroups('all');
+  renderFeed('all');
   renderComposer();
 
   document.querySelectorAll('.filters .chip').forEach(c => {
     c.addEventListener('click', () => {
       document.querySelectorAll('.filters .chip').forEach(x => x.classList.remove('active'));
       c.classList.add('active');
-      renderGroups(c.dataset.filter);
+      renderFeed(c.dataset.filter);
     });
   });
 
