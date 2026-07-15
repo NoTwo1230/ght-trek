@@ -1136,7 +1136,10 @@
   .pass-summary-num { font-size: 12px; font-weight: 700; color: var(--text); white-space: nowrap; }
   .pass-summary-bar { flex: 1; height: 5px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; }
   .pass-summary-bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--green), var(--accent)); transition: width .4s ease; }
-  .pass-list { max-height: 240px; overflow-y: auto; }
+  /* 即将翻越列表：桌面端随右栏剩余高度填充(尽量一屏)，超出才滚动；小屏用 max-height 兜底 */
+  .pass-list { flex: 1 1 auto; min-height: 140px; max-height: calc(100vh - 260px); overflow-y: auto; }
+  #cardPasses { display: flex; flex-direction: column; min-height: 0; }
+  #cardPasses .card-b { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
   .pass-check { width: 15px; height: 15px; border-radius: 50%; flex-shrink: 0; background: var(--green); color: #0a0e14; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
   .pass-row.done { opacity: .5; }
   .pass-row.done .pass-name { text-decoration: line-through; text-decoration-color: rgba(255,255,255,.35); }
@@ -2644,7 +2647,7 @@ function savePassDone(set) { try { localStorage.setItem(PASS_DONE_KEY, JSON.stri
 // ── 垭口翻越列表（与预设轨迹实时同步）──
 function computePassList() {
   const wps = (APP.presetTrack && APP.presetTrack.waypoints) || [];
-  let passes = wps.filter(w => w._type === 'pass' || w._type === 'peak');
+  let passes = dedupeWaypoints(wps.filter(w => w._type === 'pass' || w._type === 'peak'));
   if (!passes.length) {
     const reason = wps.length ? 'unrecognized' : (APP.presetTrack ? 'noWpt' : 'noPreset');
     return { passes: [], done: 0, total: 0, wpCount: wps.length, reason };
@@ -4517,17 +4520,30 @@ function mergeGPXSegments(segments) {
   segments.forEach(seg => {
     // Append all track points (preserve order)
     mergedTrackPoints.push(...seg.trackPoints);
-
-    // Append waypoints, deduplicate by coordinate proximity (~11m)
-    seg.waypoints.forEach(wp => {
-      const dup = mergedWaypoints.some(mwp =>
-        Math.abs(mwp.lat - wp.lat) < 0.0001 && Math.abs(mwp.lon - wp.lon) < 0.0001
-      );
-      if (!dup) mergedWaypoints.push(wp);
-    });
+    // Append waypoints (去重统一在末尾 dedupeWaypoints 处理)
+    seg.waypoints.forEach(wp => mergedWaypoints.push(wp));
   });
 
-  return { trackPoints: mergedTrackPoints, waypoints: mergedWaypoints };
+  return { trackPoints: mergedTrackPoints, waypoints: dedupeWaypoints(mergedWaypoints) };
+}
+
+// 标注点去重：同名 + 同海拔 + 坐标在 ~100m 内 视为同一点（吸收 GPX 重复导出 / 浮点噪声）。
+// 无名点退化为纯坐标(3位≈111m)去重。避免「即将翻越」/ 地图出现重名同海拔的重复项。
+function dedupeWaypoints(wps) {
+  if (!wps || !wps.length) return wps || [];
+  const seen = new Set();
+  const out = [];
+  for (const w of wps) {
+    const name = (w.desc || w.name || '').trim();
+    const elev = (w.elev != null && isFinite(w.elev)) ? Math.round(w.elev) : '';
+    const lat = w.lat != null ? w.lat.toFixed(3) : '';
+    const lon = w.lon != null ? w.lon.toFixed(3) : '';
+    const key = name ? (name + '|' + elev + '|' + lat + ',' + lon) : (lat + ',' + lon);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(w);
+  }
+  return out;
 }
 
 // Read a single File object as text (Promise wrapper)
@@ -4905,6 +4921,7 @@ function addActualTrack(gpxData, stats) {
 
 function setAsPreset(gpxData, stats) {
   gpxData.distances = calculateTrackDistances(gpxData.trackPoints);
+  gpxData.waypoints = dedupeWaypoints(gpxData.waypoints); // 去除 GPX 重复标注点（同名同海拔）
   APP.presetTrack = gpxData;
   // Sync rest days from dayRange (batch import) or clear (single file)
   APP.presetRestDays = (gpxData.dayRange && gpxData.dayRange.restDays) ? gpxData.dayRange.restDays : [];
