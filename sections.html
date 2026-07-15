@@ -6,6 +6,10 @@
 <title>GHT 路段全景 · 13 段区域徒步指南</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap">
+<!-- 预加载首屏 coverflow 图片，消除白屏等待 -->
+<link rel="preload" as="image" href="assets/region-maps/kanchenjunga_index.png">
+<link rel="preload" as="image" href="assets/region-maps/makalu_index.png">
+<link rel="preload" as="image" href="assets/region-maps/everest_index.png">
 <style>
   :root{
     --bg:#0a0e14; --panel:#0d1219; --panel-alt:#11161f; --border:#1c2333;
@@ -196,7 +200,7 @@
   <div class="detail" id="detail">
     <div class="d-backdrop"></div>
     <div class="detail-card">
-      <div class="d-media"><img class="d-img" src="" alt=""></div>
+      <div class="d-media"><img class="d-img" src="" alt="" width="560" height="440"></div>
       <div class="d-info">
         <button class="d-close" aria-label="关闭">×</button>
         <div class="d-head">
@@ -282,7 +286,7 @@
       const status = o.measured ? '<span class="cfc-status meas">完成</span>' : '<span class="cfc-status plan">计划</span>';
       return `<div class="cfc" data-i="${i}" style="--rc:${rc};--rb:${rb}">
         <div class="cfc-img">
-          <img loading="lazy" src="${o.index}" alt="${esc(o.zh)} 区域地图">
+          <img loading="lazy" src="${o.index}" alt="${esc(o.zh)} 区域地图" width="300" height="230">
           <span class="cfc-num">${String(o.num).padStart(2,'0')}</span>
           ${status}
           <button class="cfc-view" data-i="${i}">查看大图 ↗</button>
@@ -290,8 +294,19 @@
       </div>`;
     }
 
+    // 虚拟化渲染：只渲染可见卡片 + 左右各 2 张（最多 5 张 DOM 节点）
+    // 减少首次 <img> 数量，大幅加快首屏加载
     function render(){
-      track.innerHTML = view.map(cardHTML).join('');
+      const n = view.length;
+      const visible = [];
+      for(let i = Math.max(0, active - 2); i <= Math.min(n - 1, active + 2); i++){
+        visible.push({ html: cardHTML(view[i], i), realIdx: i });
+      }
+      track.innerHTML = visible.map(v=>v.html).join('');
+      // 在 DOM 节点上标记真实索引
+      Array.from(track.children).forEach((c, li) => {
+        c.dataset.realIdx = visible[li].realIdx;
+      });
       dotsEl.innerHTML = view.map((o,i)=>`<button class="cf-dot${i===active?' active':''}" data-i="${i}" style="--rc:${o.color};--rb:${o.cborder}" aria-label="${esc(o.zh)}"></button>`).join('');
       layout();
     }
@@ -303,7 +318,9 @@
       const zDepth = W<760?60:130;
       const rot = 34;
       for(let i=0;i<cards.length;i++){
-        const c=cards[i]; const off=i-active; const a=Math.abs(off);
+        const c=cards[i];
+        const realIdx = +c.dataset.realIdx;   // 虚拟化后的真实索引
+        const off=realIdx-active; const a=Math.abs(off);
         const tx=off*spread, tz=-a*zDepth, ry=off*-rot;
         let scale=1-a*0.17; if(scale<0.42)scale=0.42;
         const op=a>3?0:1-a*0.17;
@@ -384,7 +401,7 @@
       const btn=e.target.closest('.cfc-view');
       if(btn){ e.stopPropagation(); openDetail(+btn.dataset.i); return; }
       const card=e.target.closest('.cfc');
-      if(card){ const i=+card.dataset.i; if(i===active)openDetail(i); else setActive(i); }
+      if(card){ const i=+card.dataset.realIdx; if(i===active)openDetail(i); else setActive(i); }
     });
     // image zoom from detail
     detail.querySelector('.d-img').addEventListener('click',()=>{
@@ -394,7 +411,7 @@
     // image-only lightbox
     const lb=document.getElementById('lb'),lbCap=document.getElementById('lbCap'),lbImgs=document.getElementById('lbImgs');
     let lbOpen=false;
-    function openRegion(src,name){lbCap.textContent='🗺️ '+name;lbImgs.innerHTML=`<img src="${src}" alt="">`;lb.classList.add('open');lbOpen=true;}
+    function openRegion(src,name){lbCap.textContent='🗺️ '+name;lbImgs.innerHTML=`<img src="${src}" alt="" width="820" loading="lazy">`;lb.classList.add('open');lbOpen=true;}
     document.getElementById('lbClose').addEventListener('click',()=>{lb.classList.remove('open');lbOpen=false;});
     lb.addEventListener('click',e=>{if(e.target===lb){lb.classList.remove('open');lbOpen=false;}});
 

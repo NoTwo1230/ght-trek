@@ -142,15 +142,20 @@
   .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
   .legend .bar { width: 16px; height: 4px; border-radius: 2px; }
 
-  .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
-  .wd { font-size: 11px; color: var(--text-dim); text-align: center; padding: 4px 0; font-weight: 500; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .wd { font-size: 11px; color: var(--text-dim); text-align: center; padding: 5px 2px; font-weight: 500; }
   .cell {
-    position: relative; min-height: 104px; background: var(--panel);
-    border: 1px solid var(--border); border-radius: 11px; padding: 7px;
-    display: flex; flex-direction: column; gap: 5px; transition: border-color .15s;
+    position: relative; min-height: 100px; background: var(--panel);
+    border: 1px solid var(--border); border-radius: 10px; padding: 5px 6px;
+    display: flex; flex-direction: column; gap: 4px; transition: border-color .15s;
+    overflow: hidden;
   }
   .cell:hover { border-color: var(--border-light); }
-  .cell.out { opacity: .32; background: transparent; }
+  .cell.out { opacity: .28; background: transparent; border-color: transparent; }
   .cell.today { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(88,166,255,0.45); }
   .cell .dnum { font-size: 11px; color: var(--text-dim); font-weight: 600; }
   .cell.today .dnum { color: var(--accent); }
@@ -159,20 +164,21 @@
   .chip {
     position: relative; display: flex; flex-direction: column; gap: 2px;
     width: 100%; text-align: left; font: inherit; color: var(--text);
-    border: 1px solid var(--border-light); border-radius: 9px; padding: 6px 8px 7px 11px;
+    border: 1px solid var(--border-light); border-radius: 8px; padding: 5px 7px 6px 9px;
     background: var(--panel-alt); cursor: pointer; overflow: hidden;
     transition: transform .12s, border-color .15s, box-shadow .15s;
   }
   .chip:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,.35); border-color: var(--accent); }
-  .chip .stripe { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; }
-  .chip .crow { display: flex; align-items: center; gap: 6px; }
-  .chip .dlab { font-size: 11px; font-weight: 700; }
-  .chip .sdot { width: 8px; height: 8px; border-radius: 50%; margin-left: auto; }
-  .chip .route { font-size: 10.5px; color: var(--text-dim); line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .chip .route .ar { color: var(--accent); margin: 0 3px; }
-  .chip .meta { display: flex; gap: 8px; font-size: 9.5px; color: var(--text-dimmer); }
-  .chip .badge { margin-left: auto; background: var(--accent-bg); color: var(--accent); font-size: 9px; font-weight: 700; border-radius: 10px; padding: 1px 6px; }
-  .chip .ghost { font-size: 9px; color: var(--text-dimmer); }
+  .chip .stripe { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 2px 0 0 2px; }
+  .chip .crow { display: flex; align-items: center; gap: 5px; }
+  .chip .dlab { font-size: 10.5px; font-weight: 700; }
+  .chip .sdot { width: 7px; height: 7px; border-radius: 50%; margin-left: auto; flex-shrink: 0; }
+  .chip .route { font-size: 10px; color: var(--text-dim); line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chip .route .ar { color: var(--accent); margin: 0 2px; }
+  .chip .meta { display: flex; gap: 6px; font-size: 9px; color: var(--text-dimmer); }
+  .chip .meta .rname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip .badge { margin-left: auto; background: var(--accent-bg); color: var(--accent); font-size: 8.5px; font-weight: 700; border-radius: 8px; padding: 1px 5px; }
+  .chip .ghost { font-size: 8.5px; color: var(--text-dimmer); }
   .chip.is-rest { background: rgba(63,185,80,.08); border-color: rgba(63,185,80,.25); }
   .chip.is-delay { background: rgba(210,153,34,.08); border-color: rgba(210,153,34,.25); }
 
@@ -263,13 +269,122 @@
 
   .foot-note { text-align: center; font-size: 11px; color: var(--text-dimmer); padding: 24px 20px 8px; line-height: 1.7; }
 
-  @media (max-width: 640px) {
+  /* ═══ 响应式断点系统 ═══ */
+
+  /* ── 大屏优化 (≥1200px)：宽松间距 ── */
+  @media (min-width: 1200px) {
+    .cal-wrap { padding: 18px 28px 60px; }
+    .cell { min-height: 116px; padding: 7px 8px; }
+    .chip { padding: 6px 9px 7px 12px; }
+    .chip .dlab { font-size: 11.5px; }
+    .chip .route { font-size: 10.5px; }
+    .chip .meta { font-size: 10px; }
+    .grid { gap: 8px; }
+  }
+
+  /* ── 平板横屏 (768–1023px)：适度紧凑 ── */
+  @media (max-width: 1023px) and (min-width: 768px) {
+    .cal-wrap { max-width: 100%; padding: 12px 16px 50px; }
+    .cell { min-height: 92px; padding: 4px 5px; }
+    .chip { padding: 4px 6px 5px 8px; }
+    .chip .route { font-size: 9.5px; }
+    .chip .meta { font-size: 8.5px; gap: 5px; }
+    .chip .dlab { font-size: 10px; }
+    .legend { font-size: 10.5px; gap: 8px 12px; padding: 8px 11px; }
+    .drawer { width: 400px; }
+  }
+
+  /* ── 平板竖屏/大手机 (≤767px)：紧凑模式，隐藏次要信息 ── */
+  @media (max-width: 767px) and (min-width: 481px) {
     .cols { grid-template-columns: 1fr; }
-    .stat { min-width: calc(50% - 5px); }
+    .stat { min-width: calc(50% - 4px); padding: 9px 12px; }
+    .stat .v { font-size: 18px; }
     .topbar .title small { display: none; }
-    .cal-title { min-width: 110px; font-size: 16px; }
-    .cell { min-height: 88px; }
-    .legend { font-size: 10.5px; }
+    .topbar { padding: 11px 14px; gap: 10px; }
+    .cal-title { min-width: 100px; font-size: 15px; }
+    .cell { min-height: 82px; padding: 4px 5px; border-radius: 8px; }
+    .chip { padding: 4px 6px 5px 8px; border-radius: 7px; }
+    .chip .stripe { width: 3px; }
+    .chip .dlab { font-size: 9.5px; }
+    .chip .sdot { width: 6px; height: 6px; }
+    .chip .route { font-size: 9px; }
+    /* 隐藏区域名（次要），保留距离 */
+    .chip .meta .rname { display: none; }
+    .chip .meta { font-size: 8.5px; gap: 4px; }
+    .chip .ghost { display: none; }
+    .toolbar { padding: 10px 14px; gap: 8px; }
+    .glabel { font-size: 10px; }
+    .seg button { padding: 5px 10px; font-size: 11px; }
+    .legend { font-size: 10px; gap: 6px 10px; padding: 8px 10px; flex-wrap: wrap; }
+    .drawer { width: 100%; }
+    .summary { padding: 12px 14px 4px; gap: 8px; }
+    .cal-head { margin-bottom: 10px; gap: 10px; }
+  }
+
+  /* ── 小手机 (≤480px)：极简模式，只保留核心信息 ── */
+  @media (max-width: 480px) {
+    html, body { font-size: 14px; } /* 缩小基准字号 */
+    .cols { grid-template-columns: 1fr; gap: 10px; }
+    .stat { min-width: calc(45% - 3px); padding: 8px 10px; }
+    .stat .v { font-size: 17px; }
+    .stat .l { font-size: 10px; }
+    .topbar { padding: 10px 12px; gap: 8px; }
+    .topbar .title { font-size: 15px; }
+    .topbar .title small,
+    .back-link span { display: none; }
+    .back-link { padding: 6px 9px; font-size: 11px; }
+    .summary { padding: 10px 12px 4px; gap: 6px; }
+
+    /* 工具栏：位置基准标签隐藏，按钮缩小 */
+    .toolbar { padding: 8px 12px; gap: 6px; flex-wrap: wrap; }
+    .glabel { display: none; }
+    .seg button { padding: 5px 9px; font-size: 10.5px; }
+    .count-note { font-size: 10px; }
+
+    /* 日历网格：进一步压缩 */
+    .cal-wrap { padding: 10px 10px 40px; }
+    .cal-nav button { width: 30px; height: 30px; font-size: 14px; }
+    .cal-title { font-size: 14px; min-width: 90px; }
+    .grid { gap: 4px; }
+    .wd { font-size: 10px; padding: 3px 0; }
+    .cell { min-height: 70px; padding: 3px 4px; border-radius: 7px; border-color: var(--border); }
+    .cell .dnum { font-size: 10px; }
+    .cell.today { box-shadow: 0 0 0 1px rgba(88,166,255,0.4); }
+
+    /* 芯片：极致精简 — 只保留 D号+状态+路线，隐藏距离和区域名 */
+    .chip { padding: 3px 5px 4px 7px; border-radius: 6px; gap: 1px; }
+    .chip .stripe { width: 3px; }
+    .chip .crow { gap: 4px; }
+    .chip .dlab { font-size: 9px; }
+    .chip .sdot { width: 6px; height: 6px; }
+    .chip .route { font-size: 8.5px; line-height: 1.25; }
+    .chip .meta { display: none; }          /* 隐藏距离 + 区域名 */
+    .chip .ghost { display: none; }
+    .chip .badge { font-size: 8px; padding: 0 4px; }
+    .chip:hover { transform: translateY(-1px); }
+
+    /* 图例：折叠为单行 */
+    .legend { font-size: 9px; gap: 5px 8px; padding: 6px 8px; }
+    .legend .item { gap: 4px; }
+
+    /* 抽屉：全屏滑入 */
+    .drawer { width: 100vw; border-radius: 0; }
+    .drawer .dhead { padding: 13px 14px 10px; }
+    .drawer .dbody { padding: 13px 14px 30px; }
+    .dclose { width: 28px; height: 28px; font-size: 18px; }
+    .slip-note { font-size: 11px; padding: 7px 10px; }
+
+    /* 摘要备注缩小 */
+    .foot-note { font-size: 10px; padding: 18px 12px 6px; }
+  }
+
+  /* ── 超小屏 (≤360px) ── */
+  @media (max-width: 360px) {
+    .stat { min-width: calc(42% - 2px); padding: 7px 8px; }
+    .stat .v { font-size: 15px; }
+    .cell { min-height: 62px; padding: 2px 3px; }
+    .chip .dlab { font-size: 8.5px; }
+    .chip .route { font-size: 8px; }
   }
 </style>
 </head>
@@ -572,7 +687,7 @@ function renderCalendar(){
           <span class="stripe" style="background:${region.color}"></span>
           <span class="crow"><span class="dlab">D${day.day}</span><span class="sdot" style="background:${STATUS[st].c}"></span></span>
           <span class="route">${esc(day.from)}<span class="ar">→</span>${esc(day.to)}</span>
-          <span class="meta"><span>${((+day.plannedDistance)||0).toFixed(1)}km</span><span>${esc(region.zh)}</span></span>
+          <span class="meta"><span>${((+day.plannedDistance)||0).toFixed(1)}km</span><span class="rname">${esc(region.zh)}</span></span>
           ${ghost}</button>`;
       } else {
         // 多天重叠（方案 A）：紧凑块 + 角标，点开看全部
