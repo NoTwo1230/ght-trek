@@ -1266,22 +1266,23 @@ const nepalProvinces = nepalProvinceData;
 //  DATA: GHT Sections (10 sections, East → West)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ── 13-region entry anchors (GHT corridor, east → west) ──
-// Used to split an uploaded GPX into 13 segments. Runs at load (top-level) so entries
-// are attached to window.GHT_SECTIONS before calculateSectionRanges() is first called.
+// Each anchor = where the track CROSSES INTO that region from the previous one.
+// Calibrated against region-maps/*_detail.png territorial boundaries so each
+// segment captures a visually distinct portion of the route.
 const REGION_ENTRIES = {
-  'kanchenjunga': [27.35, 87.95],
-  'makalu':       [27.62, 87.45],
-  'everest':      [27.85, 86.73],
-  'rolwaling':    [27.88, 86.35],
-  'langtang':     [28.05, 85.45],
-  'ganesh':       [28.12, 85.20],
-  'manaslu':      [28.35, 84.90],
-  'annapurna':    [28.45, 84.42],
-  'dolpo':        [28.70, 83.80],
-  'mugu':         [29.20, 82.90],
-  'humla':        [29.62, 82.10],
-  'bajhang':      [29.55, 81.60],
-  'darchula':     [29.70, 80.75]
+  'kanchenjunga': [27.35, 87.95],   // Trek start – NE Nepal entry (Phungling/Taplejung)
+  'makalu':       [27.53, 87.52],   // K→M boundary: Sele La / upper Barun valley (tan→purple edge)
+  'everest':      [27.80, 86.82],   // M→E boundary: Tashi Lapcha approach (purple→gold edge)
+  'rolwaling':    [27.91, 86.30],   // E→R boundary: Tashi Lapcha / Rolwaling valley entry
+  'langtang':     [28.08, 85.38],   // R→L boundary: Ganja La / Langtang National Park edge
+  'ganesh':       [28.18, 85.12],   // L→G boundary: between Langtang & Manaslu conservation areas
+  'manaslu':      [28.35, 84.88],   // G→M boundary: Soti Khola / Arughat corridor
+  'annapurna':    [28.48, 84.42],   // M→A boundary: Besisahar / Marsyangdi headwaters
+  'dolpo':        [28.72, 83.70],   // A→D boundary: Dhaulagiri west face / Dolpo east edge
+  'mugu':         [29.15, 83.20],   //D→M boundary: Phoksundo Lake west / Humla east approach
+  'humla':        [29.45, 82.65],   // M→H boundary: Nara La approach / Simikot east
+  'bajhang':      [29.58, 81.95],   // H→B boundary: Humla west / Seti Khola headwaters
+  'darchula':     [29.68, 80.90]    // B→D boundary: Api Nampa area / trek terminus region
 };
 (window.GHT_SECTIONS || []).forEach(r => { if (!r.entry && REGION_ENTRIES[r.id]) r.entry = REGION_ENTRIES[r.id]; });
 
