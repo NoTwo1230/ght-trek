@@ -102,6 +102,21 @@
   .empty{text-align:center;color:var(--text-dim);padding:64px 20px;font-size:14px;line-height:1.8}
   .empty a{color:var(--accent);text-decoration:none}
 
+  /* 发布框（仅主人可见） */
+  .composer{max-width:920px;margin:14px auto 0;padding:0 22px}
+  .composer-box{background:var(--panel);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px}
+  .composer-box label{display:block;font-size:11px;color:var(--text-dim);margin-bottom:6px}
+  .composer-box select,.composer-box textarea{width:100%;background:var(--bg-soft);border:1px solid var(--border);
+    border-radius:8px;color:var(--text);padding:8px 10px;font-family:inherit;font-size:13px;box-sizing:border-box}
+  .composer-box select{margin-bottom:8px}
+  .composer-box textarea{resize:vertical;min-height:64px;line-height:1.6}
+  .composer-box .btn-pub{margin-top:10px;width:100%;padding:10px;background:var(--accent);color:#fff;
+    border:none;border-radius:8px;font-size:13.5px;font-weight:600;cursor:pointer;transition:.18s}
+  .composer-box .btn-pub:hover{filter:brightness(1.12)}
+  .owner-note{max-width:920px;margin:18px auto 0;padding:0 22px;text-align:center;
+    color:var(--text-dim);font-size:12.5px}
+  .owner-note a{color:var(--accent);text-decoration:none}
+
   @media(max-width:680px){
     .stats{grid-template-columns:repeat(2,1fr)}
     .page-head h1{font-size:22px}
@@ -116,7 +131,7 @@
       <span>GHT <span class="sub">大喜马拉雅高线</span></span>
     </div>
     <div class="spacer"></div>
-    <a class="backbtn" href="index.html">← 回主页 / 发布日志</a>
+    <a class="backbtn" href="index.html">← 回主页</a>
   </div>
 
   <div class="page-head">
@@ -140,6 +155,8 @@
     <span class="hint">按路段从上到下排列</span>
   </div>
 
+  <div class="composer" id="composer"></div>
+
   <div class="feed" id="feed"></div>
 
 <script>
@@ -148,6 +165,11 @@
     num: i + 1, id: r.id, zh: r.zh || r.en || ('第' + (i + 1) + '段'),
     en: r.en || '', color: r.color || '#888'
   }));
+
+  // 主人态：与首页共享 sessionStorage 中的 token（首页密码解锁后本站可直接发布）
+  const NEPAL_OFFSET_MS = (5 * 60 + 45) * 60 * 1000;
+  function getOwnerToken() { try { return sessionStorage.getItem('ght_token') || ''; } catch (e) { return ''; } }
+  const IS_OWNER = !!getOwnerToken();
 
   let logEntries = [];
   const actualByDate = {};   // date -> { dayNum, points:[{elev}] }
@@ -277,7 +299,7 @@
     }
 
     if (!html) {
-      html = `<div class="empty">暂无日志。<br>主人可在 <a href="index.html">主页「日志」</a> 发布（发布时可选择所属路段）。</div>`;
+      html = `<div class="empty">暂无日志。<br>主人可在此页面发布随笔（发布时可选择所属路段）。</div>`;
     }
     feed.innerHTML = html;
   }
@@ -298,10 +320,64 @@
     document.getElementById('st-sec').innerHTML = covered.size + '<small>段</small>';
   }
 
+  // ── 发布框（主人态显示；从首页迁移而来，原在 index.html 的 renderLog 内）──
+  function fmtNepalDate(d) {
+    const dt = (d instanceof Date) ? d : new Date(d);
+    if (isNaN(dt.getTime())) return null;
+    const nepal = new Date(dt.getTime() + NEPAL_OFFSET_MS);
+    const y = nepal.getUTCFullYear();
+    const m = String(nepal.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(nepal.getUTCDate()).padStart(2, '0');
+    return y + '-' + m + '-' + day;
+  }
+
+  function saveLogEntries() {
+    try { localStorage.setItem('ght_log', JSON.stringify(logEntries)); } catch (e) {}
+  }
+
+  function renderComposer() {
+    const box = document.getElementById('composer');
+    if (!box) return;
+    if (!IS_OWNER) {
+      box.innerHTML = '<div class="owner-note">🔒 需先在 <a href="index.html">主页</a> 用主人密码解锁，本页才会显示发布框。</div>';
+      return;
+    }
+    const opts = SECTIONS.map(s => `<option value="${s.num}">${s.zh}</option>`).join('');
+    box.innerHTML = `
+      <div class="composer-box">
+        <label>所属路段（选填，不选则归入「未分组」）</label>
+        <select id="jSec"><option value="">未分组</option>${opts}</select>
+        <textarea id="jText" rows="3" placeholder="记点什么…（山里信号不稳，先记着）"></textarea>
+        <button class="btn-pub" id="jPub">发布</button>
+      </div>`;
+    const btn = document.getElementById('jPub');
+    if (btn) btn.addEventListener('click', addLogEntry);
+  }
+
+  function addLogEntry() {
+    const ta = document.getElementById('jText');
+    const text = (ta ? ta.value : '').trim();
+    if (!text) return;
+    const sel = document.getElementById('jSec');
+    const secVal = sel ? sel.value : '';
+    const sectionId = secVal ? parseInt(secVal, 10) : null;
+    const today = fmtNepalDate(new Date());
+    const entry = { date: today, text };
+    if (sectionId) entry.sectionId = sectionId;
+    logEntries.push(entry);
+    logEntries.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    saveLogEntries();
+    if (ta) ta.value = '';
+    if (sel) sel.value = '';
+    renderStats();
+    renderGroups(document.querySelector('.filters .chip.active')?.dataset.filter || 'all');
+  }
+
   // ── 启动 ──
   load();
   renderStats();
   renderGroups('all');
+  renderComposer();
 
   document.querySelectorAll('.filters .chip').forEach(c => {
     c.addEventListener('click', () => {

@@ -1184,7 +1184,6 @@
     </div>
     <nav class="topnav-tabs" aria-label="主导航">
       <button class="tn-tab active" data-view="dashboard">Dashboard</button>
-      <button class="tn-tab" data-view="journal">日志</button>
       <a class="tn-ext" href="itinerary.html" target="_blank" rel="noopener" title="计划 vs 实际 · 行程对比 →">📅 行程对比 ↗</a>
       <a class="tn-ext" href="sections.html" target="_blank" rel="noopener" title="路段进度 · 按 已完成/进行中/未完成 分组 →">🏔️ 路段 ↗</a>
       <a class="tn-ext" href="journal.html" target="_blank" rel="noopener" title="远征日志 · 按路段分组 →">📝 日志 ↗</a>
@@ -1792,7 +1791,7 @@ const APP = {
 let currentLang = 'zh';
 const I18N = {
   zh: {
-    'nav.dashboard': '仪表盘', 'nav.sections': '路段', 'nav.itinerary': '行程', 'nav.journal': '日志', 'nav.datamgmt': '数据管理',
+    'nav.dashboard': '仪表盘', 'nav.sections': '路段', 'nav.itinerary': '行程', 'nav.datamgmt': '数据管理',
     'brand.sub': '大喜马拉雅高线',
     'pos.prefix': '📍 当前位置:',
     'basemap.terrain': '户外图 (Esri 地形 · 默认)', 'basemap.topo': '地形图 (等高线)', 'basemap.dark': '暗色图 (OpenStreetMap)',
@@ -1807,7 +1806,7 @@ const I18N = {
     'dm.title': '数据管理', 'dm.pwdHint': '请输入主人密码以管理轨迹数据', 'dm.unlock': '解锁', 'dm.pwdErr': '密码错误', 'dm.connErr': '无法连接服务器（后端未启动？）'
   },
   en: {
-    'nav.dashboard': 'Dashboard', 'nav.sections': 'Sections', 'nav.itinerary': 'Itinerary', 'nav.journal': 'Journal', 'nav.datamgmt': 'Data',
+    'nav.dashboard': 'Dashboard', 'nav.sections': 'Sections', 'nav.itinerary': 'Itinerary', 'nav.datamgmt': 'Data',
     'brand.sub': 'GREAT HIMALAYA TRAIL',
     'pos.prefix': '📍 Current location:',
     'basemap.terrain': 'Terrain (Esri Topo · default)', 'basemap.topo': 'Topographic (Contours)', 'basemap.dark': 'Dark (OpenStreetMap)',
@@ -2178,7 +2177,6 @@ function fitRoute() {
 const VIEW_TITLES = {
   sections: ['🏔️ 路段探索器', 'SECTION EXPLORER'],
   itinerary: ['📅 行程安排', 'ITINERARY'],
-  journal: ['📝 远征日志', 'JOURNAL'],
   about: ['ℹ️ 关于本程', 'ABOUT']
 };
 
@@ -2191,7 +2189,6 @@ function showView(view) {
   let html = '';
   if (view === 'sections') html = renderSections();
   else if (view === 'itinerary') html = renderItinerary();
-  else if (view === 'journal') html = renderLog();
   const title = VIEW_TITLES[view] || ['视图', 'VIEW'];
   card.innerHTML = '<div class="card-h"><span>' + title[0] + '</span><span class="en">' + title[1] + '</span></div><div class="card-b">' +
     (html || '<div style="color:var(--text-dim);font-size:11px;padding:8px;">' + t('view.empty') + '</div>') + '</div>';
@@ -3265,55 +3262,6 @@ function persistPresetSegments(valid) {
     try { localStorage.setItem('ght_preset_segments', JSON.stringify(build(valid, 60))); }
     catch(e2) {}
   }
-}
-
-function renderLog() {
-  const entries = APP.logEntries.map(e => {
-    let body = '';
-    if (e.dailyStats) {
-      const ds = e.dailyStats;
-      const startTime = ds.startTime ? new Date(ds.startTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '';
-      const endTime = ds.endTime ? new Date(ds.endTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '';
-
-      body = `
-        <div class="gpx-badge">📡 GPS 自动记录 ${startTime && endTime ? '· ' + startTime + ' → ' + endTime : ''}</div>
-        <div style="color:var(--text-dim);font-size:11px;margin-bottom:2px;">${e.text || ''}</div>
-        <div class="daily-stats">
-          <div class="stat-item"><span class="val green">${ds.distance.toFixed(1)}<span style="font-size:10px;font-weight:400;"> km</span></span>距离</div>
-          <div class="stat-item"><span class="val orange">${ds.elevGain.toLocaleString()}<span style="font-size:10px;font-weight:400;"> m</span></span>爬升</div>
-          <div class="stat-item"><span class="val orange">${ds.elevLoss.toLocaleString()}<span style="font-size:10px;font-weight:400;"> m</span></span>下降</div>
-          ${ds.durationStr ? '<div class="stat-item"><span class="val white">' + ds.durationStr + '</span>用时</div>' : ''}
-          ${ds.avgSpeed ? '<div class="stat-item"><span class="val white">' + ds.avgSpeed + '<span style="font-size:10px;font-weight:400;"> km/h</span></span>均速</div>' : ''}
-          <div class="stat-item"><span class="val white">${ds.maxElev.toLocaleString()}<span style="font-size:10px;font-weight:400;"> m</span></span>最高</div>
-        </div>`;
-    } else {
-      body = `<div class="text">${e.text}</div>`;
-    }
-
-    return `<div class="log-entry"><div class="date">📅 ${e.date}</div>${body}</div>`;
-  }).reverse().join('');
-
-  const secOpts = (window.GHT_SECTIONS || []).map((r, i) =>
-    `<option value="${i + 1}">${r.zh || r.en || ('第' + (i + 1) + '段')}</option>`).join('');
-  const ownerForm = APP.isOwner ? `
-    <div style="margin-top:16px;padding:12px;background:var(--bg);border:1px dashed var(--border);border-radius:8px;">
-      <label style="display:block;font-size:11px;color:var(--text-dim);margin-bottom:5px;">所属路段</label>
-      <select id="logSection" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 8px;font-family:inherit;font-size:13px;margin-bottom:8px;">
-        <option value="">未分组</option>${secOpts}
-      </select>
-      <textarea id="logText" placeholder="写点什么..." rows="3" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px;font-family:inherit;font-size:13px;resize:vertical;"></textarea>
-      <button class="btn primary" onclick="addLogEntry()" style="margin-top:8px;width:100%;">✍️ 发布日志</button>
-    </div>
-  ` : '';
-
-  const uploadBtn = APP.isOwner ? `
-    <div style="margin-top:12px;padding:12px;background:var(--bg);border:1px dashed var(--border);border-radius:8px;text-align:center;">
-      <input type="file" id="gpxUpload" accept=".gpx,.kml,.geojson" multiple style="display:none" onchange="handleGPXUpload(event)">
-      <button class="btn primary" onclick="document.getElementById('gpxUpload').click()" style="width:100%;">📤 上传GPS轨迹</button>
-    </div>
-  ` : '';
-
-  return entries + ownerForm + uploadBtn;
 }
 
 function renderDonate() {
@@ -4851,21 +4799,6 @@ function saveLogEntries() {
   try { localStorage.setItem('ght_log', JSON.stringify(APP.logEntries)); } catch(e) {}
 }
 
-function addLogEntry() {
-  const text = document.getElementById('logText').value.trim();
-  if (!text) return;
-  const sel = document.getElementById('logSection');
-  const secVal = sel ? sel.value : '';
-  const sectionId = secVal ? parseInt(secVal, 10) : null;
-  const today = fmtNepalDate(new Date());
-  const entry = { date: today, text };
-  if (sectionId) entry.sectionId = sectionId;
-  APP.logEntries.push(entry);
-  document.getElementById('logText').value = '';
-  if (sel) sel.value = '';
-  saveLogEntries();
-  openPanel('log');
-}
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  OWNER MODE
