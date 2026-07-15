@@ -331,28 +331,19 @@
     padding: 6px 14px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     font-size: 11px;
     color: var(--text-dim);
     flex-shrink: 0;
     white-space: nowrap;
     user-select: none;
-    cursor: pointer;
   }
-  .elevation-panel .elevation-header:hover { color: var(--text); }
-  .elevation-panel .elevation-header button {
-    background: none; border: none; color: var(--text-dim); cursor: pointer;
-    font-size: 14px; padding: 2px 6px; border-radius: 4px;
-  }
-  .elevation-panel .elevation-header button:hover { color: var(--text); background: rgba(255,255,255,0.06); }
   .elevation-panel .elevation-body {
     height: 112px;
     padding: 0 10px 6px;
     overflow: hidden;
-    transition: height 0.3s ease;
     flex-shrink: 0;
   }
-  .elevation-panel:not(.open) .elevation-body { height: 0 !important; flex: none !important; padding-top: 0 !important; padding-bottom: 0 !important; }
   .elevation-panel .elevation-body svg { width: 100%; height: 100%; display: block; }
 
   /* ── MAP OVERLAYS ── */
@@ -1221,9 +1212,8 @@
         </div>
       </div>
       <div class="elevation-panel" id="elevationPanel">
-        <div class="elevation-header" onclick="toggleElevationProfile()" title="点击折叠/展开海拔剖面">
+        <div class="elevation-header">
           <span>📈 海拔剖面 · 预设轨迹 · <span id="elevLabel">--</span></span>
-          <button id="elevToggle" type="button" aria-label="折叠/展开海拔剖面" aria-expanded="true" aria-controls="elevationBody">▼</button>
         </div>
         <div class="elevation-body" id="elevationBody"></div>
       </div>
@@ -2205,22 +2195,7 @@ function closePanel() { /* 新版无侧栏抽屉，no-op */ }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  ELEVATION PROFILE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function toggleElevationProfile() {
-  const panel = document.getElementById('elevationPanel');
-  const btn = document.getElementById('elevToggle');
-  panel.classList.toggle('open');
-  const isOpen = panel.classList.contains('open');
-  if (btn) {
-    btn.textContent = isOpen ? '▼' : '▲';
-    btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-  }
-  if (isOpen && APP.presetTrack) {
-    // 等布局把高度从 0 过渡到目标值后再绘制，避免按 0 高度画歪
-    requestAnimationFrame(() => drawElevationProfile());
-  }
-}
-
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function drawElevationProfile() {
   const container = document.getElementById('elevationBody');
   if (!container || !APP.presetTrack) return;
@@ -4128,12 +4103,10 @@ function renderAllTracks() {
       sectionColor = APP.sectionRanges[bestIdx].regionColor || '#3fb950';
     }
 
-    const segs = splitByBreaks(track.trackPoints);
-    segs.forEach(seg => {
-      const coords = seg.map(p => [p.lat, p.lon]);
-      // 细白线 = 真实走过的 GPS 路径（克制）
-      L.polyline(coords, { color: '#ffffff', weight: 2, opacity: 0.6, lineCap: 'round', lineJoin: 'round' }).addTo(uploadedTrackGroup);
-    });
+    // 整条实际轨迹渲染为一条连续 polyline（不再按 _break 切割），
+    // 避免 GPS 信号中断导致的 >1km 跳点在地图上产生视觉断层。
+    const coords = track.trackPoints.map(p => [p.lat, p.lon]);
+    L.polyline(coords, { color: '#ffffff', weight: 2, opacity: 0.6, lineCap: 'round', lineJoin: 'round' }).addTo(uploadedTrackGroup);
 
     const s = track.trackPoints[0], e = track.trackPoints[track.trackPoints.length - 1];
     L.circleMarker([s.lat, s.lon], { radius: 4, color: '#fff', fillColor: sectionColor, fillOpacity: 1, weight: 2 })
@@ -4158,10 +4131,8 @@ function renderAllTracks() {
   // 5. Update progress
   updateProgress();
 
-  // 6. Update elevation profile if open
-  if (document.getElementById('elevationPanel').classList.contains('open')) {
-    drawElevationProfile();
-  }
+  // 6. Update elevation profile
+  drawElevationProfile();
 
 }
 
@@ -4751,9 +4722,7 @@ function setAsPreset(gpxData, stats) {
   showGPXUploadResult(gpxData, stats);
   renderAllTracks();
 
-  if (document.getElementById('elevationPanel').classList.contains('open')) {
-    drawElevationProfile();
-  }
+  drawElevationProfile();
 }
 
 function showGPXUploadResult(gpxData, stats) {
@@ -4922,14 +4891,6 @@ updateCurrentPosition();
 if (APP.itinerary.length && APP.actualTracks.length) {
   matchItineraryToActuals();
   saveItinerary();
-}
-
-// 有预设轨迹时默认展开海拔剖面，使首页仪表盘信息更完整
-if (APP.presetTrack) {
-  const ep = document.getElementById('elevationPanel');
-  const eb = document.getElementById('elevToggle');
-  if (ep) ep.classList.add('open');
-  if (eb) { eb.textContent = '▼'; eb.setAttribute('aria-expanded', 'true'); }
 }
 
 // 先用本地默认配置同步渲染首页
