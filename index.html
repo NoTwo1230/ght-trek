@@ -2021,9 +2021,9 @@ const API = (function () {
   // 后端地址：读 <meta name="ght-api">；为空 = 无后端（本地访客态）
   function apiBase() { return metaVal('ght-api').replace(/\/+$/, ''); }
   function hasBackend() { return !!apiBase(); }
-  function getToken() { try { return sessionStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; } }
-  function setToken(t) { try { sessionStorage.setItem(TOKEN_KEY, t || ''); } catch (e) {} }
-  function clearToken() { try { sessionStorage.removeItem(TOKEN_KEY); } catch (e) {} }
+  function getToken() { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; } }
+  function setToken(t) { try { if (t) localStorage.setItem(TOKEN_KEY, t); else localStorage.removeItem(TOKEN_KEY); } catch (e) {} }
+  function clearToken() { try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} }
   function authHeader() { const t = getToken(); return t ? { 'Authorization': 'Bearer ' + t } : {}; }
   async function req(method, path, opts) {
     opts = opts || {};
