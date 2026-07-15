@@ -1129,12 +1129,22 @@
   /* passes list */
   .pass-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-top: 1px solid var(--border); font-size: 12px; }
   .pass-row:first-child { border-top: none; }
-  .pass-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .pass-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--accent); }
   .pass-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .pass-elev { color: var(--text-dim); font-size: 11px; }
   .pass-days { font-size: 10px; padding: 1px 6px; border-radius: 10px; background: rgba(63,185,80,0.15); color: var(--green); white-space: nowrap; }
   .pass-days.far { background: rgba(139,148,158,0.15); color: var(--text-dim); }
   .more-link { display: block; text-align: center; font-size: 11px; color: var(--accent); padding: 8px 0 2px; cursor: pointer; }
+  .pass-summary { display: flex; align-items: center; gap: 10px; padding: 2px 0 10px; }
+  .pass-summary-num { font-size: 12px; font-weight: 700; color: var(--text); white-space: nowrap; }
+  .pass-summary-bar { flex: 1; height: 5px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; }
+  .pass-summary-bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--green), var(--accent)); transition: width .4s ease; }
+  .pass-list { max-height: 240px; overflow-y: auto; }
+  .pass-check { width: 15px; height: 15px; border-radius: 50%; flex-shrink: 0; background: var(--green); color: #0a0e14; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+  .pass-row.done { opacity: .5; }
+  .pass-row.done .pass-name { text-decoration: line-through; text-decoration-color: rgba(255,255,255,.35); }
+  .pass-row[data-pass] { cursor: pointer; }
+  .pass-row[data-pass]:hover { background: rgba(255,255,255,.04); }
 
   /* upload card */
   .upload-zone { text-align: center; }
@@ -2629,25 +2639,82 @@ function expedInfoHTML() {
     '</div></div>';
 }
 
+// ── 垭口覆盖判定：实际轨迹(任一段,半径内)经过即算翻越 ──
+function passCovered(wpt, R) {
+  if (!wpt) return false;
+  return (APP.actualTracks || []).some(t => ptNearSegment(wpt, t.trackPoints || [], R));
+}
+// 主人手动「已翻越」记录（localStorage 持久化，用于 GPS 信号弱未覆盖时补记）
+const PASS_DONE_KEY = 'ght_passDone';
+function loadPassDone() { try { return new Set(JSON.parse(localStorage.getItem(PASS_DONE_KEY) || '[]')); } catch (e) { return new Set(); } }
+function savePassDone(set) { try { localStorage.setItem(PASS_DONE_KEY, JSON.stringify(Array.from(set))); } catch (e) {} }
+
+// ── 垭口翻越列表（与预设轨迹实时同步）──
+function computePassList() {
+  const wps = (APP.presetTrack && APP.presetTrack.waypoints) || [];
+  let passes = wps.filter(w => w._type === 'pass' || w._type === 'peak');
+  if (!passes.length) return { passes: [], done: 0, total: 0 };
+  const override = loadPassDone();
+  const presetPts = (APP.presetTrack && APP.presetTrack.trackPoints) || [];
+  const R = 500;
+  passes = passes.map(w => {
+    const nm = (w.desc || w.name || '').trim();
+    const auto = passCovered(w, R);
+    const done = auto || (nm && override.has(nm));
+    let idx = Infinity;
+    if (presetPts.length) {
+      let best = Infinity, bi = -1;
+      const step = Math.max(1, Math.floor(presetPts.length / 400));
+      for (let i = 0; i < presetPts.length; i += step) {
+        const d = haversine(w.lat, w.lon, presetPts[i].lat, presetPts[i].lon);
+        if (d < best) { best = d; bi = i; }
+      }
+      idx = bi;
+    }
+    return { nm, done, auto, elev: w.elev, idx };
+  }).sort((a, b) => a.idx - b.idx);
+  const done = passes.filter(p => p.done).length;
+  return { passes, done, total: passes.length };
+}
+
 // ── F. 即将翻越垭口 ──
 function passesHTML() {
-  const wps = (APP.presetTrack && APP.presetTrack.waypoints) || [];
-  const passes = wps.filter(w => w._type === 'pass' || w._type === 'peak');
+  const { passes, done, total } = computePassList();
   let rows = '';
-  if (!passes.length) {
+  if (!total) {
     rows = '<div style="font-size:11px;color:var(--text-dim);padding:8px 0;">' + t('pass.none') + '</div>';
   } else {
-    const curIdx = currentSectionIdx();
-    passes.slice(0, 6).forEach((w, i) => {
-      const far = i >= 3;
-      rows += '<div class="pass-row"><span class="pass-dot" style="background:var(--accent)"></span>' +
-        '<span class="pass-name">' + (w.name || w.desc || '未命名') + '</span>' +
-        '<span class="pass-elev">' + (w.elev != null ? fmtNum(w.elev) + 'm' : '') + '</span>' +
-        '<span class="pass-days' + (far ? ' far' : '') + '">' + (i === 0 ? t('pass.soon') : '+' + i + t('pass.seg')) + '</span></div>';
-    });
+    rows = passes.map(p => {
+      const cls = 'pass-row' + (p.done ? ' done' : '');
+      const mark = p.done ? '<span class="pass-check">✓</span>' : '<span class="pass-dot"></span>';
+      const elev = p.elev != null ? fmtNum(p.elev) + 'm' : '';
+      const toggle = APP.isOwner ? ' data-pass="' + encodeURIComponent(p.nm) + '" title="点击切换翻越状态"' : '';
+      return '<div class="' + cls + '"' + toggle + '>' + mark +
+        '<span class="pass-name">' + (p.nm || '未命名') + '</span>' +
+        (elev ? '<span class="pass-elev">' + elev + '</span>' : '') + '</div>';
+    }).join('');
   }
+  const summary = total ? '<div class="pass-summary"><span class="pass-summary-num">⛰️ ' + done + ' / ' + total + '</span>' +
+    '<div class="pass-summary-bar"><i style="width:' + (total ? Math.round(done / total * 100) : 0) + '%"></i></div></div>' : '';
   return '<div class="card-h"><span>即将翻越</span><span class="en">UPCOMING PASSES</span></div>' +
-    '<div class="card-b">' + rows + '<a class="more-link" href="sections.html" target="_blank" rel="noopener">' + t('pass.all') + '</a></div>';
+    summary +
+    '<div class="card-b pass-list">' + rows + (total ? '<a class="more-link" href="sections.html" target="_blank" rel="noopener">' + t('pass.all') + '</a>' : '') + '</div>';
+}
+
+// 主人点击手动记录/取消垭口翻越
+function togglePassDone(key) {
+  const name = decodeURIComponent(key);
+  const s = loadPassDone();
+  if (s.has(name)) s.delete(name); else s.add(name);
+  savePassDone(s);
+  renderDashboard();
+}
+// 绑定垭口点击（仅主人可交互）
+function bindPassList() {
+  if (!APP.isOwner) return;
+  document.querySelectorAll('.pass-row[data-pass]').forEach(el => {
+    el.onclick = () => togglePassDone(el.dataset.pass);
+  });
 }
 
 // ── I. 上传 / 管理 ──
@@ -2682,6 +2749,7 @@ function renderDashboard() {
   setCard('cardPasses', passesHTML());
   updateLiveStatus();
   if (typeof bindSectionClickHandlers === 'function') { try { bindSectionClickHandlers(); } catch (e) {} }
+  bindPassList();
 }
 
 function renderInfoBar() {
