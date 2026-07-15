@@ -43,9 +43,9 @@ window.GHT_SECTIONS = [
         "ele": 5110
       }
     ],
-    "color": "#c0392b",
-    "ctext": "#e57373",
-    "cborder": "#e57373",
+    "color": "#a8521e",
+    "ctext": "#cf9f83",
+    "cborder": "#cf9f83",
     "detail": "assets/region-maps/kanchenjunga_detail.png",
     "index": "assets/region-maps/kanchenjunga_index.png"
   },
@@ -88,9 +88,9 @@ window.GHT_SECTIONS = [
         "ele": 4090
       }
     ],
-    "color": "#8e44ad",
-    "ctext": "#bb8fce",
-    "cborder": "#bb8fce",
+    "color": "#b1319f",
+    "ctext": "#d48dca",
+    "cborder": "#d48dca",
     "detail": "assets/region-maps/makalu_detail.png",
     "index": "assets/region-maps/makalu_index.png"
   },
@@ -141,9 +141,9 @@ window.GHT_SECTIONS = [
         "ele": 5240
       }
     ],
-    "color": "#2e6fcf",
-    "ctext": "#6fa8e6",
-    "cborder": "#6fa8e6",
+    "color": "#2f63c4",
+    "ctext": "#8ca9de",
+    "cborder": "#8ca9de",
     "detail": "assets/region-maps/everest_detail.png",
     "index": "assets/region-maps/everest_index.png"
   },
@@ -174,9 +174,9 @@ window.GHT_SECTIONS = [
         "ele": 4160
       }
     ],
-    "color": "#16a085",
-    "ctext": "#5fd0bd",
-    "cborder": "#5fd0bd",
+    "color": "#2f95c0",
+    "ctext": "#8cc4dc",
+    "cborder": "#8cc4dc",
     "detail": "assets/region-maps/rolwaling_detail.png",
     "index": "assets/region-maps/rolwaling_index.png"
   },
@@ -219,9 +219,9 @@ window.GHT_SECTIONS = [
         "ele": 5260
       }
     ],
-    "color": "#27ae60",
-    "ctext": "#6fd99a",
-    "cborder": "#6fd99a",
+    "color": "#c2315f",
+    "ctext": "#dd8da7",
+    "cborder": "#dd8da7",
     "detail": "assets/region-maps/langtang_detail.png",
     "index": "assets/region-maps/langtang_index.png"
   },
@@ -248,9 +248,9 @@ window.GHT_SECTIONS = [
         "ele": 4500
       }
     ],
-    "color": "#e67e22",
-    "ctext": "#f0a96b",
-    "cborder": "#f0a96b",
+    "color": "#9aa82f",
+    "ctext": "#c7cf8c",
+    "cborder": "#c7cf8c",
     "detail": "assets/region-maps/ganesh_detail.png",
     "index": "assets/region-maps/ganesh_index.png"
   },
@@ -273,9 +273,9 @@ window.GHT_SECTIONS = [
         "ele": 5106
       }
     ],
-    "color": "#caa015",
-    "ctext": "#e8c45a",
-    "cborder": "#e8c45a",
+    "color": "#d2691e",
+    "ctext": "#e6ac83",
+    "cborder": "#e6ac83",
     "detail": "assets/region-maps/manaslu_detail.png",
     "index": "assets/region-maps/manaslu_index.png"
   },
@@ -306,9 +306,9 @@ window.GHT_SECTIONS = [
         "ele": 6040
       }
     ],
-    "color": "#d6336c",
-    "ctext": "#ed7aa0",
-    "cborder": "#ed7aa0",
+    "color": "#4a35c0",
+    "ctext": "#9b8fdc",
+    "cborder": "#9b8fdc",
     "detail": "assets/region-maps/annapurna_detail.png",
     "index": "assets/region-maps/annapurna_index.png"
   },
@@ -343,9 +343,9 @@ window.GHT_SECTIONS = [
         "ele": 5200
       }
     ],
-    "color": "#3b3f94",
-    "ctext": "#7a7ed0",
-    "cborder": "#7a7ed0",
+    "color": "#e0b500",
+    "ctext": "#edd672",
+    "cborder": "#edd672",
     "detail": "assets/region-maps/dolpo_detail.png",
     "index": "assets/region-maps/dolpo_index.png"
   },
@@ -372,9 +372,9 @@ window.GHT_SECTIONS = [
         "ele": 4400
       }
     ],
-    "color": "#0e9594",
-    "ctext": "#5fc9c8",
-    "cborder": "#5fc9c8",
+    "color": "#2bb6b6",
+    "ctext": "#8ad6d6",
+    "cborder": "#8ad6d6",
     "detail": "assets/region-maps/mugu_detail.png",
     "index": "assets/region-maps/mugu_index.png"
   },
@@ -405,9 +405,9 @@ window.GHT_SECTIONS = [
         "ele": 4500
       }
     ],
-    "color": "#6c7bd1",
-    "ctext": "#9aa8e8",
-    "cborder": "#9aa8e8",
+    "color": "#c22929",
+    "ctext": "#dd8989",
+    "cborder": "#dd8989",
     "detail": "assets/region-maps/humla_detail.png",
     "index": "assets/region-maps/humla_index.png"
   },
@@ -430,9 +430,9 @@ window.GHT_SECTIONS = [
         "ele": null
       }
     ],
-    "color": "#7cb518",
-    "ctext": "#aadd55",
-    "cborder": "#aadd55",
+    "color": "#9c8f3e",
+    "ctext": "#c8c194",
+    "cborder": "#c8c194",
     "detail": "assets/region-maps/bajhang_detail.png",
     "index": "assets/region-maps/bajhang_index.png"
   },
@@ -459,9 +459,9 @@ window.GHT_SECTIONS = [
         "ele": 3900
       }
     ],
-    "color": "#a0522d",
-    "ctext": "#c8825c",
-    "cborder": "#c8825c",
+    "color": "#31b97e",
+    "ctext": "#8dd8b8",
+    "cborder": "#8dd8b8",
     "detail": "assets/region-maps/darchula_detail.png",
     "index": "assets/region-maps/darchula_index.png"
   }
