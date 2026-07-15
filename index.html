@@ -1119,9 +1119,6 @@
   /* weather/safety card styles removed with the module (cardSafety) */
 
   /* exped info */
-  .ei-cover { height: 86px; border-radius: 8px; margin-bottom: 10px; position: relative; overflow: hidden;
-    background: linear-gradient(135deg, #1b2735, #0a0e14 65%), radial-gradient(circle at 72% 22%, rgba(88,166,255,0.28), transparent 52%); }
-  .ei-cover::after { content: '🏔️'; position: absolute; right: 10px; bottom: 4px; font-size: 30px; opacity: 0.55; }
   .ei-meta { display: grid; grid-template-columns: auto 1fr; gap: 5px 10px; font-size: 11px; }
   .ei-meta .k { color: var(--text-dim); }
   .ei-meta .v { color: var(--text); text-align: right; font-weight: 500; }
@@ -2612,8 +2609,6 @@ function todaySummaryHTML() {
 
 // ── D. 远征概况 ──
 function expedInfoHTML() {
-  const totalKm = APP.totalDistance || 0;
-  const doneKm = (APP.completedDistance / 1000) || 0;
   const gain = getCumulativeElevGain() || (APP.presetTrack && APP.presetTrack.stats ? APP.presetTrack.stats.elevGain : 0);
   const maxElev = (APP.maxElev) || (APP.presetTrack && APP.presetTrack.stats ? APP.presetTrack.stats.maxElev : null);
   const wps = (APP.presetTrack && APP.presetTrack.waypoints) || [];
@@ -2627,11 +2622,8 @@ function expedInfoHTML() {
   }
   const meta = (k, v) => '<div class="k">' + k + '</div><div class="v">' + v + '</div>';
   return '<div class="card-h"><span>远征概况</span><span class="en">EXPEDITION INFO</span></div>' +
-    '<div class="card-b"><div class="ei-cover"></div>' +
-    '<div class="ei-meta">' +
+    '<div class="card-b"><div class="ei-meta">' +
     meta(t('ei.from'), APP.startPlaceName || '—') +
-    meta(t('ei.total'), fmtNum(totalKm) + ' km') +
-    meta(t('ei.recorded'), fmtNum(doneKm, 1) + ' km') +
     meta(t('ei.gain'), gain ? '+' + fmtNum(gain) + 'm' : '—') +
     meta(t('ei.max'), maxElev ? fmtNum(maxElev) + 'm' : '—') +
     meta(t('ei.passes'), nPasses + ' / ' + nCamps) +
