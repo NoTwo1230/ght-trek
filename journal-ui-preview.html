@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GHT 远征日志 · UI 预览</title>
+<style>
+  :root{
+    --bg:#0a0d12; --bg-soft:#0f141d; --panel:rgba(255,255,255,.035);
+    --panel-2:rgba(255,255,255,.055); --border:rgba(255,255,255,.09);
+    --text:#e6edf3; --text-dim:#8b98a8; --text-faint:#5b6675;
+    --accent:#4f9dff; --accent-soft:#1b3a5c;
+    --green:#34d058; --orange:#ffa94d; --gold:#FFCE6B;
+    --r:14px; --r-sm:9px;
+    /* 13 段区域配色（与 sections-data.js 一致） */
+    --c-kanchenjunga:#a8521e; --c-makalu:#b1319f; --c-everest:#2f63c4;
+    --c-rolwaling:#2f95c0; --c-langtang:#c2315f; --c-ganesh:#9aa82f;
+    --c-manaslu:#d2691e; --c-annapurna:#4a35c0; --c-dolpo:#e0b500;
+    --c-mugu:#2bb6b6; --c-humla:#c22929; --c-bajhang:#9c8f3e; --c-darchula:#31b97e;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",Inter,system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;line-height:1.5}
+  body{
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(79,157,255,.10), transparent 60%),
+      radial-gradient(900px 500px at -5% 10%, rgba(177,49,159,.07), transparent 55%),
+      var(--bg);
+    min-height:100vh;
+  }
+
+  /* ── 顶栏 ── */
+  .topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:18px;
+    padding:12px 22px;background:rgba(10,13,18,.72);backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--border)}
+  .brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:15px;letter-spacing:.3px;flex:none}
+  .brand .logo{width:24px;height:24px;border-radius:7px;
+    background:linear-gradient(135deg,var(--accent),#9b6cff);display:grid;place-items:center;
+    font-size:13px;box-shadow:0 2px 10px rgba(79,157,255,.4)}
+  .brand .sub{font-weight:400;font-size:11px;color:var(--text-dim);letter-spacing:1px}
+  .tabs{display:flex;gap:4px;margin-left:6px}
+  .tab{padding:7px 13px;border-radius:9px;font-size:13px;color:var(--text-dim);cursor:pointer;
+    border:1px solid transparent;transition:.18s;text-decoration:none}
+  .tab:hover{color:var(--text);background:var(--panel)}
+  .tab.active{color:#fff;background:var(--accent-soft);border-color:rgba(79,157,255,.4)}
+  .tabs-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+  .lang{font-size:12px;color:var(--text-dim);background:var(--panel);border:1px solid var(--border);
+    border-radius:8px;padding:6px 10px;cursor:pointer}
+  .databtn{font-size:12px;color:var(--text);background:var(--panel-2);border:1px solid var(--border);
+    border-radius:8px;padding:6px 11px;cursor:pointer}
+
+  /* ── 页头 ── */
+  .page-head{max-width:880px;margin:0 auto;padding:30px 22px 8px}
+  .page-head h1{font-size:27px;font-weight:800;letter-spacing:.5px;display:flex;align-items:center;gap:11px}
+  .page-head .en{font-size:12px;font-weight:600;color:var(--text-faint);letter-spacing:3px;margin-top:3px}
+  .page-head p.sub{color:var(--text-dim);font-size:13px;margin-top:9px;max-width:620px}
+
+  /* 统计条 */
+  .stats{max-width:880px;margin:18px auto 6px;padding:0 22px;
+    display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .stat{background:var(--panel);border:1px solid var(--border);border-radius:var(--r-sm);
+    padding:13px 15px}
+  .stat .v{font-size:20px;font-weight:800;letter-spacing:.3px}
+  .stat .v small{font-size:11px;font-weight:600;color:var(--text-dim);margin-left:2px}
+  .stat .k{font-size:11px;color:var(--text-dim);margin-top:3px}
+  .stat .v.green{color:var(--green)} .stat .v.gold{color:var(--gold)} .stat .v.accent{color:var(--accent)}
+
+  /* 筛选条 */
+  .filters{max-width:880px;margin:20px auto 4px;padding:0 22px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .chip{padding:7px 14px;border-radius:20px;font-size:12.5px;border:1px solid var(--border);
+    background:var(--panel);color:var(--text-dim);cursor:pointer;transition:.18s;user-select:none}
+  .chip:hover{color:var(--text);border-color:rgba(255,255,255,.2)}
+  .chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .filters .spacer{flex:1}
+  .filters .hint{font-size:11px;color:var(--text-faint)}
+
+  /* ── 时间线信息流 ── */
+  .feed{max-width:880px;margin:8px auto 40px;padding:18px 22px 0;position:relative}
+  .feed::before{content:"";position:absolute;left:46px;top:30px;bottom:40px;width:2px;
+    background:linear-gradient(var(--border),rgba(255,255,255,.02));border-radius:2px}
+  .entry{position:relative;padding:0 0 26px 56px}
+  .node{position:absolute;left:38px;top:6px;width:16px;height:16px;border-radius:50%;
+    background:var(--bg);border:3px solid var(--accent);box-shadow:0 0 0 4px rgba(79,157,255,.12)}
+  .entry[data-type="gps"] .node{border-color:var(--green)}
+  .entry[data-type="rest"] .node{border-color:var(--text-faint)}
+
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--r);
+    padding:15px 17px;transition:.2s;overflow:hidden}
+  .card:hover{border-color:rgba(255,255,255,.18);background:var(--panel-2)}
+  .card-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:9px}
+  .region-tag{font-size:11px;font-weight:700;padding:3px 10px;border-radius:7px;color:#fff;letter-spacing:.4px}
+  .date{font-size:12.5px;color:var(--text-dim);font-weight:600}
+  .day-badge{font-size:11px;color:var(--text-faint);background:rgba(255,255,255,.05);
+    border:1px solid var(--border);border-radius:6px;padding:2px 8px}
+  .gps-badge{margin-left:auto;font-size:11px;color:var(--green);background:rgba(52,208,88,.1);
+    border:1px solid rgba(52,208,88,.3);border-radius:7px;padding:3px 9px;font-weight:600}
+
+  .note{font-size:13.5px;color:var(--text);line-height:1.7;margin:4px 0 12px}
+  .note.dim{color:var(--text-dim)}
+
+  /* GPS 统计 chips */
+  .chips{display:flex;gap:9px;flex-wrap:wrap;margin:6px 0 12px}
+  .sc{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;
+    padding:8px 11px;min-width:72px}
+  .sc .sv{font-size:15px;font-weight:800;letter-spacing:.2px}
+  .sc .sv.green{color:var(--green)} .sc .sv.orange{color:var(--orange)} .sc .sv.white{color:var(--text)}
+  .sc .sv small{font-size:10px;font-weight:500;color:var(--text-dim);margin-left:1px}
+  .sc .sk{font-size:10.5px;color:var(--text-dim);margin-top:2px}
+
+  /* 高程迷你折线 */
+  .spark{margin-top:6px;width:100%;height:54px;display:block;border-radius:8px;
+    background:linear-gradient(180deg,rgba(79,157,255,.06),transparent);border:1px solid var(--border)}
+
+  /* 照片位 */
+  .photos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
+  .photo{aspect-ratio:4/3;border-radius:9px;border:1px solid var(--border);position:relative;overflow:hidden;
+    background:linear-gradient(135deg,#1a2230,#0f141d)}
+  .photo::after{content:"📷";position:absolute;inset:0;display:grid;place-items:center;font-size:20px;opacity:.35}
+  .photo .cap{position:absolute;left:0;right:0;bottom:0;font-size:10px;color:var(--text-dim);
+    padding:4px 6px;background:linear-gradient(transparent,rgba(0,0,0,.6))}
+
+  /* 主人发布框 */
+  .compose{max-width:880px;margin:6px auto 60px;padding:0 22px}
+  .compose .box{background:var(--panel);border:1px dashed var(--border);border-radius:var(--r);padding:16px}
+  .compose h3{font-size:13px;color:var(--text-dim);font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+  .compose textarea{width:100%;min-height:74px;resize:vertical;background:var(--bg-soft);
+    border:1px solid var(--border);border-radius:10px;color:var(--text);padding:11px;
+    font-family:inherit;font-size:13.5px;line-height:1.6}
+  .compose textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,157,255,.12)}
+  .compose .row{display:flex;gap:10px;align-items:center;margin-top:11px}
+  .compose .attach{font-size:12.5px;color:var(--text-dim);background:var(--panel-2);border:1px solid var(--border);
+    border-radius:8px;padding:8px 12px;cursor:pointer}
+  .compose .post{margin-left:auto;background:var(--accent);color:#fff;border:none;border-radius:9px;
+    padding:9px 20px;font-size:13.5px;font-weight:700;cursor:pointer;transition:.18s}
+  .compose .post:hover{filter:brightness(1.1);transform:translateY(-1px)}
+
+  @media(max-width:680px){
+    .stats{grid-template-columns:repeat(2,1fr)}
+    .tabs .tab:nth-child(n+3){display:none}
+    .photos{grid-template-columns:repeat(2,1fr)}
+    .feed::before{left:30px} .entry{padding-left:42px} .node{left:22px}
+  }
+</style>
+</head>
+<body>
+
+  <!-- 顶栏 -->
+  <div class="topbar">
+    <div class="brand">
+      <span class="logo">🏔️</span>
+      <span>GHT <span class="sub">大喜马拉雅高线</span></span>
+    </div>
+    <nav class="tabs">
+      <a class="tab" href="#">Dashboard</a>
+      <a class="tab active" href="#">日志</a>
+      <a class="tab" href="itinerary.html">📅 行程对比 ↗</a>
+      <a class="tab" href="sections.html">🏔️ 路段 ↗</a>
+    </nav>
+    <div class="tabs-right">
+      <button class="lang">中文 ▾</button>
+      <button class="databtn">🔧 数据管理</button>
+    </div>
+  </div>
+
+  <!-- 页头 -->
+  <div class="page-head">
+    <h1>📝 远征日志</h1>
+    <div class="en">JOURNAL · 东段 → 西段 全程纪实</div>
+    <p class="sub">从 Phungling 到 Darchula，86 天高线穿越的每日记录。GPS 自动同步徒步数据，沿途随笔与照片实时更新。</p>
+  </div>
+
+  <!-- 统计条 -->
+  <div class="stats">
+    <div class="stat"><div class="v">12<small>篇</small></div><div class="k">总日志</div></div>
+    <div class="stat"><div class="v green">612<small>km</small></div><div class="k">已记录里程</div></div>
+    <div class="stat"><div class="v gold">38.4<small>k m</small></div><div class="k">累计爬升</div></div>
+    <div class="stat"><div class="v accent">5<small>段</small></div><div class="k">覆盖路段</div></div>
+  </div>
+
+  <!-- 筛选 -->
+  <div class="filters">
+    <span class="chip active" data-filter="all">全部</span>
+    <span class="chip" data-filter="gps">📡 GPS 自动</span>
+    <span class="chip" data-filter="text">✍️ 手写随笔</span>
+    <span class="spacer"></span>
+    <span class="hint">按路段 / 日期排序 ▾</span>
+  </div>
+
+  <!-- 时间线信息流 -->
+  <div class="feed">
+
+    <!-- GPS 自动记录 -->
+    <div class="entry" data-type="gps">
+      <div class="node"></div>
+      <div class="card">
+        <div class="card-top">
+          <span class="region-tag" style="background:var(--c-makalu)">马卡鲁</span>
+          <span class="date">2026-11-12</span>
+          <span class="day-badge">Day 9</span>
+          <span class="gps-badge">📡 自动记录 · 08:12 → 16:40</span>
+        </div>
+        <div class="note dim">翻过 Shipton 垭口，雪线以上风很大，但视野无敌。下午下撤到山谷营地。</div>
+        <div class="chips">
+          <div class="sc"><div class="sv white">18.4<small>km</small></div><div class="sk">距离</div></div>
+          <div class="sc"><div class="sv orange">1,240<small>m</small></div><div class="sk">爬升</div></div>
+          <div class="sc"><div class="sv orange">980<small>m</small></div><div class="sk">下降</div></div>
+          <div class="sc"><div class="sv white">6h12m</div><div class="sk">用时</div></div>
+          <div class="sc"><div class="sv white">3.0<small>km/h</small></div><div class="sk">均速</div></div>
+          <div class="sc"><div class="sv white">4,210<small>m</small></div><div class="sk">最高</div></div>
+        </div>
+        <svg class="spark" viewBox="0 0 600 54" preserveAspectRatio="none">
+          <path d="M0,46 L60,40 L120,30 L180,34 L240,18 L300,22 L360,10 L420,16 L480,6 L540,12 L600,20"
+                fill="none" stroke="var(--green)" stroke-width="2" opacity=".9"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 手写随笔 + 照片 -->
+    <div class="entry" data-type="text">
+      <div class="node"></div>
+      <div class="card">
+        <div class="card-top">
+          <span class="region-tag" style="background:var(--c-everest)">珠峰</span>
+          <span class="date">2026-11-21</span>
+          <span class="day-badge">Day 14 · 休整</span>
+        </div>
+        <div class="note">在 Namche Bazaar 休整一天。补给、热水澡、给家里报平安。海拔适应很关键——明天开始进入真正的高海拔。镇上 WiFi 居然不错，发了会儿呆看雪山。</div>
+        <div class="photos">
+          <div class="photo"><span class="cap">Namche 晨雾</span></div>
+          <div class="photo"><span class="cap">客栈屋顶</span></div>
+          <div class="photo"><span class="cap">雪山日落</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GPS 自动记录 -->
+    <div class="entry" data-type="gps">
+      <div class="node"></div>
+      <div class="card">
+        <div class="card-top">
+          <span class="region-tag" style="background:var(--c-everest)">珠峰</span>
+          <span class="date">2026-11-23</span>
+          <span class="day-badge">Day 16</span>
+          <span class="gps-badge">📡 自动记录 · 07:40 → 15:05</span>
+        </div>
+        <div class="note dim">经 Dingboche 一路上行，空气明显稀薄，步伐慢但稳。</div>
+        <div class="chips">
+          <div class="sc"><div class="sv white">12.1<small>km</small></div><div class="sk">距离</div></div>
+          <div class="sc"><div class="sv orange">880<small>m</small></div><div class="sk">爬升</div></div>
+          <div class="sc"><div class="sv orange">320<small>m</small></div><div class="sk">下降</div></div>
+          <div class="sc"><div class="sv white">5h18m</div><div class="sk">用时</div></div>
+          <div class="sc"><div class="sv white">4,620<small>m</small></div><div class="sk">最高</div></div>
+        </div>
+        <svg class="spark" viewBox="0 0 600 54" preserveAspectRatio="none">
+          <path d="M0,44 L80,38 L160,30 L240,26 L320,18 L400,20 L480,12 L560,8 L600,14"
+                fill="none" stroke="var(--green)" stroke-width="2" opacity=".9"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 手写随笔 -->
+    <div class="entry" data-type="text">
+      <div class="node"></div>
+      <div class="card">
+        <div class="card-top">
+          <span class="region-tag" style="background:var(--c-langtang)">朗塘</span>
+          <span class="date">2026-12-09</span>
+          <span class="day-badge">Day 39</span>
+        </div>
+        <div class="note">今天跨过 Baggyo 垭口，向导讲了好多山神的传说。海拔计显示 4200+，但体感比珠峰那段轻松，大概是适应了。夜里营地里星星多到不真实。</div>
+      </div>
+    </div>
+
+    <!-- 休息日 -->
+    <div class="entry" data-type="rest">
+      <div class="node"></div>
+      <div class="card">
+        <div class="card-top">
+          <span class="region-tag" style="background:var(--c-rolwaling)">罗尔瓦林</span>
+          <span class="date">2026-12-02</span>
+          <span class="day-badge">Day 33 · 天气延误</span>
+        </div>
+        <div class="note dim">大雪封山，原地休整一天。把装备重新打包，读了会儿书。安全优先。</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 主人发布框 -->
+  <div class="compose">
+    <div class="box">
+      <h3>✍️ 发布新日志（主人）</h3>
+      <textarea placeholder="今天发生了什么？记录海拔、天气、心情，或贴上照片…"></textarea>
+      <div class="row">
+        <span class="attach">📷 添加照片</span>
+        <span class="attach">📤 关联 GPS 轨迹</span>
+        <button class="post">发布日志</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // 筛选交互（仅 UI 演示）
+  document.querySelectorAll('.filters .chip').forEach(c=>{
+    c.addEventListener('click',()=>{
+      document.querySelectorAll('.filters .chip').forEach(x=>x.classList.remove('active'));
+      c.classList.add('active');
+      const f=c.dataset.filter;
+      document.querySelectorAll('.entry').forEach(e=>{
+        e.style.display = (f==='all'||e.dataset.type===f) ? '' : 'none';
+      });
+    });
+  });
+</script>
+</body>
+</html>

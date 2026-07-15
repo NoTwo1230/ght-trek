@@ -1184,7 +1184,6 @@
     <nav class="topnav-tabs" aria-label="主导航">
       <button class="tn-tab active" data-view="dashboard">Dashboard</button>
       <button class="tn-tab" data-view="journal">日志</button>
-      <button class="tn-tab" data-view="about">关于</button>
       <a class="tn-ext" href="itinerary.html" target="_blank" rel="noopener" title="计划 vs 实际 · 行程对比 →">📅 行程对比 ↗</a>
       <a class="tn-ext" href="sections.html" target="_blank" rel="noopener" title="路段进度 · 按 已完成/进行中/未完成 分组 →">🏔️ 路段 ↗</a>
     </nav>
@@ -1791,7 +1790,7 @@ const APP = {
 let currentLang = 'zh';
 const I18N = {
   zh: {
-    'nav.dashboard': '仪表盘', 'nav.sections': '路段', 'nav.itinerary': '行程', 'nav.journal': '日志', 'nav.about': '关于', 'nav.datamgmt': '数据管理',
+    'nav.dashboard': '仪表盘', 'nav.sections': '路段', 'nav.itinerary': '行程', 'nav.journal': '日志', 'nav.datamgmt': '数据管理',
     'brand.sub': '大喜马拉雅高线',
     'pos.prefix': '📍 当前位置:',
     'basemap.terrain': '户外图 (Esri 地形 · 默认)', 'basemap.topo': '地形图 (等高线)', 'basemap.dark': '暗色图 (OpenStreetMap)',
@@ -1803,11 +1802,10 @@ const I18N = {
     'pass.none': '暂无垭口数据', 'pass.soon': '近日', 'pass.seg': '段', 'pass.all': '查看全部路段 →',
     'up.btn': '📤 上传GPS轨迹', 'up.hint': '支持批量多文件 (.gpx/.kml)<br>PeakVisor / Strava / Garmin 均可', 'up.date': '出发日期：', 'up.reset': '🗑️ 重置数据',
     'view.empty': '暂无内容',
-    'about.text': '本页追踪 <b>大喜马拉雅高线（Great Himalaya Trail）</b> 东段至西段的徒步进度，支持 GPX 轨迹上传、计划/实际双栏对照与垭口清单可视化。<br><br>数据来源：主人上传的 GPS 轨迹（GPX），地图底图 © OpenStreetMap · Esri · OpenTopoMap。<br><br>© 2026 GHT 高线追踪',
     'dm.title': '数据管理', 'dm.pwdHint': '请输入主人密码以管理轨迹数据', 'dm.unlock': '解锁', 'dm.pwdErr': '密码错误', 'dm.connErr': '无法连接服务器（后端未启动？）'
   },
   en: {
-    'nav.dashboard': 'Dashboard', 'nav.sections': 'Sections', 'nav.itinerary': 'Itinerary', 'nav.journal': 'Journal', 'nav.about': 'About', 'nav.datamgmt': 'Data',
+    'nav.dashboard': 'Dashboard', 'nav.sections': 'Sections', 'nav.itinerary': 'Itinerary', 'nav.journal': 'Journal', 'nav.datamgmt': 'Data',
     'brand.sub': 'GREAT HIMALAYA TRAIL',
     'pos.prefix': '📍 Current location:',
     'basemap.terrain': 'Terrain (Esri Topo · default)', 'basemap.topo': 'Topographic (Contours)', 'basemap.dark': 'Dark (OpenStreetMap)',
@@ -1819,7 +1817,6 @@ const I18N = {
     'pass.none': 'No pass data', 'pass.soon': 'Soon', 'pass.seg': 'seg', 'pass.all': 'All sections →',
     'up.btn': '📤 Upload GPS track', 'up.hint': 'Batch upload (.gpx/.kml)<br>PeakVisor / Strava / Garmin supported', 'up.date': 'Start date: ', 'up.reset': '🗑️ Reset data',
     'view.empty': 'No content',
-    'about.text': 'This page tracks the trekking progress of the <b>Great Himalaya Trail</b> from east to west, with GPX upload and planned/actual comparison, with pass checklists.<br><br>Data: owner-uploaded GPS tracks (GPX). Basemap © OpenStreetMap · Esri · OpenTopoMap.<br><br>© 2026 GHT Trail Tracker',
     'dm.title': 'Data Management', 'dm.pwdHint': 'Enter owner password to manage track data', 'dm.unlock': 'Unlock', 'dm.pwdErr': 'Wrong password', 'dm.connErr': 'Cannot reach server (backend down?)'
   }
 };
@@ -2195,7 +2192,6 @@ function showView(view) {
   if (view === 'sections') html = renderSections();
   else if (view === 'itinerary') html = renderItinerary();
   else if (view === 'journal') html = renderLog();
-  else if (view === 'about') html = aboutHTML();
   const title = VIEW_TITLES[view] || ['视图', 'VIEW'];
   card.innerHTML = '<div class="card-h"><span>' + title[0] + '</span><span class="en">' + title[1] + '</span></div><div class="card-b">' +
     (html || '<div style="color:var(--text-dim);font-size:11px;padding:8px;">' + t('view.empty') + '</div>') + '</div>';
@@ -2604,10 +2600,6 @@ function uploadHTML() {
     '<div class="date-row">' + t('up.date') + '<input type="date" value="' + (APP.itineraryStartDate || '') + '" onchange="setItineraryStartDate(this.value)"></div>' +
     (APP.isOwner ? '<div style="margin-top:10px;text-align:center;"><button class="btn-reset visible" id="btnReset" onclick="clearAllData()" style="font-size:11px;">' + t('up.reset') + '</button></div>' : '') +
     '</div>';
-}
-
-function aboutHTML() {
-  return '<div style="font-size:12px;line-height:1.7;color:var(--text);">' + t('about.text') + '</div>';
 }
 
 function updateLiveStatus() {
