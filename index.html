@@ -3355,13 +3355,56 @@ function haversine(lat1, lon1, lat2, lon2) {
 // 抽稀轨迹点：保留首尾 + 近似等间距采样，避免 localStorage 5MB 配额溢出
 // （GPS 全量点可达数万，序列化后超 5MB 会被浏览器静默丢弃，导致刷新后轨迹丢失）。
 // 运行时距离/爬升使用已算好的 stats，不依赖抽稀后的点数重新计算，因此不影响精度。
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  Douglas-Peucker 轨迹简化（替代均匀采样）
+//  保留弯曲路段细节（如马纳斯鲁环线），剔除直线段的冗余点。
+//  输入：trackPoints 数组 + 容差(°) → 输出：简化后的子集（首尾必保）。
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function perpendicularDistance(lat, lon, lat1, lon1, lat2, lon2) {
+  const dx = lon2 - lon1, dy = lat2 - lat1;
+  const lenSq = dx * dx + dy * dy;
+  if (lenSq === 0) return Math.hypot(lat - lat1, lon - lon1);
+  const t = ((lon - lon1) * dx + (lat - lat1) * dy) / lenSq;
+  const clat = lat1 + t * dy, clon = lon1 + t * dx;
+  return Math.hypot(lat - clat, lon - clon);
+}
+
+function douglasPeucker(points, startIndex, endIndex, tolerance, keep) {
+  let maxDist = 0, maxIdx = startIndex;
+  for (let i = startIndex + 1; i < endIndex; i++) {
+    const d = perpendicularDistance(
+      points[i].lat, points[i].lon,
+      points[startIndex].lat, points[startIndex].lon,
+      points[endIndex].lat, points[endIndex].lon
+    );
+    if (d > maxDist) { maxDist = d; maxIdx = i; }
+  }
+  if (maxDist > tolerance) {
+    keep[maxIdx] = true;
+    douglasPeucker(points, startIndex, maxIdx, tolerance, keep);
+    douglasPeucker(points, maxIdx, endIndex, tolerance, keep);
+  }
+}
+
+function simplifyPointsDP(points, tolerance) {
+  if (!points || points.length <= 2) return points;
+  const n = points.length;
+  const keep = new Array(n).fill(false);
+  keep[0] = true; keep[n - 1] = true;
+  douglasPeucker(points, 0, n - 1, tolerance, keep);
+  return points.filter((_, i) => keep[i]);
+}
+
 function decimateTrack(points, max) {
   if (!points || !points.length) return [];
   if (points.length <= max) return points;
-  const step = points.length / max;
+  // 先用 Douglas-Peucker 简化，再在超限时均匀截断
+  const simplified = simplifyPointsDP(points, 0.0004);  // ≈44m 容差
+  if (simplified.length <= max) return simplified;
+  const step = simplified.length / max;
   const out = [];
-  for (let i = 0; i < max; i++) out.push(points[Math.floor(i * step)]);
-  const last = points[points.length - 1];
+  for (let i = 0; i < max; i++) out.push(simplified[Math.floor(i * step)]);
+  const last = simplified[simplified.length - 1];
   if (out[out.length - 1] !== last) out.push(last);
   return out;
 }
@@ -3372,17 +3415,42 @@ function decimatePresetTrack(preset, max) {
   if (!preset || !preset.trackPoints || preset.trackPoints.length <= max) return preset;
   const pts = preset.trackPoints;
   const dist = Array.isArray(preset.distances) ? preset.distances : null;
-  const step = pts.length / max;
+
+  // Douglas-Peucker 简化（保留弯道细节），同步 distances
+  const simplified = simplifyPointsDP(pts, 0.0004);
+
+  if (simplified.length <= max) {
+    // 无需二次降级：直接用 DP 结果构建同步 distances
+    const np = { ...preset, trackPoints: simplified };
+    if (dist) {
+      // 通过坐标匹配重建 distances（DP 子集是原数组的真子集）
+      const distMap = new Map();
+      pts.forEach((p, i) => distMap.set(p.lat + ',' + p.lon, dist[i]));
+      np.distances = simplified.map(p => distMap.get(p.lat + ',' + p.lon) || 0);
+    }
+    return np;
+  }
+
+  // DP 后仍超限（极端情况）：均匀降级到 max
+  const step = simplified.length / max;
   const outPts = [], outDist = dist ? [] : null;
   for (let i = 0; i < max; i++) {
     const idx = Math.floor(i * step);
-    outPts.push(pts[idx]);
-    if (outDist) outDist.push(dist[idx]);
+    outPts.push(simplified[idx]);
+    if (outDist) {
+      // distances 需要从原始数组中查找
+      const p = simplified[idx];
+      const origIdx = pts.findIndex(op => op.lat === p.lat && op.lon === p.lon);
+      outDist.push(origIdx >= 0 ? dist[origIdx] : 0);
+    }
   }
-  const last = pts.length - 1;
-  if (outPts[outPts.length - 1] !== pts[last]) {
-    outPts.push(pts[last]);
-    if (outDist) outDist.push(dist[last]);
+  const last = simplified[simplified.length - 1];
+  if (outPts[outPts.length - 1] !== last) {
+    outPts.push(last);
+    if (outDist) {
+      const origIdx = pts.findIndex(op => op.lat === last.lat && op.lon === last.lon);
+      outDist.push(origIdx >= 0 ? dist[origIdx] : 0);
+    }
   }
   const np = { ...preset, trackPoints: outPts };
   if (outDist) np.distances = outDist;
@@ -3921,10 +3989,10 @@ const sectionColors = (window.GHT_SECTIONS || []).map(r => r.color);
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const TRACK_FILL_DONE = '#FFCE6B';       // 已完成/进行中 内层填充（金色）
 const TRACK_FILL_OPACITY = 0.9;
-const TRACK_DASH = '#ffffff';            // 计划段中间虚线颜色
+const TRACK_DASH = 'rgba(255,255,255,0.55)'; // 计划段中间虚线（细淡，仅提示「此处有路」）
 
 // 返回某段「外发光 + 边框 + 内层」样式（2026-07-15 调整）
-//  · 计划段   ：区域色实线边框 + 白色虚线中心线（一眼看出未走）
+//  · 计划段   ：区域色边框 + 极细淡虚线中心（透明底，一眼看出未走）
 //  · 已完成段 ：金色填充内层 + 更粗/更亮的区域色边框 + 白色外发光（边框明显）
 function getSectionStyle(color, status) {
   const isDone = status === 'completed' || status === 'in-progress';
@@ -3938,9 +4006,9 @@ function getSectionStyle(color, status) {
   }
   return {
     glow:   null,
-    border: { color: color, weight: 6, opacity: 0.95, dashArray: undefined },
+    border: { color: color, weight: 5, opacity: 0.88, dashArray: undefined },
     inner:  null,
-    dashed: { color: TRACK_DASH, weight: 3, opacity: 0.85, dashArray: '5 9' }
+    dashed: { color: TRACK_DASH, weight: 1, opacity: 1, dashArray: '4 10' }
   };
 }
 
@@ -4710,11 +4778,11 @@ function setAsPreset(gpxData, stats) {
   APP.sectionRanges = calculateSectionRanges(APP.presetTrack);
 
   try {
-    const p = decimatePresetTrack(APP.presetTrack, 1500);
+    const p = decimatePresetTrack(APP.presetTrack, 4000);
     localStorage.setItem('ght_preset', JSON.stringify(p));
   } catch(e) {
     try {
-      const p = decimatePresetTrack(APP.presetTrack, 600);
+      const p = decimatePresetTrack(APP.presetTrack, 1500);
       localStorage.setItem('ght_preset', JSON.stringify(p));
     } catch(e2) {}
   }
