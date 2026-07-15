@@ -1144,6 +1144,7 @@
     font-size: 10px; color: var(--text-dim); white-space: nowrap; overflow: hidden;
   }
   .statusbar .live-dot { color: var(--green); display: flex; align-items: center; gap: 4px; }
+  .statusbar .live-dot.offline { color: var(--text-dim); }
   .statusbar .spacer { flex: 1; }
 
   /* legend → top-left; compass → top-right (zoom/basemap moved to bottom-left) */
@@ -1239,7 +1240,7 @@
   <!-- ── BOTTOM STATUS BAR ── -->
   <footer class="statusbar">
     <span>© 2026 GHT 高线追踪</span>
-    <span class="live-dot">🟢 Live Tracking Active · 实时追踪中</span>
+    <span class="live-dot" id="liveDot">🟢 Live Tracking Active · 实时追踪中</span>
     <span class="spacer"></span>
     <span>数据来源: GPX</span>
     <span>底图: © OpenStreetMap · Esri · OpenTopoMap</span>
@@ -1936,6 +1937,8 @@ L.control.scale({ metric: true, imperial: false, position: 'bottomright', maxWid
 // Province layer group
 const provinceLayerGroup = L.layerGroup().addTo(map);
 const uploadedTrackGroup = L.layerGroup().addTo(map);
+// 分段名称标注图层（每段中点放一个区域名标签，让每段在地图上可辨识）
+const sectionLabelGroup = L.layerGroup().addTo(map);
 // 标注点图层：默认不加入地图；点开某路段详情时才按需显示该段的标注点
 const waypointLayer = L.layerGroup();
 
@@ -2318,18 +2321,15 @@ function drawElevationProfile() {
   };
   function currentRegion13() {
     if (!window.GHT_SECTIONS || !window.GHT_SECTIONS.length) return null;
-    const cands = [];
-    const info = currentSectionInfo();
-    if (info.nameEn) cands.push(info.nameEn);
-    if (info.name) cands.push(info.name);
-    const gi = ghtSections[currentSectionIdx()];
-    if (gi) { if (gi.nameEn) cands.push(gi.nameEn); if (gi.name) cands.push(gi.name); }
+    const r = getCurrentSectionRange();
+    if (!r) return null;
+    const cands = [r.regionEn, r.regionZh].filter(Boolean);
     for (const c of cands) {
       const key = c.toLowerCase().replace(/\s+/g, '-');
-      if (SECTION_TO_REGION13[key]) return window.GHT_SECTIONS.find(r => r.id === SECTION_TO_REGION13[key]) || null;
+      if (SECTION_TO_REGION13[key]) return window.GHT_SECTIONS.find(reg => reg.id === SECTION_TO_REGION13[key]) || null;
     }
     const hay = cands.join(' ').toLowerCase();
-    return window.GHT_SECTIONS.find(r => hay.includes(r.id.toLowerCase())) || null;
+    return window.GHT_SECTIONS.find(reg => hay.includes(reg.id.toLowerCase())) || null;
   }
 
   function updateCurrentPosition() {
@@ -2393,23 +2393,46 @@ function getProvZH(pid) {
   return m[pid] || pid || '—';
 }
 
-function currentSectionInfo() {
-  let name = '', nameEn = '';
+// ── 唯一真相源：当前所在路段 ──
+// 未出发（无实时 GPS）：固定返回起点段（sectionRanges[0] = 干城章嘉），避免「0% 却显示下一段」的歧义。
+// 实时追踪中：按当前 GPS 位置最近的轨迹点定位到所属路段。
+// 面板「当前状态」与地图徽标「当前位置」统一调用此函数 → 二者永不矛盾。
+function getCurrentSectionRange() {
   if (APP.sectionRanges && APP.sectionRanges.length) {
+    const hasLive = APP.currentPosition && APP.actualTracks && APP.actualTracks.length;
+    if (!hasLive) return APP.sectionRanges[0];           // 未出发 → 起点段
+    // 有实时位置：找包含当前 GPS 最近轨迹点的路段
+    if (APP.presetTrack && APP.presetTrack.trackPoints.length) {
+      const pts = APP.presetTrack.trackPoints;
+      let best = -1, bd = Infinity;
+      for (let i = 0; i < pts.length; i++) {
+        const d = haversine(APP.currentPosition.lat, APP.currentPosition.lon, pts[i].lat, pts[i].lon);
+        if (d < bd) { bd = d; best = i; }
+      }
+      if (best >= 0) {
+        const hit = APP.sectionRanges.find(r => best >= r.startIndex && best <= r.endIndex);
+        if (hit) return hit;
+      }
+    }
     const inProg = APP.sectionRanges.findIndex(r => r.status === 'in-progress');
-    if (inProg >= 0) { name = APP.sectionRanges[inProg].regionZh || ''; nameEn = APP.sectionRanges[inProg].regionEn || ''; }
-    else { const c = APP.sectionRanges.filter(r => r.status === 'completed').length; const idx = Math.min(c, APP.sectionRanges.length - 1); name = APP.sectionRanges[idx].regionZh || ''; nameEn = APP.sectionRanges[idx].regionEn || ''; }
-  } else if (ghtSections[APP.currentSection - 1]) { name = ghtSections[APP.currentSection - 1].name; nameEn = ghtSections[APP.currentSection - 1].nameEn; }
-  return { name, nameEn };
+    if (inProg >= 0) return APP.sectionRanges[inProg];
+    const c = APP.sectionRanges.filter(r => r.status === 'completed').length;
+    return APP.sectionRanges[Math.min(c, APP.sectionRanges.length - 1)];
+  }
+  return null;
+}
+
+function currentSectionInfo() {
+  const r = getCurrentSectionRange();
+  if (r) return { name: r.regionZh || '', nameEn: r.regionEn || '' };
+  if (ghtSections[APP.currentSection - 1]) return { name: ghtSections[APP.currentSection - 1].name, nameEn: ghtSections[APP.currentSection - 1].nameEn };
+  return { name: '', nameEn: '' };
 }
 
 function currentSectionIdx() {
-  let idx = APP.currentSection - 1;
-  if (APP.sectionRanges && APP.sectionRanges.length) {
-    const inProg = APP.sectionRanges.findIndex(r => r.status === 'in-progress');
-    idx = inProg >= 0 ? inProg : Math.min(APP.sectionRanges.filter(r => r.status === 'completed').length, APP.sectionRanges.length - 1);
-  }
-  return idx;
+  const r = getCurrentSectionRange();
+  if (r) return APP.sectionRanges.indexOf(r);
+  return APP.currentSection - 1;
 }
 
 function getNextPass() {
@@ -2452,7 +2475,8 @@ function progressCardHTML() {
 // ── B. 当前状态 ──
 function currentStatusHTML() {
   const sec = currentSectionInfo();
-  const prov = getProv(ghtSections[currentSectionIdx()] ? ghtSections[currentSectionIdx()].province : '');
+  const idx = currentSectionIdx();
+  const prov = getProv(ghtSections[idx] ? ghtSections[idx].province : '');
   const elev = (APP.currentPosition && APP.currentPosition.elev != null) ? Math.round(APP.currentPosition.elev)
     : (APP.maxElev || (APP.presetTrack && APP.presetTrack.stats ? APP.presetTrack.stats.maxElev : null));
   const np = getNextPass();
@@ -2466,10 +2490,24 @@ function currentStatusHTML() {
       eta = base.toISOString().slice(0, 10);
     }
   }
+
+  // 当前营地：实时追踪→最近标注点；未出发→起点营地（明确标注「未出发」，避免误显下一段）
+  const hasLive = APP.currentPosition && APP.actualTracks && APP.actualTracks.length;
+  let campVal, campSub;
+  if (hasLive && APP.allWpts && APP.allWpts.length) {
+    const lbl = nearestWaypointLabel(APP.allWpts, APP.currentPosition, 6000);
+    campVal = lbl || (sec.nameEn || sec.name || '—');
+    campSub = sec.name || '';
+  } else {
+    const startCamp = (APP.itinerary && APP.itinerary[0] && APP.itinerary[0].from) || APP.startPlaceName || '起点';
+    campVal = '🚩 ' + startCamp;
+    campSub = (sec.name || '起点') + ' · 未出发';
+  }
+
   const row = (ico, k, v, sub) => '<div class="st-row"><span class="st-ico">' + ico + '</span><span class="st-k">' + k + '</span><span class="st-v">' + v + (sub ? '<small>' + sub + '</small>' : '') + '</span></div>';
   return '<div class="card-h"><span>当前状态</span><span class="en">CURRENT STATUS</span></div>' +
     '<div class="card-b">' +
-    row('🏕️', t('st.camp'), sec.nameEn || sec.name || '—', sec.name || '') +
+    row('🏕️', t('st.camp'), campVal, campSub) +
     row('🗺️', t('st.area'), prov, '') +
     row('🔺', t('st.elev'), elev != null ? fmtNum(elev) + 'm' : '—', '') +
     row('⛰️', t('st.pass'), np ? (np.name || np.desc || '未命名') : '—', np && np.elev != null ? fmtNum(np.elev) + 'm' : '') +
@@ -2560,12 +2598,26 @@ function aboutHTML() {
   return '<div style="font-size:12px;line-height:1.7;color:var(--text);">' + t('about.text') + '</div>';
 }
 
+function updateLiveStatus() {
+  const el = document.getElementById('liveDot');
+  if (!el) return;
+  const hasLive = APP.currentPosition && APP.actualTracks && APP.actualTracks.length;
+  if (hasLive) {
+    el.className = 'live-dot';
+    el.innerHTML = '🟢 Live Tracking Active · 实时追踪中';
+  } else {
+    el.className = 'live-dot offline';
+    el.innerHTML = '⚪ 计划中 · 尚未出发';
+  }
+}
+
 function renderDashboard() {
   setCard('cardProgress', progressCardHTML());
   setCard('cardStatus', currentStatusHTML());
   setCard('cardToday', todaySummaryHTML());
   setCard('cardInfo', expedInfoHTML());
   setCard('cardPasses', passesHTML());
+  updateLiveStatus();
   if (typeof bindSectionClickHandlers === 'function') { try { bindSectionClickHandlers(); } catch (e) {} }
 }
 
@@ -3884,9 +3936,40 @@ function drawSectionSegment(points, color, status, layerGroup, popupHtml) {
   });
 }
 
+// 每段中点放一个区域名标签（divIcon），让 13 段在地图上各自可辨识（尤其解决「马卡鲁段没标注」）。
+// 即使某段因锚点贴近而切片 <2 点无法画折线，标签仍按其入口锚点显示，保证不漏标。
+function drawSectionLabels() {
+  sectionLabelGroup.clearLayers();
+  if (!APP.sectionRanges || !APP.sectionRanges.length || !APP.presetTrack) return;
+  const pts = APP.presetTrack.trackPoints;
+  APP.sectionRanges.forEach((range, idx) => {
+    let lat, lon, label;
+    const mid = Math.floor((range.startIndex + range.endIndex) / 2);
+    if (pts[mid]) { lat = pts[mid].lat; lon = pts[mid].lon; }
+    else if (window.GHT_SECTIONS) {
+      const reg = window.GHT_SECTIONS.find(r => r.id === range.regionId);
+      if (reg && reg.entry) { lat = reg.entry[0]; lon = reg.entry[1]; }
+    }
+    if (lat == null) return;
+    label = range.regionZh || range.regionEn || ('第' + (idx + 1) + '段');
+    const color = range.regionColor || '#888';
+    const icon = L.divIcon({
+      className: '',
+      html: '<div style="transform:translate(-50%,-120%);white-space:nowrap;padding:2px 7px;border-radius:10px;' +
+            'background:rgba(13,18,25,0.78);border:1px solid ' + color + ';color:' + color +
+            ';font:600 11px/1.4 system-ui,sans-serif;box-shadow:0 1px 4px rgba(0,0,0,.5);">' +
+            (idx + 1) + '. ' + label + '</div>',
+      iconSize: [0, 0],
+      iconAnchor: [0, 0]
+    });
+    L.marker([lat, lon], { icon, interactive: false, keyboard: false })
+      .addTo(sectionLabelGroup);
+  });
+}
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  RENDER ALL TRACKS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function renderAllTracks() {
   uploadedTrackGroup.clearLayers();
 
@@ -3906,17 +3989,23 @@ function renderAllTracks() {
       });
 
       // Draw prefix segment: track points BEFORE the first section's startIndex
-      // (e.g., Phungling → Kanchenjunga entry). Without this, the initial portion of Day 1
-      // would be silently dropped because sectionRanges start at the nearest park entry.
+      // (e.g., Phungling → Kanchenjunga entry). Drawn in NEUTRAL dashed grey (not the
+      // region color) so it isn't mistaken for a second Kanchenjunga-colored slice.
       const firstStartIdx = APP.sectionRanges[0].startIndex;
       if (firstStartIdx > 1) {
         const prefix = APP.presetTrack.trackPoints.slice(0, firstStartIdx);
         if (prefix.length >= 2) {
-          drawSectionSegment(prefix, APP.sectionRanges[0].regionColor || '#888', APP.sectionRanges[0].status || 'upcoming', uploadedTrackGroup,
-            '<b>📍 起始段</b><br>起点 → 第一个区域入口<br>距离: ~' +
-            Math.round((APP.presetTrack.distances[firstStartIdx] || 0) / 1000) + 'km');
+          const coords = prefix.map(p => [p.lat, p.lon]);
+          L.polyline(coords, {
+            color: '#8b949e', weight: 4, opacity: 0.7, dashArray: '6 6',
+            lineCap: 'round', lineJoin: 'round'
+          }).bindPopup('<b>📍 起始段</b><br>起点 → 第一个区域入口<br>距离: ~' +
+            Math.round((APP.presetTrack.distances[firstStartIdx] || 0) / 1000) + 'km').addTo(uploadedTrackGroup);
         }
       }
+
+      // 每段名称标签（解决「马卡鲁段没标注」等问题）
+      drawSectionLabels();
     } else {
       // Fallback: no section ranges (e.g. single-day track not near any park entry)
       // Draw as one continuous line with default color
@@ -3930,12 +4019,13 @@ function renderAllTracks() {
       });
     }
 
-    // Preset start & end red dots
+    // Preset start & end markers — neutral pin style (light fill, dark ring) so they
+    // read as waypoints, never as a "section color" that could be confused with Kanchenjunga red.
     const start = APP.presetTrack.trackPoints[0];
     const end = APP.presetTrack.trackPoints[APP.presetTrack.trackPoints.length - 1];
-    L.circleMarker([start.lat, start.lon], { radius: 6, color: '#fff', fillColor: '#f85149', fillOpacity: 1, weight: 2 })
+    L.circleMarker([start.lat, start.lon], { radius: 6, color: '#0d1219', fillColor: '#e6edf3', fillOpacity: 1, weight: 2 })
       .bindPopup('<b>🚩 预设起点</b>').addTo(uploadedTrackGroup);
-    L.circleMarker([end.lat, end.lon], { radius: 6, color: '#fff', fillColor: '#f85149', fillOpacity: 1, weight: 2 })
+    L.circleMarker([end.lat, end.lon], { radius: 6, color: '#0d1219', fillColor: '#e6edf3', fillOpacity: 1, weight: 2 })
       .bindPopup('<b>🏁 预设终点</b>').addTo(uploadedTrackGroup);
 
     // 标注点默认不加载到地图——点开某路段详情时由 showSectionWaypoints() 按需显示该段标注点
