@@ -2653,7 +2653,10 @@ function savePassDone(set) { try { localStorage.setItem(PASS_DONE_KEY, JSON.stri
 function computePassList() {
   const wps = (APP.presetTrack && APP.presetTrack.waypoints) || [];
   let passes = wps.filter(w => w._type === 'pass' || w._type === 'peak');
-  if (!passes.length) return { passes: [], done: 0, total: 0 };
+  if (!passes.length) {
+    const reason = wps.length ? 'unrecognized' : (APP.presetTrack ? 'noWpt' : 'noPreset');
+    return { passes: [], done: 0, total: 0, wpCount: wps.length, reason };
+  }
   const override = loadPassDone();
   const presetPts = (APP.presetTrack && APP.presetTrack.trackPoints) || [];
   const R = 500;
@@ -2679,10 +2682,13 @@ function computePassList() {
 
 // ── F. 即将翻越垭口 ──
 function passesHTML() {
-  const { passes, done, total } = computePassList();
+  const { passes, done, total, reason, wpCount } = computePassList();
   let rows = '';
   if (!total) {
-    rows = '<div style="font-size:11px;color:var(--text-dim);padding:8px 0;">' + t('pass.none') + '</div>';
+    let msg = t('pass.none');
+    if (reason === 'unrecognized') msg = '预设含 ' + wpCount + ' 个标注点，但均未识别为垭口/山峰（pass/peak）。请检查 GPX 标注的分类字段（如 PeakVisor tagId、sym、中文"垭口/山口"）。';
+    else if (reason === 'noWpt') msg = '预设轨迹未包含任何标注点（wpt）。请在 GPX 中保留垭口/住宿点的 waypoint 再导入。';
+    rows = '<div style="font-size:11px;color:#d29922;padding:8px 0;line-height:1.5;">' + msg + '</div>';
   } else {
     rows = passes.map(p => {
       const cls = 'pass-row' + (p.done ? ' done' : '');
@@ -3707,17 +3713,26 @@ function parseGPX(xmlText) {
     const nameLower = (wpt.name || '').toLowerCase();
     const symLower = (wpt.sym || '').toLowerCase();
     const typeLower = (wpt.gpxType || '').toLowerCase();
-    // Pass detection: check desc + name for common pass/saddle indicators
+    // PeakVisor tagId（key 可能是 'tagId' 或 'pv:tagId'），含 natural:saddle / mountain_pass 等
+    const tagIdVal = (wpt.allFieldsFlat &&
+      (wpt.allFieldsFlat['tagId'] || wpt.allFieldsFlat['pv:tagId'] || '')) + '';
+    const tagIdLow = tagIdVal.toLowerCase();
+
+    // 垭口/山口判定 —— 覆盖：英文(la/pass/bhanjyang…)、藏语转写、PeakVisor tagId(saddle/pass/col)、
+    // Garmin/OSM 的 sym/type 字段、以及中文(垭口/山口/达坂/鞍部)。
     const isPass = descLower.match(/\b(la|pass|bhanjyang|labtsa|lapcha|lekh)\b/i) ||
                    nameLower.match(/\b(la|pass|bhanjyang|labtsa|lapcha|lekh)\b/i) ||
                    (wpt.desc || '').includes('La ') || (wpt.desc || '').includes(' Pass') ||
-                   (wpt.name || '').includes('La ') || (wpt.name || '').includes(' Pass');
+                   (wpt.name || '').includes('La ') || (wpt.name || '').includes(' Pass') ||
+                   tagIdLow.includes('saddle') || tagIdLow.includes('mountain_pass') ||
+                   tagIdLow.includes('pass') || tagIdLow.includes('col') ||
+                   symLower.includes('saddle') || symLower.includes('pass') || symLower.includes('col') ||
+                   typeLower.includes('saddle') || typeLower.includes('pass') ||
+                   /[垭山]口|达坂|鞍部/.test((wpt.name || '') + ' ' + (wpt.desc || ''));
 
     // Hut / camp detection — PeakVisor uses name "Hut / Shelter", sym "Pin, Green",
     // type "TechNote", and tagId "logistics:hut" (key may be 'tagId' or 'pv:tagId' depending on parser)
-    const tagIdVal = (wpt.allFieldsFlat &&
-      (wpt.allFieldsFlat['tagId'] || wpt.allFieldsFlat['pv:tagId'] || '')) + '';
-    const isHut = tagIdVal.includes('hut') ||
+    const isHut = tagIdLow.includes('hut') ||
                   nameLower.includes('hut') || nameLower.includes('shelter') ||
                   nameLower.includes('camp') || symLower.includes('green') ||
                   typeLower.includes('camp');
@@ -3726,7 +3741,9 @@ function parseGPX(xmlText) {
       wpt._type = 'pass';
     } else if (isHut) {
       wpt._type = 'camp';
-    } else if (symLower.includes('summit')) {
+    } else if (symLower.includes('summit') || tagIdLow.includes('peak') ||
+               tagIdLow.includes('summit') || nameLower.includes('peak') ||
+               typeLower.includes('peak')) {
       wpt._type = 'peak';
     } else {
       wpt._type = 'other';
