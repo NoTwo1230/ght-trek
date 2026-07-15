@@ -387,6 +387,7 @@
   .map-legend .lg-sw { width: 16px; height: 4px; border-radius: 2px; flex-shrink: 0; }
   .map-legend .lg-plan { background: linear-gradient(90deg, #a8521e, #b1319f, #2f63c4, #2f95c0, #c2315f, #9aa82f, #d2691e, #4a35c0, #e0b500, #2bb6b6, #c22929, #9c8f3e, #31b97e); }
   .map-legend .lg-cyan { background: #1D9E75; }
+  .map-legend .lg-dev { background: #FF7A1A; }
   @media (max-width: 640px) {
     .map-legend { width: 160px; top: 8px; left: 8px; }
     .map-compass { top: 8px; right: 8px; }
@@ -543,6 +544,13 @@
   .stat-card .label { font-size: 10px; color: var(--text-dim); margin-bottom: 4px; }
   .stat-card .value { font-size: 18px; font-weight: 600; }
   .stat-card .unit { font-size: 10px; font-weight: 400; color: var(--text-dim); }
+
+  .deviation-box { margin: 4px 0; padding: 10px 12px; background: rgba(255,122,26,0.08); border: 1px solid rgba(255,122,26,0.35); border-radius: 10px; }
+  .deviation-box .db-title { font-size: 11px; color: #FF9E4D; font-weight: 600; margin-bottom: 8px; }
+  .deviation-box .db-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .deviation-box .db-item { text-align: center; }
+  .deviation-box .db-v { font-size: 16px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+  .deviation-box .db-l { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
 
   .section-item {
     display: flex;
@@ -1226,6 +1234,7 @@
         </div>
         <div class="map-overlay map-legend" aria-label="图例">
           <div class="lg-row"><span class="lg-sw lg-cyan"></span>实际徒步轨迹</div>
+          <div class="lg-row"><span class="lg-sw lg-dev"></span>偏离 · 绕路</div>
           <div class="lg-row"><span class="lg-sw lg-plan"></span>计划路线 · 未走</div>
         </div>
       </div>
@@ -2518,6 +2527,7 @@ function getNextPass() {
 }
 
 function fmtNum(n, d) { return (n == null || isNaN(n)) ? '—' : Number(n).toLocaleString(undefined, { maximumFractionDigits: d == null ? 0 : d }); }
+function fmtDist(m) { if (m == null || !isFinite(m)) return '—'; return m >= 1000 ? (m / 1000).toFixed(2) + ' km' : Math.round(m) + ' m'; }
 
 // ── A. 征途总进度 ──
 function progressCardHTML() {
@@ -2825,6 +2835,17 @@ function renderProgress() {
         <div class="value">${getCumulativeElevGain() > 0 ? Math.round(getCumulativeElevGain()).toLocaleString() : '?'}<span class="unit"> m</span></div>
       </div>
     </div>
+
+    ${(APP.deviation && APP.deviation.has) ? `
+    <div class="deviation-box">
+      <div class="db-title">🟧 轨迹偏差 · 实际 vs 计划走廊(${DEVIATION_CORRIDOR}m)</div>
+      <div class="db-grid">
+        <div class="db-item"><div class="db-v">${fmtDist(APP.deviation.devDist)}</div><div class="db-l">偏离里程</div></div>
+        <div class="db-item"><div class="db-v">${APP.deviation.adherence.toFixed(1)}%</div><div class="db-l">贴线率</div></div>
+        <div class="db-item"><div class="db-v">${fmtDist(APP.deviation.maxDev)}</div><div class="db-l">最大偏离</div></div>
+        <div class="db-item"><div class="db-v">${APP.deviation.episodes}</div><div class="db-l">偏离段数</div></div>
+      </div>
+    </div>` : ''}
 
     <div style="font-size:13px;font-weight:600;color:var(--accent);margin:16px 0 8px;">🗺️ 路段列表</div>
     <div>${sec}</div>
@@ -3997,6 +4018,8 @@ const sectionColors = (window.GHT_SECTIONS || []).map(r => r.color);
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const ACTUAL_TRACK_COLOR = '#1D9E75';   // 实际徒步轨迹青色
+const DEVIATION_CORRIDOR = 250;         // 偏离判定走廊（米，与 _onRoute 同口径）
+const DEVIATION_COLOR = '#FF7A1A';      // 偏离段高亮橙
 
 // 返回「预设未走段」样式：原区域色实线描边（无金色、无虚线）。
 function getSectionStyle(color) {
@@ -4090,6 +4113,46 @@ function isNearGrid(grid, lat, lon, cellDeg, maxDistM) {
   return false;
 }
 
+// ── 轨迹偏差：实际点 → 预设折线最近距离（米）──
+// 等距矩形投影到本地米坐标（徒步尺度足够准），再算点到线段距离；
+// 预设点建线段网格，逐环向外扩搜最近线段，避免大绕路（数 km）量出哨兵值。
+function toMeters(lat, lon, lat0, lon0) {
+  return [ (lon - lon0) * Math.cos(lat0 * Math.PI / 180) * 111320, (lat - lat0) * 110540 ];
+}
+function ptSegDist(px, py, a, b) {
+  const dx = b.mx - a.mx, dy = b.my - a.my, l2 = dx * dx + dy * dy;
+  if (l2 === 0) return Math.hypot(px - a.mx, py - a.my);
+  let t = ((px - a.mx) * dx + (py - a.my) * dy) / l2; t = Math.max(0, Math.min(1, t));
+  return Math.hypot(px - (a.mx + t * dx), py - (a.my + t * dy));
+}
+function buildSegGrid(points, cellM) {
+  const g = new Map();
+  points.forEach((p, j) => {
+    const k = Math.floor(p.mx / cellM) + '_' + Math.floor(p.my / cellM);
+    let arr = g.get(k); if (!arr) { arr = []; g.set(k, arr); } arr.push(j);
+  });
+  return g;
+}
+function nearestToPresetSeg(mx, my, pts, grid, cellM) {
+  const cx = Math.floor(mx / cellM), cy = Math.floor(my / cellM);
+  let best = Infinity;
+  // 逐环向外（Chebyshev 环），命中首个含预设点的环即停：最近预设点必在最近的非空环内。
+  for (let rad = 1; rad <= 30; rad++) {
+    let found = false;
+    for (let dx = -rad; dx <= rad; dx++) for (let dy = -rad; dy <= rad; dy++) {
+      if (Math.max(Math.abs(dx), Math.abs(dy)) !== rad) continue; // 只查当前环
+      const arr = grid.get((cx + dx) + '_' + (cy + dy)); if (!arr) continue;
+      found = true;
+      for (const j of arr) {
+        if (j > 0) best = Math.min(best, ptSegDist(mx, my, pts[j - 1], pts[j]));
+        if (j < pts.length - 1) best = Math.min(best, ptSegDist(mx, my, pts[j], pts[j + 1]));
+      }
+    }
+    if (found) break;
+  }
+  return best === Infinity ? 1e9 : best;
+}
+
 // 绘制一段轨迹：计划=区域色边框+白色虚线中心；已完成=金色填充+醒目边框+白光晕
 // 把一条 style 画成若干 polyline 层（glow / border / inner / dashed）。
 function drawRun(pts, style, layerGroup, popupHtml) {
@@ -4152,14 +4215,24 @@ function renderAllTracks() {
   const NEAR_M = 250;
   const allActual = [];
   APP.actualTracks.forEach(t => { for (let i = 0; i < t.trackPoints.length; i++) allActual.push(t.trackPoints[i]); });
-  if (APP.presetTrack && allActual.length) {
+  if (APP.presetTrack && APP.presetTrack.trackPoints.length >= 2 && allActual.length) {
     const actualGrid = buildPointGrid(allActual, 0.003);
     const presetGrid = buildPointGrid(APP.presetTrack.trackPoints, 0.003);
     APP.presetTrack.trackPoints.forEach(p => { p._walked = isNearGrid(actualGrid, p.lat, p.lon, 0.003, NEAR_M); });
     allActual.forEach(p => { p._onRoute = isNearGrid(presetGrid, p.lat, p.lon, 0.003, NEAR_M); });
+
+    // 轨迹偏差：预设投到本地米坐标并建线段网格，逐实际点算到预设折线的最近线段距离（_devM，米）。
+    const lat0 = APP.presetTrack.trackPoints.reduce((s, p) => s + p.lat, 0) / APP.presetTrack.trackPoints.length;
+    const lon0 = APP.presetTrack.trackPoints.reduce((s, p) => s + p.lon, 0) / APP.presetTrack.trackPoints.length;
+    const presetMeters = APP.presetTrack.trackPoints.map(p => { const m = toMeters(p.lat, p.lon, lat0, lon0); return { mx: m[0], my: m[1] }; });
+    const presetSegGrid = buildSegGrid(presetMeters, 500);
+    allActual.forEach(p => {
+      const m = toMeters(p.lat, p.lon, lat0, lon0);
+      p._devM = nearestToPresetSeg(m[0], m[1], presetMeters, presetSegGrid, 500);
+    });
   } else if (allActual.length) {
-    // 有实际轨迹但无预设可比对：整条实际轨迹作为青色独立层
-    allActual.forEach(p => { p._onRoute = false; });
+    // 有实际轨迹但无预设可比对：整条实际轨迹作为青色独立层，偏差无法计算
+    allActual.forEach(p => { p._onRoute = false; p._devM = 1e9; });
   }
 
   // 1. Draw preset track sections — 未走部分用原区域色实线（已走部分交给青色实际轨迹）
@@ -4221,6 +4294,8 @@ function renderAllTracks() {
 
   // 2. 实际徒步轨迹 —— 作为细而克制的「真实 GPS 路径」叠加在计划路线之上。
   //    进度已由下方计划段的协调色填充表达，这里只保留精确的已走路径痕迹，不抢轮廓与进度填充的风头。
+  let devTotal = 0, devDev = 0, devOn = 0, devMax = 0, devEpi = 0;
+  const hasPresetForDev = !!(APP.presetTrack && APP.presetTrack.trackPoints.length >= 2);
   APP.actualTracks.forEach((track, idx) => {
     if (track.trackPoints.length < 2) return;
 
@@ -4249,7 +4324,40 @@ function renderAllTracks() {
       .bindPopup('<b>📍 实际轨迹 ' + (idx + 1) + ' 起点</b>').addTo(uploadedTrackGroup);
     L.circleMarker([e.lat, e.lon], { radius: 4, color: '#fff', fillColor: '#f85149', fillOpacity: 1, weight: 2 })
       .bindPopup('<b>🏁 实际轨迹 ' + (idx + 1) + ' 终点</b>').addTo(uploadedTrackGroup);
+
+    // ── 轨迹偏差：累计偏离里程 + 橙色高亮偏离段（合并连续 run 减少 DOM 节点）──
+    if (hasPresetForDev) {
+      let inEpi = false;
+      const tp = track.trackPoints;
+      const runs = []; let cur = null;
+      for (let i = 0; i < tp.length - 1; i++) {
+        const a = tp[i], b = tp[i + 1];
+        const segLen = haversine(a.lat, a.lon, b.lat, b.lon);
+        devTotal += segLen;
+        const devAvg = ((a._devM != null ? a._devM : 1e9) + (b._devM != null ? b._devM : 1e9)) / 2;
+        const off = devAvg > DEVIATION_CORRIDOR;
+        if (off) {
+          devDev += segLen;
+          if (!inEpi) { devEpi++; inEpi = true; }
+          if (!cur) { cur = [[a.lat, a.lon]]; runs.push(cur); }
+          cur.push([b.lat, b.lon]);
+        } else {
+          devOn += segLen; inEpi = false; cur = null;
+        }
+        if (a._devM != null) devMax = Math.max(devMax, a._devM);
+        if (b._devM != null) devMax = Math.max(devMax, b._devM);
+      }
+      runs.forEach(r => {
+        L.polyline(r, { color: DEVIATION_COLOR, weight: 9, opacity: 0.16, lineCap: 'round', lineJoin: 'round' }).addTo(uploadedTrackGroup);
+        L.polyline(r, { color: DEVIATION_COLOR, weight: 5, opacity: 0.98, lineCap: 'round', lineJoin: 'round' }).addTo(uploadedTrackGroup);
+      });
+    }
   });
+  APP.deviation = {
+    total: devTotal, devDist: devDev, onDist: devOn, maxDev: devMax, episodes: devEpi,
+    adherence: devTotal > 0 ? (devOn / devTotal * 100) : 0,
+    has: devTotal > 0
+  };
 
   // 3. Current position
   if (APP.actualTracks.length > 0) {
