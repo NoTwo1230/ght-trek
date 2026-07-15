@@ -1946,8 +1946,6 @@ L.control.scale({ metric: true, imperial: false, position: 'bottomright', maxWid
 // Province layer group
 const provinceLayerGroup = L.layerGroup().addTo(map);
 const uploadedTrackGroup = L.layerGroup().addTo(map);
-// 分段名称标注图层（每段中点放一个区域名标签，让每段在地图上可辨识）
-const sectionLabelGroup = L.layerGroup().addTo(map);
 // 标注点图层：默认不加入地图；点开某路段详情时才按需显示该段的标注点
 const waypointLayer = L.layerGroup();
 
@@ -2267,6 +2265,18 @@ function drawElevationProfile() {
     });
   }
 
+  // Build section dividers — very faint dashed vertical lines between the 13 sections.
+  // Drawn at each section's startIndex (skip the first, which sits at the left edge).
+  let sectionDividers = '';
+  if (APP.sectionRanges && APP.sectionRanges.length > 1) {
+    for (let i = 1; i < APP.sectionRanges.length; i++) {
+      const bi = APP.sectionRanges[i].startIndex;
+      if (bi == null || bi <= 0) continue;
+      const x = pad.left + (bi / (points.length - 1)) * pw;
+      sectionDividers += `<line x1="${x.toFixed(1)}" y1="${pad.top}" x2="${x.toFixed(1)}" y2="${pad.top + ph}" stroke="rgba(255,255,255,0.16)" stroke-width="0.7" stroke-dasharray="2,5"/>`;
+    }
+  }
+
   // Current position line
   let posLine = '';
   if (APP.currentPosition && APP.presetTrack) {
@@ -2298,6 +2308,7 @@ function drawElevationProfile() {
   container.innerHTML = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="100%" preserveAspectRatio="none">
     <rect width="${w}" height="${h}" fill="transparent"/>
     ${gridLines}
+    ${sectionDividers}
     <path d="${pathD}" fill="none" stroke="var(--accent)" stroke-width="1.5" opacity="0.6"/>
     <path d="${pathD}" fill="url(#elevGrad)" stroke="none" opacity="0.15"/>
     ${posLine}
@@ -4059,37 +4070,8 @@ function drawSectionSegment(points, color, status, layerGroup, popupHtml) {
   });
 }
 
-// 每段中点放一个区域名标签（divIcon），让 13 段在地图上各自可辨识（尤其解决「马卡鲁段没标注」）。
-// 即使某段因锚点贴近而切片 <2 点无法画折线，标签仍按其入口锚点显示，保证不漏标。
-function drawSectionLabels() {
-  sectionLabelGroup.clearLayers();
-  if (!APP.sectionRanges || !APP.sectionRanges.length || !APP.presetTrack) return;
-  const pts = APP.presetTrack.trackPoints;
-  APP.sectionRanges.forEach((range, idx) => {
-    let lat, lon, label;
-    const mid = Math.floor((range.startIndex + range.endIndex) / 2);
-    if (pts[mid]) { lat = pts[mid].lat; lon = pts[mid].lon; }
-    else if (window.GHT_SECTIONS) {
-      const reg = window.GHT_SECTIONS.find(r => r.id === range.regionId);
-      if (reg && reg.entry) { lat = reg.entry[0]; lon = reg.entry[1]; }
-    }
-    if (lat == null) return;
-    // 地图标签只用英文名（首页面向国际访客，去掉中文）
-    label = range.regionEn || range.regionZh || ('Section ' + (idx + 1));
-    const color = range.regionColor || '#888';
-    const icon = L.divIcon({
-      className: '',
-      html: '<div style="transform:translate(-50%,-120%);white-space:nowrap;padding:2px 7px;border-radius:10px;' +
-            'background:rgba(13,18,25,0.78);border:1px solid ' + color + ';color:' + color +
-            ';font:600 11px/1.4 system-ui,sans-serif;box-shadow:0 1px 4px rgba(0,0,0,.5);">' +
-            (idx + 1) + '. ' + label + '</div>',
-      iconSize: [0, 0],
-      iconAnchor: [0, 0]
-    });
-    L.marker([lat, lon], { icon, interactive: false, keyboard: false })
-      .addTo(sectionLabelGroup);
-  });
-}
+// 每段名称标签已按用户要求移除（地图上不再显示区域名标签）。
+
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  RENDER ALL TRACKS
@@ -4128,8 +4110,7 @@ function renderAllTracks() {
         }
       }
 
-      // 每段名称标签（解决「马卡鲁段没标注」等问题）
-      drawSectionLabels();
+      // 每段名称标签已按用户要求移除（地图上不再显示区域名标签）
     } else {
       // Fallback: no section ranges (e.g. single-day track not near any park entry)
       // Draw as one continuous line with default color
