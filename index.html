@@ -1186,6 +1186,7 @@
       <button class="tn-tab" data-view="journal">日志</button>
       <a class="tn-ext" href="itinerary.html" target="_blank" rel="noopener" title="计划 vs 实际 · 行程对比 →">📅 行程对比 ↗</a>
       <a class="tn-ext" href="sections.html" target="_blank" rel="noopener" title="路段进度 · 按 已完成/进行中/未完成 分组 →">🏔️ 路段 ↗</a>
+      <a class="tn-ext" href="journal.html" target="_blank" rel="noopener" title="远征日志 · 按路段分组 →">📝 日志 ↗</a>
     </nav>
     <div class="topnav-right">
       <button class="lang-btn">中文 ▾</button>
@@ -3275,8 +3276,14 @@ function renderLog() {
     return `<div class="log-entry"><div class="date">📅 ${e.date}</div>${body}</div>`;
   }).reverse().join('');
 
+  const secOpts = (window.GHT_SECTIONS || []).map((r, i) =>
+    `<option value="${i + 1}">${r.zh || r.en || ('第' + (i + 1) + '段')}</option>`).join('');
   const ownerForm = APP.isOwner ? `
     <div style="margin-top:16px;padding:12px;background:var(--bg);border:1px dashed var(--border);border-radius:8px;">
+      <label style="display:block;font-size:11px;color:var(--text-dim);margin-bottom:5px;">所属路段</label>
+      <select id="logSection" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 8px;font-family:inherit;font-size:13px;margin-bottom:8px;">
+        <option value="">未分组</option>${secOpts}
+      </select>
       <textarea id="logText" placeholder="写点什么..." rows="3" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px;font-family:inherit;font-size:13px;resize:vertical;"></textarea>
       <button class="btn primary" onclick="addLogEntry()" style="margin-top:8px;width:100%;">✍️ 发布日志</button>
     </div>
@@ -4719,12 +4726,23 @@ function addActualTrack(gpxData, stats) {
   }
 
   if (dailyStats && dailyStats.date) {
+    // 按当日轨迹首点最近的区域锚点，自动归类到对应路段（sectionId = 锚点索引+1）
+    let logSectionId = null;
+    try {
+      const sp = gpxData.trackPoints && gpxData.trackPoints[0];
+      if (sp) {
+        const idx = findParkIndexForPoint(sp.lat, sp.lon);
+        if (idx >= 0) logSectionId = idx + 1;
+      }
+    } catch (e) {}
     APP.logEntries = APP.logEntries.filter(e => e.date !== dailyStats.date);
-    APP.logEntries.push({
+    const entry = {
       date: dailyStats.date,
       text: '📡 GPS自动记录: ' + dailyStats.distance.toFixed(1) + 'km, ' + dailyStats.elevGain.toLocaleString() + 'm爬升',
       dailyStats
-    });
+    };
+    if (logSectionId) entry.sectionId = logSectionId;
+    APP.logEntries.push(entry);
     saveLogEntries();
   }
 
@@ -4819,9 +4837,15 @@ function saveLogEntries() {
 function addLogEntry() {
   const text = document.getElementById('logText').value.trim();
   if (!text) return;
+  const sel = document.getElementById('logSection');
+  const secVal = sel ? sel.value : '';
+  const sectionId = secVal ? parseInt(secVal, 10) : null;
   const today = fmtNepalDate(new Date());
-  APP.logEntries.push({ date: today, text });
+  const entry = { date: today, text };
+  if (sectionId) entry.sectionId = sectionId;
+  APP.logEntries.push(entry);
   document.getElementById('logText').value = '';
+  if (sel) sel.value = '';
   saveLogEntries();
   openPanel('log');
 }

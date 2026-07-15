@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GHT 远征日志 · 按路段分组</title>
+<script src="sections-data.js"></script>
+<style>
+  :root{
+    --bg:#0a0d12; --bg-soft:#0f141d; --panel:rgba(255,255,255,.035);
+    --panel-2:rgba(255,255,255,.055); --border:rgba(255,255,255,.09);
+    --text:#e6edf3; --text-dim:#8b98a8; --text-faint:#5b6675;
+    --accent:#4f9dff; --accent-soft:#1b3a5c;
+    --green:#34d058; --orange:#ffa94d; --gold:#FFCE6B;
+    --r:14px; --r-sm:9px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",Inter,system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;line-height:1.5}
+  body{
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(79,157,255,.10), transparent 60%),
+      radial-gradient(900px 500px at -5% 10%, rgba(177,49,159,.07), transparent 55%),
+      var(--bg);
+    min-height:100vh;
+  }
+
+  /* 顶栏 */
+  .topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:16px;
+    padding:12px 22px;background:rgba(10,13,18,.72);backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--border)}
+  .brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:15px;letter-spacing:.3px;flex:none}
+  .brand .logo{width:24px;height:24px;border-radius:7px;
+    background:linear-gradient(135deg,var(--accent),#9b6cff);display:grid;place-items:center;font-size:13px}
+  .brand .sub{font-weight:400;font-size:11px;color:var(--text-dim);letter-spacing:1px}
+  .topbar .spacer{flex:1}
+  .backbtn{font-size:12.5px;color:var(--text);background:var(--panel-2);border:1px solid var(--border);
+    border-radius:8px;padding:7px 13px;text-decoration:none;cursor:pointer;transition:.18s;white-space:nowrap}
+  .backbtn:hover{color:#fff;border-color:rgba(255,255,255,.22)}
+
+  /* 页头 */
+  .page-head{max-width:920px;margin:0 auto;padding:30px 22px 6px}
+  .page-head h1{font-size:27px;font-weight:800;letter-spacing:.5px;display:flex;align-items:center;gap:11px}
+  .page-head .en{font-size:12px;font-weight:600;color:var(--text-faint);letter-spacing:3px;margin-top:3px}
+  .page-head p.sub{color:var(--text-dim);font-size:13px;margin-top:10px;max-width:660px}
+
+  /* 统计条 */
+  .stats{max-width:920px;margin:18px auto 4px;padding:0 22px;
+    display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .stat{background:var(--panel);border:1px solid var(--border);border-radius:var(--r-sm);padding:13px 15px}
+  .stat .v{font-size:20px;font-weight:800;letter-spacing:.3px}
+  .stat .v small{font-size:11px;font-weight:600;color:var(--text-dim);margin-left:2px}
+  .stat .k{font-size:11px;color:var(--text-dim);margin-top:3px}
+  .stat .v.green{color:var(--green)} .stat .v.gold{color:var(--gold)} .stat .v.accent{color:var(--accent)}
+
+  /* 筛选 */
+  .filters{max-width:920px;margin:20px auto 4px;padding:0 22px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .chip{padding:7px 14px;border-radius:20px;font-size:12.5px;border:1px solid var(--border);
+    background:var(--panel);color:var(--text-dim);cursor:pointer;transition:.18s;user-select:none}
+  .chip:hover{color:var(--text);border-color:rgba(255,255,255,.2)}
+  .chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .filters .spacer{flex:1}
+  .filters .hint{font-size:11px;color:var(--text-faint)}
+
+  /* 分组信息流 */
+  .feed{max-width:920px;margin:8px auto 50px;padding:18px 22px 0}
+  .sgroup{margin-bottom:30px}
+  .sg-head{display:flex;align-items:center;gap:11px;padding:9px 0 11px 14px;
+    border-left:3px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:14px}
+  .sg-dot{width:11px;height:11px;border-radius:50%;flex:none;box-shadow:0 0 0 3px rgba(255,255,255,.05)}
+  .sg-name{font-size:16px;font-weight:800;letter-spacing:.4px}
+  .sg-en{font-size:10.5px;font-weight:600;color:var(--text-faint);letter-spacing:2px}
+  .sg-count{margin-left:auto;font-size:11px;color:var(--text-dim);background:var(--panel);
+    border:1px solid var(--border);border-radius:20px;padding:3px 11px}
+  .sg-entries{display:flex;flex-direction:column;gap:14px}
+
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--r);padding:15px 17px;transition:.2s;overflow:hidden}
+  .card:hover{border-color:rgba(255,255,255,.18);background:var(--panel-2)}
+  .card-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:9px}
+  .date{font-size:12.5px;color:var(--text-dim);font-weight:600}
+  .day-badge{font-size:11px;color:var(--text-faint);background:rgba(255,255,255,.05);
+    border:1px solid var(--border);border-radius:6px;padding:2px 8px}
+  .gps-badge{margin-left:auto;font-size:11px;color:var(--green);background:rgba(52,208,88,.1);
+    border:1px solid rgba(52,208,88,.3);border-radius:7px;padding:3px 9px;font-weight:600}
+
+  .note{font-size:13.5px;color:var(--text);line-height:1.7;margin:2px 0 12px;white-space:pre-wrap;word-break:break-word}
+  .note.dim{color:var(--text-dim)}
+
+  /* GPS 统计 chips */
+  .chips{display:flex;gap:9px;flex-wrap:wrap;margin:4px 0 10px}
+  .sc{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;padding:8px 11px;min-width:72px}
+  .sc .sv{font-size:15px;font-weight:800;letter-spacing:.2px}
+  .sc .sv.green{color:var(--green)} .sc .sv.orange{color:var(--orange)} .sc .sv.white{color:var(--text)}
+  .sc .sv small{font-size:10px;font-weight:500;color:var(--text-dim);margin-left:1px}
+  .sc .sk{font-size:10.5px;color:var(--text-dim);margin-top:2px}
+
+  /* 高程迷你折线 */
+  .spark{margin-top:4px;width:100%;height:54px;display:block;border-radius:8px;
+    background:linear-gradient(180deg,rgba(79,157,255,.06),transparent);border:1px solid var(--border)}
+
+  .empty{text-align:center;color:var(--text-dim);padding:64px 20px;font-size:14px;line-height:1.8}
+  .empty a{color:var(--accent);text-decoration:none}
+
+  @media(max-width:680px){
+    .stats{grid-template-columns:repeat(2,1fr)}
+    .page-head h1{font-size:22px}
+  }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="brand">
+      <span class="logo">🏔️</span>
+      <span>GHT <span class="sub">大喜马拉雅高线</span></span>
+    </div>
+    <div class="spacer"></div>
+    <a class="backbtn" href="index.html">← 回主页 / 发布日志</a>
+  </div>
+
+  <div class="page-head">
+    <h1>📝 远征日志</h1>
+    <div class="en">JOURNAL · 按路段分组 · 东段 → 西段</div>
+    <p class="sub">从 Phungling 到 Darchula 的全程纪实。GPS 自动同步徒步数据，沿途随笔按 13 个路段归类。山里信号不稳，只发文字、不传照片。</p>
+  </div>
+
+  <div class="stats" id="stats">
+    <div class="stat"><div class="v" id="st-total">0<small>篇</small></div><div class="k">总日志</div></div>
+    <div class="stat"><div class="v green" id="st-dist">0<small>km</small></div><div class="k">已记录里程</div></div>
+    <div class="stat"><div class="v gold" id="st-gain">0<small>km</small></div><div class="k">累计爬升</div></div>
+    <div class="stat"><div class="v accent" id="st-sec">0<small>段</small></div><div class="k">覆盖路段</div></div>
+  </div>
+
+  <div class="filters">
+    <span class="chip active" data-filter="all">全部</span>
+    <span class="chip" data-filter="gps">📡 GPS 自动</span>
+    <span class="chip" data-filter="text">✍️ 手写随笔</span>
+    <span class="spacer"></span>
+    <span class="hint">按路段从上到下排列</span>
+  </div>
+
+  <div class="feed" id="feed"></div>
+
+<script>
+  // ── 路段元数据（来自 sections-data.js 的 window.GHT_SECTIONS）──
+  const SECTIONS = (window.GHT_SECTIONS || []).map((r, i) => ({
+    num: i + 1, id: r.id, zh: r.zh || r.en || ('第' + (i + 1) + '段'),
+    en: r.en || '', color: r.color || '#888'
+  }));
+
+  let logEntries = [];
+  const actualByDate = {};   // date -> { dayNum, points:[{elev}] }
+
+  function load() {
+    try {
+      const raw = JSON.parse(localStorage.getItem('ght_log') || '[]');
+      if (Array.isArray(raw)) logEntries = raw;
+    } catch (e) {}
+    try {
+      const acts = JSON.parse(localStorage.getItem('ght_actual') || '[]');
+      if (Array.isArray(acts)) acts.forEach(t => {
+        const d = t.date || (t.dailyStats && t.dailyStats.date);
+        if (d) actualByDate[d] = { dayNum: t.dayNum, points: t.trackPoints || [] };
+      });
+    } catch (e) {}
+    // 新 → 旧
+    logEntries.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  }
+
+  function escapeHtml(s) {
+    return (s || '').replace(/[&<>"']/g, c => (
+      { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+    ));
+  }
+
+  // 真实高程迷你折线（取自该日实际轨迹的 elev 字段，无数据则返回空）
+  function sparkline(points, color) {
+    const pts = (points || []).filter(p => p && typeof p.elev === 'number' && !isNaN(p.elev));
+    if (pts.length < 2) return '';
+    const step = Math.max(1, Math.floor(pts.length / 80));
+    const sampled = [];
+    for (let i = 0; i < pts.length; i += step) sampled.push(pts[i]);
+    if (sampled[sampled.length - 1] !== pts[pts.length - 1]) sampled.push(pts[pts.length - 1]);
+    let min = Infinity, max = -Infinity;
+    sampled.forEach(p => { if (p.elev < min) min = p.elev; if (p.elev > max) max = p.elev; });
+    const W = 600, H = 54, pad = 6, span = (max - min) || 1;
+    const d = sampled.map((p, i) => {
+      const x = (i / (sampled.length - 1)) * W;
+      const y = H - pad - ((p.elev - min) / span) * (H - 2 * pad);
+      return (i === 0 ? 'M' : 'L') + x.toFixed(1) + ',' + y.toFixed(1);
+    }).join(' ');
+    return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">`
+      + `<path d="${d}" fill="none" stroke="${color}" stroke-width="2" opacity=".9"/></svg>`;
+  }
+
+  function entryCard(e, region) {
+    const isGps = !!e.dailyStats;
+    const ds = e.dailyStats || {};
+    const meta = actualByDate[e.date] || {};
+    const dayNum = e.dayNum || meta.dayNum;
+
+    let gpsBadge = '';
+    if (isGps) {
+      const st = ds.startTime ? new Date(ds.startTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '';
+      const et = ds.endTime ? new Date(ds.endTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '';
+      gpsBadge = `<span class="gps-badge">📡 自动记录${st && et ? ' · ' + st + ' → ' + et : ''}</span>`;
+    }
+
+    let chips = '';
+    if (isGps) {
+      chips = `<div class="chips">`
+        + `<div class="sc"><div class="sv white">${(ds.distance || 0).toFixed(1)}<small>km</small></div><div class="sk">距离</div></div>`
+        + `<div class="sc"><div class="sv orange">${(ds.elevGain || 0).toLocaleString()}<small>m</small></div><div class="sk">爬升</div></div>`
+        + `<div class="sc"><div class="sv orange">${(ds.elevLoss || 0).toLocaleString()}<small>m</small></div><div class="sk">下降</div></div>`
+        + (ds.durationStr ? `<div class="sc"><div class="sv white">${ds.durationStr}</div><div class="sk">用时</div></div>` : '')
+        + (ds.avgSpeed ? `<div class="sc"><div class="sv white">${ds.avgSpeed}<small>km/h</small></div><div class="sk">均速</div></div>` : '')
+        + `<div class="sc"><div class="sv white">${(ds.maxElev || 0).toLocaleString()}<small>m</small></div><div class="sk">最高</div></div>`
+        + `</div>`;
+    }
+    const spark = isGps ? sparkline(meta.points, region.color) : '';
+    const dayBadge = dayNum ? `<span class="day-badge">Day ${dayNum}</span>` : '';
+
+    return `<div class="entry" data-type="${isGps ? 'gps' : 'text'}">
+      <div class="card">
+        <div class="card-top">
+          <span class="date">${escapeHtml(e.date || '—')}</span>
+          ${dayBadge}
+          ${gpsBadge}
+        </div>
+        <div class="note${isGps ? ' dim' : ''}">${escapeHtml(e.text || '')}</div>
+        ${chips}${spark}
+      </div>
+    </div>`;
+  }
+
+  function renderGroups(filter) {
+    const feed = document.getElementById('feed');
+    const groups = {};
+    const ungrouped = [];
+    logEntries.forEach(e => {
+      if (e.sectionId && e.sectionId >= 1 && e.sectionId <= SECTIONS.length) {
+        (groups[e.sectionId] = groups[e.sectionId] || []).push(e);
+      } else ungrouped.push(e);
+    });
+
+    const pass = (e) => filter === 'all' || (filter === 'gps' ? !!e.dailyStats : !e.dailyStats);
+
+    let html = '';
+    SECTIONS.forEach(sec => {
+      const shown = (groups[sec.num] || []).filter(pass);
+      if (!shown.length) return;
+      html += `<section class="sgroup" data-section="${sec.num}">
+        <div class="sg-head" style="border-left-color:${sec.color}">
+          <span class="sg-dot" style="background:${sec.color}"></span>
+          <span class="sg-name" style="color:${sec.color}">${sec.zh}</span>
+          <span class="sg-en">${(sec.en || '').toUpperCase()}</span>
+          <span class="sg-count">${shown.length} 篇</span>
+        </div>
+        <div class="sg-entries">${shown.map(e => entryCard(e, sec)).join('')}</div>
+      </section>`;
+    });
+
+    if (ungrouped.length) {
+      const shown = ungrouped.filter(pass);
+      if (shown.length) {
+        html += `<section class="sgroup" data-section="0">
+          <div class="sg-head" style="border-left-color:var(--text-faint)">
+            <span class="sg-dot" style="background:var(--text-faint)"></span>
+            <span class="sg-name" style="color:var(--text-dim)">未分组</span>
+            <span class="sg-en">UNGROUPED</span>
+            <span class="sg-count">${shown.length} 篇</span>
+          </div>
+          <div class="sg-entries">${shown.map(e => entryCard(e, { color: 'var(--accent)' })).join('')}</div>
+        </section>`;
+      }
+    }
+
+    if (!html) {
+      html = `<div class="empty">暂无日志。<br>主人可在 <a href="index.html">主页「日志」</a> 发布（发布时可选择所属路段）。</div>`;
+    }
+    feed.innerHTML = html;
+  }
+
+  function renderStats() {
+    let dist = 0, gain = 0;
+    const covered = new Set();
+    logEntries.forEach(e => {
+      if (e.dailyStats) {
+        dist += e.dailyStats.distance || 0;
+        gain += e.dailyStats.elevGain || 0;
+      }
+      if (e.sectionId && e.sectionId >= 1 && e.sectionId <= SECTIONS.length) covered.add(e.sectionId);
+    });
+    document.getElementById('st-total').innerHTML = logEntries.length + '<small>篇</small>';
+    document.getElementById('st-dist').innerHTML = Math.round(dist).toLocaleString() + '<small>km</small>';
+    document.getElementById('st-gain').innerHTML = (gain / 1000).toFixed(1) + '<small>k m</small>';
+    document.getElementById('st-sec').innerHTML = covered.size + '<small>段</small>';
+  }
+
+  // ── 启动 ──
+  load();
+  renderStats();
+  renderGroups('all');
+
+  document.querySelectorAll('.filters .chip').forEach(c => {
+    c.addEventListener('click', () => {
+      document.querySelectorAll('.filters .chip').forEach(x => x.classList.remove('active'));
+      c.classList.add('active');
+      renderGroups(c.dataset.filter);
+    });
+  });
+</script>
+</body>
+</html>
