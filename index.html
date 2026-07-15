@@ -933,20 +933,6 @@
   }
   .fitview-btn:hover { background: rgba(88,166,255,0.2); color: #fff; }
 
-  /* Region-area toggle (bottom-left, below fit-view) */
-  .regionarea-control { margin-top: 8px; }
-  .regionarea-btn {
-    width: 34px; height: 34px;
-    background: var(--panel-bg);
-    border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 6px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 16px; cursor: pointer; color: var(--text);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-    transition: all 0.15s;
-  }
-  .regionarea-btn:hover { background: rgba(88,166,255,0.2); color: #fff; }
-  .regionarea-btn.active { background: rgba(88,166,255,0.15); color: var(--accent); }
   .region-tooltip {
     background: var(--panel-bg);
     border: 1px solid rgba(255,255,255,0.2);
@@ -1305,22 +1291,6 @@ const REGION_ENTRIES = {
 // track's colored line segments sit inside recognizable region areas — matching
 // the 2D territory depiction of the sections page index images. Coordinates are
 // geographically approximate outlines of each trekking region (east → west).
-const REGION_POLYGONS = {
-  'kanchenjunga': [[27.30,87.75],[27.35,87.95],[27.45,88.05],[27.70,88.00],[27.85,87.80],[27.75,87.62],[27.50,87.60],[27.35,87.65]],
-  'makalu':       [[27.35,86.95],[27.45,87.40],[27.60,87.48],[27.75,87.40],[27.85,87.12],[27.70,86.95],[27.50,86.90]],
-  'everest':      [[27.62,86.45],[27.72,86.92],[27.90,87.02],[28.00,86.82],[28.10,86.62],[27.95,86.45],[27.75,86.40]],
-  'rolwaling':    [[27.75,86.05],[27.85,86.32],[27.95,86.44],[28.05,86.30],[27.95,86.10],[27.80,86.00]],
-  'langtang':     [[28.00,85.22],[28.10,85.52],[28.25,85.64],[28.35,85.44],[28.20,85.20],[28.05,85.15]],
-  'ganesh':       [[28.00,84.92],[28.10,85.18],[28.30,85.30],[28.40,85.10],[28.25,84.90],[28.05,84.85]],
-  'manaslu':      [[28.30,84.45],[28.40,84.84],[28.60,84.95],[28.70,84.70],[28.55,84.45],[28.35,84.40]],
-  'annapurna':    [[28.25,83.62],[28.35,84.04],[28.50,84.40],[28.66,84.45],[28.76,84.20],[28.60,83.80],[28.40,83.60]],
-  'dolpo':        [[28.45,82.82],[28.55,83.30],[28.80,83.70],[29.20,83.80],[29.50,83.52],[29.45,83.08],[29.10,82.82],[28.70,82.78]],
-  'mugu':         [[29.00,81.82],[29.10,82.40],[29.35,82.88],[29.55,82.82],[29.60,82.40],[29.30,81.92],[29.05,81.78]],
-  'humla':        [[29.35,81.22],[29.45,81.68],[29.70,82.08],[30.00,82.08],[30.10,81.68],[29.80,81.30],[29.45,81.18]],
-  'bajhang':      [[29.40,81.02],[29.50,81.45],[29.65,81.70],[29.70,81.45],[29.55,81.10],[29.42,81.00]],
-  'darchula':     [[29.45,80.42],[29.55,80.88],[29.80,81.12],[29.95,80.92],[29.85,80.55],[29.55,80.38]]
-};
-
 const ghtSections = [
   {
     id: 1, name: '干城章嘉段', nameEn: 'Kanchenjunga', province: 'koshi',
@@ -1960,31 +1930,10 @@ const BasemapSwitcher = L.Control.extend({
 });
 new BasemapSwitcher().addTo(map);
 
-// ━━ Region-area toggle control (show/hide 13-region territories, bottom-left) ━━
-const RegionAreaToggle = L.Control.extend({
-  options: { position: 'bottomleft' },
-  onAdd: function() {
-    const div = L.DomUtil.create('div', 'regionarea-control');
-    const btn = L.DomUtil.create('button', 'regionarea-btn active', div);
-    btn.innerHTML = '🏞️';
-    btn.title = '显示 / 隐藏 13 区域领土';
-    L.DomEvent.disableClickPropagation(div);
-    L.DomEvent.on(btn, 'click', function(e) {
-      L.DomEvent.stop(e);
-      if (map.hasLayer(regionAreaGroup)) { map.removeLayer(regionAreaGroup); btn.classList.remove('active'); }
-      else { map.addLayer(regionAreaGroup); btn.classList.add('active'); }
-    });
-    return div;
-  }
-});
-new RegionAreaToggle().addTo(map);
-
 L.control.scale({ metric: true, imperial: false, position: 'bottomright', maxWidth: 120 }).addTo(map);
 
 // Province layer group
 const provinceLayerGroup = L.layerGroup().addTo(map);
-// 13-region territory layer — drawn above provinces, below the track line
-const regionAreaGroup = L.layerGroup().addTo(map);
 const uploadedTrackGroup = L.layerGroup().addTo(map);
 // 标注点图层：默认不加入地图；点开某路段详情时才按需显示该段的标注点
 const waypointLayer = L.layerGroup();
@@ -2016,30 +1965,6 @@ nepalProvinces.forEach(province => {
   geoLayer._provinceId = province.provinceId;
   geoLayer._provinceColor = province.color;
 });
-
-// ── 13-region territory polygons (semi-transparent fills matching index images) ──
-function renderRegionAreas() {
-  regionAreaGroup.clearLayers();
-  (window.GHT_SECTIONS || []).forEach((r, idx) => {
-    const poly = REGION_POLYGONS[r.id];
-    if (!poly || poly.length < 3) return;
-    const geo = L.polygon(poly, {
-      color: r.color,
-      weight: 1.2,
-      opacity: 0.55,
-      fillColor: r.color,
-      fillOpacity: 0.13,
-      interactive: true,
-      className: 'region-area'
-    });
-    geo.bindTooltip(r.zh + ' · ' + r.en, {
-      permanent: false, direction: 'center', className: 'region-tooltip', opacity: 0.95
-    });
-    geo.on('click', function () { if (typeof focusRegion === 'function') focusRegion(idx); });
-    geo.addTo(regionAreaGroup);
-  });
-}
-renderRegionAreas();
 
 // Highlight province function
 function highlightProvince(provinceId) {
@@ -3901,11 +3826,23 @@ const nationalParks = [
 
 const sectionColors = (window.GHT_SECTIONS || []).map(r => r.color);
 
-function getSectionLineStyle(idx, status) {
-  const color = (window.GHT_SECTIONS[idx] && window.GHT_SECTIONS[idx].color) || '#888';
-  if (status === 'completed') return { color, weight: 6, opacity: 1.0 };
-  if (status === 'in-progress') return { color, weight: 5, opacity: 0.95, dashArray: '8 4' };
-  return { color, weight: 4, opacity: 0.75 };
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  轨迹着色规范（UI 设计决策, 2026-07-15）
+//   · 计划路线 = 透明填充 + 区域色描边（边框 = 该模块颜色）
+//   · 已完成路线（上传实际轨迹后 status=completed/in-progress）= 内部填充协调色，直观显示进度
+//  协调色 TRACK_FILL_DONE 选用暖阳金，与暗色地形底图及全部 13 个鲜艳区域边框均和谐；
+//  如需更换，只改这一个常量即可。
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const TRACK_FILL_DONE = '#FFCE6B';
+const TRACK_FILL_OPACITY = 0.82;
+
+// 返回某段「边框 + 内部」两层样式
+function getSectionStyle(color, status) {
+  const isDone = status === 'completed' || status === 'in-progress';
+  return {
+    border:  { color: color, weight: 6, opacity: 0.95, dashArray: status === 'in-progress' ? '10 6' : undefined },
+    interior:{ color: isDone ? TRACK_FILL_DONE : 'rgba(13,17,23,0)', weight: 3, opacity: isDone ? TRACK_FILL_OPACITY : 0 }
+  };
 }
 
 // Split a point array into continuous segments at break markers (cross-segment jumps)
@@ -3925,22 +3862,24 @@ function splitByBreaks(points) {
   return segments;
 }
 
-// Render a glow+stroke polyline from a point slice, splitting at breaks
-function drawTrackSegment(points, style, layerGroup, popupHtml) {
+// 绘制一段「透明线段 + 区域色边框」；已完成则内部填充协调色
+function drawSectionSegment(points, color, status, layerGroup, popupHtml) {
   const segs = splitByBreaks(points);
+  const style = getSectionStyle(color, status);
   segs.forEach(seg => {
     const coords = seg.map(p => [p.lat, p.lon]);
-    // White glow layer (bottom)
+    // 边框（区域色，较粗）= 透明线段的轮廓
+    const border = L.polyline(coords, {
+      color: style.border.color, weight: style.border.weight,
+      opacity: style.border.opacity, dashArray: style.border.dashArray,
+      lineCap: 'round', lineJoin: 'round'
+    }).addTo(layerGroup);
+    // 内部填充：计划=透明（露出暗底）；已完成=协调色
     L.polyline(coords, {
-      color: '#ffffff', weight: style.weight + 3,
-      opacity: 0.55, dashArray: style.dashArray || undefined
+      color: style.interior.color, weight: style.interior.weight,
+      opacity: style.interior.opacity, lineCap: 'round', lineJoin: 'round'
     }).addTo(layerGroup);
-    // Colored stroke layer (top)
-    const line = L.polyline(coords, {
-      color: style.color, weight: style.weight,
-      opacity: style.opacity, dashArray: style.dashArray || undefined
-    }).addTo(layerGroup);
-    if (popupHtml) line.bindPopup(popupHtml);
+    if (popupHtml) border.bindPopup(popupHtml);
   });
 }
 
@@ -3957,13 +3896,12 @@ function renderAllTracks() {
       APP.sectionRanges.forEach((range, idx) => {
         const slice = APP.presetTrack.trackPoints.slice(range.startIndex, range.endIndex + 1);
         if (slice.length < 2) return;
-        const style = getSectionLineStyle(idx, range.status);
         const popupHtml = '<b>📍 ' + (range.regionEn || ('Section ' + (idx + 1))) + '</b><br>' +
           (range.regionZh ? '<span style="font-size:11px;color:#888">' + range.regionZh + '</span><br>' : '') +
           '状态: ' + (range.status === 'completed' ? '✅ 已完成' : range.status === 'in-progress' ? '🔵 进行中' : '⚪ 未开始') +
           (range.coverage ? '<br>覆盖: ' + (range.coverage * 100).toFixed(0) + '%' : '') +
           '<br>距离: ~' + Math.round((range.endDist - range.startDist) / 1000) + 'km';
-        drawTrackSegment(slice, style, uploadedTrackGroup, popupHtml);
+        drawSectionSegment(slice, range.regionColor || '#888', range.status, uploadedTrackGroup, popupHtml);
       });
 
       // Draw prefix segment: track points BEFORE the first section's startIndex
@@ -3973,9 +3911,8 @@ function renderAllTracks() {
       if (firstStartIdx > 1) {
         const prefix = APP.presetTrack.trackPoints.slice(0, firstStartIdx);
         if (prefix.length >= 2) {
-          const firstStyle = getSectionLineStyle(0, APP.sectionRanges[0].status || 'upcoming');
-          drawTrackSegment(prefix, firstStyle, uploadedTrackGroup,
-            '<b>📍 起始段</b><br>起点 → 第一个保护区入口<br>距离: ~' +
+          drawSectionSegment(prefix, APP.sectionRanges[0].regionColor || '#888', APP.sectionRanges[0].status || 'upcoming', uploadedTrackGroup,
+            '<b>📍 起始段</b><br>起点 → 第一个区域入口<br>距离: ~' +
             Math.round((APP.presetTrack.distances[firstStartIdx] || 0) / 1000) + 'km');
         }
       }
@@ -4004,12 +3941,13 @@ function renderAllTracks() {
     computeWaypointSections();
   }
 
-  // 2. Draw actual tracks — use section color instead of universal green
+  // 2. 实际徒步轨迹 —— 作为细而克制的「真实 GPS 路径」叠加在计划路线之上。
+  //    进度已由下方计划段的协调色填充表达，这里只保留精确的已走路径痕迹，不抢轮廓与进度填充的风头。
   APP.actualTracks.forEach((track, idx) => {
     if (track.trackPoints.length < 2) return;
 
-    // Determine which section this track belongs to by matching its midpoint to section ranges
-    let sectionColor = '#3fb950'; // fallback green
+    // 匹配该轨迹所属区域（仅用于起点圆点的配色）
+    let sectionColor = '#3fb950';
     if (APP.sectionRanges && APP.sectionRanges.length > 0 && APP.presetTrack) {
       const midPt = track.trackPoints[Math.floor(track.trackPoints.length / 2)];
       let bestIdx = 0, bestDist = Infinity;
@@ -4025,16 +3963,14 @@ function renderAllTracks() {
     const segs = splitByBreaks(track.trackPoints);
     segs.forEach(seg => {
       const coords = seg.map(p => [p.lat, p.lon]);
-      // Glow layer
-      L.polyline(coords, { color: '#ffffff', weight: 7, opacity: 0.5 }).addTo(uploadedTrackGroup);
-      // Main line in section color, slightly thicker than preset to stand out
-      L.polyline(coords, { color: sectionColor, weight: 5, opacity: 1.0 }).addTo(uploadedTrackGroup);
+      // 细白线 = 真实走过的 GPS 路径（克制）
+      L.polyline(coords, { color: '#ffffff', weight: 2, opacity: 0.6, lineCap: 'round', lineJoin: 'round' }).addTo(uploadedTrackGroup);
     });
 
     const s = track.trackPoints[0], e = track.trackPoints[track.trackPoints.length - 1];
-    L.circleMarker([s.lat, s.lon], { radius: 5, color: '#fff', fillColor: sectionColor, fillOpacity: 1, weight: 2 })
+    L.circleMarker([s.lat, s.lon], { radius: 4, color: '#fff', fillColor: sectionColor, fillOpacity: 1, weight: 2 })
       .bindPopup('<b>📍 实际轨迹 ' + (idx + 1) + ' 起点</b>').addTo(uploadedTrackGroup);
-    L.circleMarker([e.lat, e.lon], { radius: 5, color: '#fff', fillColor: '#f85149', fillOpacity: 1, weight: 2 })
+    L.circleMarker([e.lat, e.lon], { radius: 4, color: '#fff', fillColor: '#f85149', fillOpacity: 1, weight: 2 })
       .bindPopup('<b>🏁 实际轨迹 ' + (idx + 1) + ' 终点</b>').addTo(uploadedTrackGroup);
   });
 
