@@ -294,18 +294,13 @@
       </div>`;
     }
 
-    // 虚拟化渲染：只渲染可见卡片 + 左右各 2 张（最多 5 张 DOM 节点）
-    // 减少首次 <img> 数量，大幅加快首屏加载
+    // 渲染全部卡片（13 段），图片仍用 loading=lazy 延迟加载以兼顾首屏性能；
+    // 不再做 ±2 虚拟化窗口，避免「看起来只有 3 段」的错觉（实为 coverflow 只缓存可见±2）。
     function render(){
       const n = view.length;
-      const visible = [];
-      for(let i = Math.max(0, active - 2); i <= Math.min(n - 1, active + 2); i++){
-        visible.push({ html: cardHTML(view[i], i), realIdx: i });
-      }
-      track.innerHTML = visible.map(v=>v.html).join('');
-      // 在 DOM 节点上标记真实索引
-      Array.from(track.children).forEach((c, li) => {
-        c.dataset.realIdx = visible[li].realIdx;
+      track.innerHTML = view.map((o,i)=>cardHTML(o,i)).join('');
+      Array.from(track.children).forEach((c, i) => {
+        c.dataset.realIdx = i;
       });
       dotsEl.innerHTML = view.map((o,i)=>`<button class="cf-dot${i===active?' active':''}" data-i="${i}" style="--rc:${o.color};--rb:${o.cborder}" aria-label="${esc(o.zh)}"></button>`).join('');
       layout();
