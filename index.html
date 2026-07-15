@@ -2259,7 +2259,7 @@ function drawElevationProfile() {
     first = false;
   }
 
-  // Build section labels
+  // Build section labels (中文路段名，替换原 1-13 段号)
   let sectionLabels = '';
   if (APP.sectionRanges && APP.sectionRanges.length > 0) {
     APP.sectionRanges.forEach((range, idx) => {
@@ -2267,7 +2267,7 @@ function drawElevationProfile() {
       const frac = midIdx / (points.length - 1);
       const x = pad.left + frac * pw;
       const color = range.regionColor || sectionColors[idx] || '#888';
-      sectionLabels += `<text x="${x.toFixed(1)}" y="${h - 2}" text-anchor="middle" font-size="9" fill="${color}" opacity="0.8">${idx+1}</text>`;
+      sectionLabels += `<text x="${x.toFixed(1)}" y="${h - 2}" text-anchor="middle" font-size="8" fill="${color}" opacity="0.85">${range.regionZh || (idx+1)}</text>`;
     });
   }
 
@@ -4082,7 +4082,8 @@ function drawSectionLabels() {
       if (reg && reg.entry) { lat = reg.entry[0]; lon = reg.entry[1]; }
     }
     if (lat == null) return;
-    label = range.regionZh || range.regionEn || ('第' + (idx + 1) + '段');
+    // 地图标签只用英文名（首页面向国际访客，去掉中文）
+    label = range.regionEn || range.regionZh || ('Section ' + (idx + 1));
     const color = range.regionColor || '#888';
     const icon = L.divIcon({
       className: '',
