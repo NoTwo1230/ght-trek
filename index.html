@@ -337,6 +337,7 @@
     flex-shrink: 0;
     white-space: nowrap;
     user-select: none;
+    cursor: pointer;
   }
   .elevation-panel .elevation-header:hover { color: var(--text); }
   .elevation-panel .elevation-header button {
@@ -351,7 +352,7 @@
     transition: height 0.3s ease;
     flex-shrink: 0;
   }
-  .elevation-panel:not(.open) .elevation-body { height: 0; padding-top: 0; padding-bottom: 0; }
+  .elevation-panel:not(.open) .elevation-body { height: 0 !important; flex: none !important; padding-top: 0 !important; padding-bottom: 0 !important; }
   .elevation-panel .elevation-body svg { width: 100%; height: 100%; display: block; }
 
   /* ── MAP OVERLAYS ── */
@@ -1221,9 +1222,9 @@
         </div>
       </div>
       <div class="elevation-panel" id="elevationPanel">
-        <div class="elevation-header">
+        <div class="elevation-header" onclick="toggleElevationProfile()" title="点击折叠/展开海拔剖面">
           <span>📈 海拔剖面 · 预设轨迹 · <span id="elevLabel">--</span></span>
-          <button id="elevToggle" onclick="toggleElevationProfile()">▲</button>
+          <button id="elevToggle" type="button" aria-label="折叠/展开海拔剖面" aria-expanded="true" aria-controls="elevationBody">▼</button>
         </div>
         <div class="elevation-body" id="elevationBody"></div>
       </div>
@@ -2212,9 +2213,14 @@ function toggleElevationProfile() {
   const panel = document.getElementById('elevationPanel');
   const btn = document.getElementById('elevToggle');
   panel.classList.toggle('open');
-  btn.textContent = panel.classList.contains('open') ? '▼' : '▲';
-  if (panel.classList.contains('open') && APP.presetTrack) {
-    drawElevationProfile();
+  const isOpen = panel.classList.contains('open');
+  if (btn) {
+    btn.textContent = isOpen ? '▼' : '▲';
+    btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  }
+  if (isOpen && APP.presetTrack) {
+    // 等布局把高度从 0 过渡到目标值后再绘制，避免按 0 高度画歪
+    requestAnimationFrame(() => drawElevationProfile());
   }
 }
 
@@ -4990,7 +4996,7 @@ if (APP.presetTrack) {
   const ep = document.getElementById('elevationPanel');
   const eb = document.getElementById('elevToggle');
   if (ep) ep.classList.add('open');
-  if (eb) eb.textContent = '▼';
+  if (eb) { eb.textContent = '▼'; eb.setAttribute('aria-expanded', 'true'); }
 }
 
 // 先用本地默认配置同步渲染首页
