@@ -1270,20 +1270,32 @@ const nepalProvinces = nepalProvinceData;
 // Each anchor = where the track CROSSES INTO that region from the previous one.
 // Calibrated against region-maps/*_detail.png territorial boundaries so each
 // segment captures a visually distinct portion of the route.
+// Anchors recomputed from the REAL 80-day GPS track (47,479 pts / 1,602 km).
+// Each value is a point DEEP INSIDE that region's territory (the first track point of
+// the region's MID-day), NOT a boundary. Reason: the old "entry-day" anchors sat on
+// boundary points that the looping Kanchenjunga trail revisits — e.g. the K→M boundary
+// [27.66,87.9359] is visited both at the start of Day 7 AND Day 12 (the trail returns to
+// the exact same spot), so a global "nearest track point" snapped Makalu to Day 1 and
+// pushed Kanchenjunga downstream — putting Makalu BEFORE Kanchenjunga. Center anchors
+// are never revisited, so the per-point Voronoi assignment (see calculateSectionRanges)
+// resolves every region correctly. Verified order on real GPS:
+//   kanchenjunga(d1) → makalu(d12) → everest(d18) → rolwaling(d30) → langtang(d38)
+//   → ganesh(d46) → manaslu(d48) → annapurna(d58) → dolpo(d63) → mugu(d68)
+//   → humla(d72) → bajhang(d77) → darchula(d86)
 const REGION_ENTRIES = {
-  'kanchenjunga': [27.35, 87.95],   // Trek start – NE Nepal entry (Phungling/Taplejung)
-  'makalu':       [27.53, 87.52],   // K→M boundary: Sele La / upper Barun valley (tan→purple edge)
-  'everest':      [27.80, 86.82],   // M→E boundary: Tashi Lapcha approach (purple→gold edge)
-  'rolwaling':    [27.91, 86.30],   // E→R boundary: Tashi Lapcha / Rolwaling valley entry
-  'langtang':     [28.08, 85.38],   // R→L boundary: Ganja La / Langtang National Park edge
-  'ganesh':       [28.18, 85.12],   // L→G boundary: between Langtang & Manaslu conservation areas
-  'manaslu':      [28.35, 84.88],   // G→M boundary: Soti Khola / Arughat corridor
-  'annapurna':    [28.48, 84.42],   // M→A boundary: Besisahar / Marsyangdi headwaters
-  'dolpo':        [28.72, 83.70],   // A→D boundary: Dhaulagiri west face / Dolpo east edge
-  'mugu':         [29.15, 83.20],   //D→M boundary: Phoksundo Lake west / Humla east approach
-  'humla':        [29.45, 82.65],   // M→H boundary: Nara La approach / Simikot east
-  'bajhang':      [29.58, 81.95],   // H→B boundary: Humla west / Seti Khola headwaters
-  'darchula':     [29.68, 80.90]    // B→D boundary: Api Nampa area / trek terminus region
+  'kanchenjunga': [27.5939, 88.0317],   // center of Kanchenjunga (mid-day real GPS)
+  'makalu':       [27.7379, 87.6869],   // center of Makalu
+  'everest':      [27.9045, 86.8717],   // center of Everest
+  'rolwaling':    [27.7983, 86.1402],   // center of Rolwaling
+  'langtang':     [28.0427, 85.7134],   // center of Langtang
+  'ganesh':       [28.1635, 85.3370],   // center of Ganesh
+  'manaslu':      [28.1969, 84.8222],   // center of Manaslu
+  'annapurna':    [28.6341, 84.4710],   // center of Annapurna
+  'dolpo':        [28.8161, 83.8638],   // center of Dolpo
+  'mugu':         [29.1871, 83.2979],   // center of Mugu
+  'humla':        [29.5197, 82.8649],   // center of Humla
+  'bajhang':      [29.7114, 82.0920],   // center of Bajhang
+  'darchula':     [29.7959, 81.0048]    // center of Darchula
 };
 (window.GHT_SECTIONS || []).forEach(r => { if (!r.entry && REGION_ENTRIES[r.id]) r.entry = REGION_ENTRIES[r.id]; });
 
@@ -3743,27 +3755,47 @@ function calculateSectionRanges(presetTrack) {
 
   const pts = presetTrack.trackPoints;
   const dists = presetTrack.distances;
+  const n = pts.length;
+  if (!n) return [];
 
-  // Find the track point index closest to each region's entry anchor
-  const entries = regions.map(region => {
-    let minDist = Infinity, bestIdx = 0;
-    for (let i = 0; i < pts.length; i++) {
-      const d = haversine(pts[i].lat, pts[i].lon, region.entry[0], region.entry[1]);
-      if (d < minDist) { minDist = d; bestIdx = i; }
+  // 1) Voronoi assignment: every track point → nearest region anchor.
+  //    Anchors are region CENTERS (never on a revisited boundary), so a looping
+  //    trail can't hijack a region's segment the way the old "nearest entry point"
+  //    logic did (that put Makalu before Kanchenjunga).
+  const assign = new Array(n);
+  for (let i = 0; i < n; i++) {
+    let best = Infinity, bi = 0;
+    for (let r = 0; r < regions.length; r++) {
+      const e = regions[r].entry;
+      const d = haversine(pts[i].lat, pts[i].lon, e[0], e[1]);
+      if (d < best) { best = d; bi = r; }
     }
-    return { region, entryIdx: bestIdx, entryDist: minDist };
-  });
+    assign[i] = bi;
+  }
 
-  // Always keep all 13 regions so the segment count stays 13; sort by track index
-  // (GHT_SECTIONS is already ordered east → west by num). Anchors far from the track
-  // simply collapse to a tiny/empty slice and render as "upcoming".
-  entries.sort((a, b) => a.entryIdx - b.entryIdx);
+  // 2) Longest contiguous run per region (loops occasionally create short spurious runs).
+  const bestRun = {};
+  let cur = assign[0], s = 0;
+  for (let i = 1; i <= n; i++) {
+    if (i === n || assign[i] !== cur) {
+      const len = (i - 1) - s + 1;
+      if (!bestRun[cur] || len > bestRun[cur].len) bestRun[cur] = { start: s, end: i - 1, len };
+      if (i < n) { cur = assign[i]; s = i; }
+    }
+  }
 
+  // 3) Build 13 ordered segments. The trek ALWAYS starts at Kanchenjunga (Phungling),
+  //    so region 0 is pinned to index 0; each subsequent region starts right after the
+  //    previous run ends. This guarantees correct east→west order and no gaps/overlaps.
   const sectionRanges = [];
-  for (let i = 0; i < entries.length; i++) {
-    const { region, entryIdx } = entries[i];
-    const startIndex = entryIdx;
-    const endIndex = (i < entries.length - 1) ? entries[i + 1].entryIdx : pts.length - 1;
+  let prevEnd = -1;
+  for (let i = 0; i < regions.length; i++) {
+    const region = regions[i];
+    const run = bestRun[i] || { start: prevEnd + 1, end: prevEnd, len: 0 };
+    const startIndex = (i === 0) ? 0 : prevEnd + 1;
+    let endIndex = run.end;
+    if (endIndex <= startIndex) endIndex = startIndex;
+    if (i === regions.length - 1) endIndex = n - 1; // last region runs to trail end
     const startDist = dists[startIndex] || 0;
     const endDist = dists[endIndex] || 0;
 
@@ -3779,6 +3811,7 @@ function calculateSectionRanges(presetTrack) {
       sectionActualDist: (endDist - startDist) / 1000,
       status: 'upcoming'
     });
+    prevEnd = endIndex;
   }
 
   return sectionRanges;
