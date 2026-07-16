@@ -386,36 +386,42 @@
     .chip .dlab { font-size: 8.5px; }
     .chip .route { font-size: 8px; }
   }
+  .lang-btn{margin-left:auto;display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-family:inherit;
+    background:rgba(255,255,255,.04);color:var(--text);border:1px solid var(--border-light);
+    border-radius:8px;padding:7px 13px;font-size:12px;transition:.2s}
+  .lang-btn:hover{color:#fff;border-color:var(--accent);background:rgba(88,166,255,.08)}
 </style>
+<script src="lang.js"></script>
 </head>
 <body>
 
 <header class="topbar">
   <div class="title">
     <span class="glyph">📅</span>
-    <span>行程日历<small> · 计划 vs 实际徒步对比</small></span>
+    <span><span data-i18n="it.title">行程日历</span><small data-i18n="it.sub"> · 计划 vs 实际徒步对比</small></span>
   </div>
-  <a class="back-link" href="index.html" title="返回地图追踪页">🗺️ 返回地图</a>
+  <button class="lang-btn" type="button">中文 ▾</button>
+  <a class="back-link" href="index.html" title="返回地图追踪页" data-i18n="back.map" data-i18n-title="back.map">🗺️ 返回地图</a>
 </header>
 
 <div id="summary" class="summary"></div>
 
-<div class="toolbar">
-  <div class="group">
-    <span class="glabel">位置基准</span>
-    <div class="seg" id="segMode">
-      <button data-mode="plan" class="active">📋 计划日期</button>
-      <button data-mode="actual">📡 实际日期</button>
+  <div class="toolbar">
+    <div class="group">
+      <span class="glabel" data-i18n="it.basis">位置基准</span>
+      <div class="seg" id="segMode">
+        <button data-mode="plan" class="active" data-i18n="it.plan">📋 计划日期</button>
+        <button data-mode="actual" data-i18n="it.actual">📡 实际日期</button>
+      </div>
     </div>
-  </div>
-  <div class="group">
-    <span class="glabel">筛选</span>
-    <div class="seg" id="segFilter">
-      <button data-filter="all" class="active">全部</button>
-      <button data-filter="done">已记录</button>
-      <button data-filter="todo">未记录</button>
+    <div class="group">
+      <span class="glabel" data-i18n="it.filter">筛选</span>
+      <div class="seg" id="segFilter">
+        <button data-filter="all" class="active" data-i18n="it.all">全部</button>
+        <button data-filter="done" data-i18n="it.done">已记录</button>
+        <button data-filter="todo" data-i18n="it.todo">未记录</button>
+      </div>
     </div>
-  </div>
   <div class="spacer"></div>
   <div class="count-note" id="countNote"></div>
 </div>
@@ -423,22 +429,22 @@
 <div class="cal-wrap">
   <div class="cal-head">
     <div class="cal-nav">
-      <button id="prevM" title="上一月">‹</button>
+      <button id="prevM" title="上一月" data-i18n-title="it.prev">‹</button>
       <div class="cal-title" id="calTitle">—</div>
-      <button id="nextM" title="下一月">›</button>
+      <button id="nextM" title="下一月" data-i18n-title="it.next">›</button>
     </div>
     <div class="spacer"></div>
     <div class="count-note" id="spanNote"></div>
   </div>
 
   <div class="legend">
-    <span class="item"><span class="dot" style="background:var(--accent)"></span>按计划</span>
-    <span class="item"><span class="dot" style="background:var(--green)"></span>超前</span>
-    <span class="item"><span class="dot" style="background:var(--red)"></span>落后</span>
-    <span class="item"><span class="dot" style="background:var(--text-dimmer)"></span>等待 GPS</span>
-    <span class="item"><span class="dot" style="background:#2e9e54"></span>休息日</span>
-    <span class="item"><span class="dot" style="background:var(--yellow)"></span>天气延误</span>
-    <span class="item"><span class="bar" style="background:linear-gradient(90deg,#c0392b,#a0522d)"></span>左条色 = 所属 13 区域</span>
+    <span class="item"><span class="dot" style="background:var(--accent)"></span><span data-i18n="it.legend.plan">按计划</span></span>
+    <span class="item"><span class="dot" style="background:var(--green)"></span><span data-i18n="it.legend.ahead">超前</span></span>
+    <span class="item"><span class="dot" style="background:var(--red)"></span><span data-i18n="it.legend.behind">落后</span></span>
+    <span class="item"><span class="dot" style="background:var(--text-dimmer)"></span><span data-i18n="it.legend.wait">等待 GPS</span></span>
+    <span class="item"><span class="dot" style="background:#2e9e54"></span><span data-i18n="it.legend.rest">休息日</span></span>
+    <span class="item"><span class="dot" style="background:var(--yellow)"></span><span data-i18n="it.legend.delay">天气延误</span></span>
+    <span class="item"><span class="bar" style="background:linear-gradient(90deg,#c0392b,#a0522d)"></span><span data-i18n="it.legend.bar">左条色 = 所属 13 区域</span></span>
   </div>
 
   <div class="grid" id="grid"></div>
@@ -463,6 +469,7 @@
    数据层：读取与主 app 完全相同的 localStorage 键，复刻核心匹配逻辑。
    不依赖任何外部库，纯前端渲染，保证长列表可完整滚动。
    ════════════════════════════════════════════════════════════ */
+const t = window.GHTI18N.t;
 const LS = {
   itinerary: 'ght_itinerary',
   actual:    'ght_actual',
@@ -586,12 +593,12 @@ function statusOf(d){
   return 'wait';
 }
 const STATUS = {
-  'on-track': { c:'var(--accent)',       t:'按计划' },
-  'ahead':    { c:'var(--green)',        t:'超前'   },
-  'behind':   { c:'var(--red)',          t:'落后'   },
-  'wait':     { c:'var(--text-dimmer)',  t:'等待 GPS' },
-  'rest':     { c:'#2e9e54',             t:'休息'   },
-  'delay':    { c:'var(--yellow)',       t:'延误'   }
+  'on-track': { c:'var(--accent)',       t:t('st.ontrack') },
+  'ahead':    { c:'var(--green)',        t:t('st.ahead') },
+  'behind':   { c:'var(--red)',          t:t('st.behind') },
+  'wait':     { c:'var(--text-dimmer)',  t:t('st.wait') },
+  'rest':     { c:'#2e9e54',             t:t('st.rest') },
+  'delay':    { c:'var(--yellow)',       t:t('st.delay') }
 };
 
 /* ════════════════════════════════════════════════════════════
@@ -609,17 +616,17 @@ function renderSummary(data){
   const pctDone = totalDays? Math.round(daysWithData/totalDays*100):0;
 
   let slip='';
-  if(overallSlip>0) slip=`<div class="slip-note">⚠️ 行程整体晚 ${overallSlip} 天（实际 GPS 日期相对计划日期的整体偏移）</div>`;
-  else if(overallSlip<0) slip=`<div class="slip-note">⚠️ 行程整体快 ${Math.abs(overallSlip)} 天（实际 GPS 日期相对计划日期的整体偏移）</div>`;
+  if(overallSlip>0) slip=`<div class="slip-note">${t('it.slip.late').replace('{n}', overallSlip)}</div>`;
+  else if(overallSlip<0) slip=`<div class="slip-note">${t('it.slip.early').replace('{n}', Math.abs(overallSlip))}</div>`;
 
   return `
-    <div class="stat"><div class="v blue">${totalDays}</div><div class="l">📅 总行程(天)</div></div>
-    <div class="stat"><div class="v green">${daysWithData} · ${pctDone}%</div><div class="l">📡 已记录轨迹</div></div>
-    <div class="stat"><div class="v">${plannedTotal}km</div><div class="l">📏 计划总距离</div></div>
-    <div class="stat"><div class="v green">${actualTotal}km</div><div class="l">✅ 实际已完成</div></div>
-    <div class="stat"><div class="v green">${ahead}</div><div class="l">🟢 超前天数</div></div>
-    <div class="stat"><div class="v blue">${onTrack}</div><div class="l">🔵 按计划</div></div>
-    <div class="stat"><div class="v red">${behind}</div><div class="l">🔴 落后天数</div></div>
+    <div class="stat"><div class="v blue">${totalDays}</div><div class="l">${t('it.sum.total')}</div></div>
+    <div class="stat"><div class="v green">${daysWithData} · ${pctDone}%</div><div class="l">${t('it.sum.recorded')}</div></div>
+    <div class="stat"><div class="v">${plannedTotal}km</div><div class="l">${t('it.sum.planned')}</div></div>
+    <div class="stat"><div class="v green">${actualTotal}km</div><div class="l">${t('it.sum.actual')}</div></div>
+    <div class="stat"><div class="v green">${ahead}</div><div class="l">${t('it.sum.ahead')}</div></div>
+    <div class="stat"><div class="v blue">${onTrack}</div><div class="l">${t('it.sum.ontrack')}</div></div>
+    <div class="stat"><div class="v red">${behind}</div><div class="l">${t('it.sum.behind')}</div></div>
     ${slip}`;
 }
 
@@ -713,10 +720,10 @@ function renderCalendar(){
   const visible = Object.keys(MAP)
     .filter(k=>{ const [ky,km,kd]=k.split('-').map(Number); return ky===y && km-1===mo; })
     .reduce((s,k)=>s+MAP[k].length, 0);
-  document.getElementById('countNote').textContent = `本页显示 ${visible} 天 · 共 ${DATA.planned.length} 天`;
+  document.getElementById('countNote').textContent = t('it.count').replace('{v}', visible).replace('{t}', DATA.planned.length);
   const fd = getPlannedDate(DATA.startDate, DATA.planned[0].day);
   const ld = getPlannedDate(DATA.startDate, DATA.planned[DATA.planned.length-1].day);
-  document.getElementById('spanNote').textContent = `行程跨度：${fd||'?'} → ${ld||'?+'}`;
+  document.getElementById('spanNote').textContent = t('it.span').replace('{f}', fd||'?').replace('{l}', ld||'?+');
 
   // 绑定点击
   document.querySelectorAll('.chip[data-key]').forEach(el=>{
@@ -743,29 +750,29 @@ function dayDetail(d){
   const meta = `<div class="dd-sub" style="margin:2px 0 8px">计划 ${planDate||'—'}${d.actual&&d.actual.date?` · 实际 ${esc(shortYmd(d.actual.date))}`:''}</div>`;
 
   const planCol = `
-    <div class="col plan"><div class="col-title">📋 计划</div>
-      <div class="row"><span class="k">路线</span><span class="v route">${esc(d.from)}<span class="arrow">→</span>${esc(d.to)}</span></div>
-      <div class="row"><span class="k">距离</span><span class="v plan">${(+d.plannedDistance||0).toFixed(1)}km</span></div>
-      <div class="row"><span class="k">爬升</span><span class="v plan">${(+d.plannedElevGain||0).toLocaleString()}m</span></div>
-      <div class="row"><span class="k">下降</span><span class="v plan">${(+d.plannedElevLoss||0).toLocaleString()}m</span></div>
-      ${d.passes&&d.passes.length?`<div class="passes">⛰ 垭口：<span class="tag">${esc(d.passes.join('、'))}</span></div>`:''}
-      ${d.isRestDay?'<div class="passes">🏕️ 休息日</div>':''}${d.weatherDelay?'<div class="passes">☁️ 天气延误</div>':''}
+    <div class="col plan"><div class="col-title">${t('it.drawer.plan')}</div>
+      <div class="row"><span class="k">${t('it.drawer.route')}</span><span class="v route">${esc(d.from)}<span class="arrow">→</span>${esc(d.to)}</span></div>
+      <div class="row"><span class="k">${t('it.drawer.dist')}</span><span class="v plan">${(+d.plannedDistance||0).toFixed(1)}km</span></div>
+      <div class="row"><span class="k">${t('it.drawer.asc')}</span><span class="v plan">${(+d.plannedElevGain||0).toLocaleString()}m</span></div>
+      <div class="row"><span class="k">${t('it.drawer.desc')}</span><span class="v plan">${(+d.plannedElevLoss||0).toLocaleString()}m</span></div>
+      ${d.passes&&d.passes.length?`<div class="passes">${t('it.drawer.passes')}<span class="tag">${esc(d.passes.join('、'))}</span></div>`:''}
+      ${d.isRestDay?`<div class="passes">${t('it.drawer.rest')}</div>`:''}${d.weatherDelay?`<div class="passes">${t('it.drawer.delay')}</div>`:''}
     </div>`;
 
   let actCol;
   if(!d.actual){
-    let msg = d.isRestDay ? '🏕️ 休息 · 未行进' : d.weatherDelay ? '☁️ 天气延误 · 未行进' : '⏳ 等待 GPS 轨迹上传';
-    actCol = `<div class="col actual"><div class="col-title">📡 实际</div><div class="pending">${msg}</div></div>`;
+    let msg = d.isRestDay ? t('it.pending.rest') : d.weatherDelay ? t('it.pending.delay') : t('it.pending.wait');
+    actCol = `<div class="col actual"><div class="col-title">${t('it.drawer.actual')}</div><div class="pending">${msg}</div></div>`;
   } else {
     const a = d.actual;
-    actCol = `<div class="col actual"><div class="col-title">📡 实际</div>
-      <div class="row"><span class="k">日期</span><span class="v">${esc(shortYmd(a.date))}</span></div>
-      <div class="row"><span class="k">路线</span><span class="v route">${esc(a.actFrom)}<span class="arrow">→</span>${esc(a.actTo)}</span></div>
-      <div class="row"><span class="k">距离</span><span class="v">${a.distance.toFixed(1)}km</span></div>
-      <div class="row"><span class="k">爬升</span><span class="v">${(+a.elevGain||0).toLocaleString()}m</span></div>
-      <div class="row"><span class="k">用时</span><span class="v">${a.durationStr||'—'}${a.avgSpeed?` · ${a.avgSpeed}km/h`:''}</span></div>
-      <div class="row"><span class="k">文件</span><span class="v" style="font-size:11px;color:var(--text-dim)">${esc(a.file)}</span></div>
-      ${a.actTo&&d.to&&a.actTo!==d.to?`<div class="mismatch">⚠️ 实际终点≠计划终点（只走了一部分/路线有偏差）</div>`:''}
+    actCol = `<div class="col actual"><div class="col-title">${t('it.drawer.actual')}</div>
+      <div class="row"><span class="k">${t('it.drawer.date')}</span><span class="v">${esc(shortYmd(a.date))}</span></div>
+      <div class="row"><span class="k">${t('it.drawer.route')}</span><span class="v route">${esc(a.actFrom)}<span class="arrow">→</span>${esc(a.actTo)}</span></div>
+      <div class="row"><span class="k">${t('it.drawer.dist')}</span><span class="v">${a.distance.toFixed(1)}km</span></div>
+      <div class="row"><span class="k">${t('it.drawer.asc')}</span><span class="v">${(+a.elevGain||0).toLocaleString()}m</span></div>
+      <div class="row"><span class="k">${t('it.drawer.dur')}</span><span class="v">${a.durationStr||'—'}${a.avgSpeed?` · ${a.avgSpeed}km/h`:''}</span></div>
+      <div class="row"><span class="k">${t('it.drawer.file')}</span><span class="v" style="font-size:11px;color:var(--text-dim)">${esc(a.file)}</span></div>
+      ${a.actTo&&d.to&&a.actTo!==d.to?`<div class="mismatch">${t('it.mismatch')}</div>`:''}
     </div>`;
   }
 
@@ -777,10 +784,10 @@ function dayDetail(d){
     const dsign = Math.abs(diff)<0.05 ? '±0.0' : (diff>0?'+':'')+diff.toFixed(1);
     const maxV = Math.max(planV, actV, 0.1);
     const pw = Math.round(planV/maxV*100), aw = Math.round(actV/maxV*100);
-    body += `<div class="cmp"><div class="cmp-head"><span class="lbl">距离对比（计划 vs 实际）</span><span class="delta ${dcls}">差值 ${dsign} km</span></div>
+    body += `<div class="cmp"><div class="cmp-head"><span class="lbl">${t('it.cmp.lbl')}</span><span class="delta ${dcls}">差值 ${dsign} km</span></div>
       <div class="bars">
-        <div class="bar-row"><span class="bl">计划</span><div class="bar-track"><div class="bar-fill plan" style="width:${pw}%"></div></div><span class="bv">${planV.toFixed(1)}km</span></div>
-        <div class="bar-row"><span class="bl">实际</span><div class="bar-track"><div class="bar-fill actual" style="width:${aw}%"></div></div><span class="bv">${actV.toFixed(1)}km</span></div>
+        <div class="bar-row"><span class="bl">${t('it.cmp.plan')}</span><div class="bar-track"><div class="bar-fill plan" style="width:${pw}%"></div></div><span class="bv">${planV.toFixed(1)}km</span></div>
+        <div class="bar-row"><span class="bl">${t('it.cmp.actual')}</span><div class="bar-track"><div class="bar-fill actual" style="width:${aw}%"></div></div><span class="bv">${actV.toFixed(1)}km</span></div>
       </div></div>`;
   }
   return head + meta + body;
@@ -816,10 +823,8 @@ function render(){
     gridEl.innerHTML = `
       <div class="empty" style="grid-column:1/-1;">
         <div class="ico">🗺️</div>
-        <h2>尚未生成行程安排</h2>
-        <p>行程会根据<b>真实的预设轨迹（GPX 分段）</b>自动生成。<br>
-        请先在 <a href="index.html">地图追踪页</a> 导入预设轨迹，或上传实际徒步 GPS 文件。<br>
-        <span style="color:var(--text-dim);">本页读取与地图页相同的本地数据，不会凭空生成占位计划。</span></p>
+        <h2>${t('it.empty.h')}</h2>
+        <p>${t('it.empty.p').replace('地图追踪页', '<a href="index.html">地图追踪页</a>')}</p>
       </div>`;
     document.getElementById('countNote').textContent = '';
     document.getElementById('spanNote').textContent = '';
@@ -837,10 +842,25 @@ function render(){
   renderCalendar();
 
   const startPlace = loadRaw(LS.startPlace);
-  document.getElementById('footNote').innerHTML = `数据来源：本浏览器本地存储（与地图页共享）。` +
-    (DATA.startDate ? ` 出发日期：<code>${esc(DATA.startDate)}</code>。` : ' 未设置出发日期（日程日期显示为「—」）。') +
-    ` 在地图页上传/编辑后，刷新本页即可同步。`;
+  const datePart = DATA.startDate
+    ? t('it.foot.date').replace('{d}', esc(DATA.startDate))
+    : t('it.foot.nodate');
+  document.getElementById('footNote').innerHTML = t('it.foot').replace('{date}', datePart);
 }
+
+/* 语言切换时重渲染（chrome 文案随语言更新） */
+window.onLangChange = function () {
+  if (typeof DATA !== 'undefined') {
+    if (!DATA.planned || !DATA.planned.length) { render(); return; }
+    document.getElementById('summary').innerHTML = renderSummary(DATA);
+    renderCalendar();
+    const startPlace = loadRaw(LS.startPlace);
+    const datePart = DATA.startDate
+      ? t('it.foot.date').replace('{d}', esc(DATA.startDate))
+      : t('it.foot.nodate');
+    document.getElementById('footNote').innerHTML = t('it.foot').replace('{date}', datePart);
+  }
+};
 
 /* ── 控件事件 ── */
 document.getElementById('segMode').addEventListener('click', e=>{

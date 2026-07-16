@@ -37,6 +37,10 @@
   .back-link{margin-left:auto;display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:var(--text-dim);
     border:1px solid var(--border-light);border-radius:8px;padding:7px 13px;font-size:12px;transition:.2s}
   .back-link:hover{color:var(--text);border-color:var(--accent);background:rgba(88,166,255,.08)}
+  .lang-btn{margin-left:14px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-family:inherit;
+    background:rgba(255,255,255,.04);color:var(--text);border:1px solid var(--border-light);
+    border-radius:8px;padding:6px 13px;font-size:12px;transition:.2s}
+  .lang-btn:hover{color:#fff;border-color:var(--accent);background:rgba(88,166,255,.08)}
 
   /* ── intro banner ── */
   .banner{max-width:1320px;margin:0 auto;padding:20px 20px 4px}
@@ -159,34 +163,36 @@
     .legend-key{margin-left:0}
   }
 </style>
+<script src="lang.js"></script>
 </head>
 <body>
   <div class="topbar">
-    <div class="title"><span class="glyph">🏔️</span> GHT 路段全景 <small>· 13 段区域徒步指南</small></div>
-    <a class="back-link" href="index.html">← 返回主站</a>
+    <div class="title"><span class="glyph">🏔️</span> <span data-i18n="sec.title">GHT 路段全景</span> <small data-i18n="sec.sub">· 13 段区域徒步指南</small></div>
+    <a class="back-link" href="index.html" data-i18n="back.main">← 返回主站</a>
+    <button class="lang-btn" type="button">中文 ▾</button>
   </div>
 
   <div class="banner">
-    <h1>GHT 大喜马拉雅高线 · <span>13 段</span> 区域徒步</h1>
-    <p>从东端的干城章嘉到西陲的达尔楚拉，整条高线穿越 13 个尼泊尔区域。横屏滑动浏览每段区域地图与名称，悬停即可居中放大，点击「查看大图」进入含全部徒步数据的详情页。</p>
-    <div class="note">📊 <span id="dataNote">数据说明：加载中…</span></div>
+    <h1 data-i18n="sec.banner">GHT 大喜马拉雅高线 · 13 段 区域徒步</h1>
+    <p data-i18n="sec.banner2">从东端的干城章嘉到西陲的达尔楚拉，整条高线穿越 13 个尼泊尔区域。横屏滑动浏览每段区域地图与名称，悬停即可居中放大，点击「查看大图」进入含全部徒步数据的详情页。</p>
+    <div class="note">📊 <span id="dataNote" data-i18n="sec.note.loading">数据说明：加载中…</span></div>
   </div>
 
   <div class="toolbar">
     <div class="seg" id="filter">
-      <button class="active" data-f="all">全部 13</button>
+      <button class="active" data-f="all" data-i18n="sec.filter.all">全部 13</button>
       <button data-f="meas" id="fMeas">完成 0</button>
       <button data-f="plan" id="fPlan">计划 13</button>
     </div>
     <div class="legend-key">
-      <span><i style="background:var(--green)"></i>完成 · 来自轨迹</span>
-      <span><i style="background:var(--amber)"></i>计划 · 参考里程</span>
+      <span><i style="background:var(--green)"></i><span data-i18n="sec.legend.meas">完成 · 来自轨迹</span></span>
+      <span><i style="background:var(--amber)"></i><span data-i18n="sec.legend.plan">计划 · 参考里程</span></span>
     </div>
   </div>
 
   <div class="cover-head">
-    <h2>🗺️ 路段全景</h2>
-    <span>悬停切换 · 点击「查看大图」看完整数据</span>
+    <h2 data-i18n="sec.cover">🗺️ 路段全景</h2>
+    <span data-i18n="sec.cover2">悬停切换 · 点击「查看大图」看完整数据</span>
   </div>
 
   <div class="cover-wrap">
@@ -209,25 +215,25 @@
           <span class="d-status meas">—</span>
         </div>
         <div class="d-stats">
-          <div class="d-stat"><div class="d-v d-dist">—</div><div class="d-l">距离</div></div>
-          <div class="d-stat"><div class="d-v d-asc">—</div><div class="d-l">累计爬升</div></div>
-          <div class="d-stat"><div class="d-v d-desc">—</div><div class="d-l">累计下降</div></div>
-          <div class="d-stat"><div class="d-v d-max">—</div><div class="d-l">最高海拔</div></div>
-          <div class="d-stat"><div class="d-v d-min">—</div><div class="d-l">最低海拔</div></div>
+          <div class="d-stat"><div class="d-v d-dist">—</div><div class="d-l" data-i18n="sec.detail.dist">距离</div></div>
+          <div class="d-stat"><div class="d-v d-asc">—</div><div class="d-l" data-i18n="sec.detail.asc">累计爬升</div></div>
+          <div class="d-stat"><div class="d-v d-desc">—</div><div class="d-l" data-i18n="sec.detail.desc">累计下降</div></div>
+          <div class="d-stat"><div class="d-v d-max">—</div><div class="d-l" data-i18n="sec.detail.max">最高海拔</div></div>
+          <div class="d-stat"><div class="d-v d-min">—</div><div class="d-l" data-i18n="sec.detail.min">最低海拔</div></div>
         </div>
         <div class="d-section">
-          <div class="d-st">🏔️ 主要垭口 / 山峰</div>
+          <div class="d-st" data-i18n="sec.detail.passes">🏔️ 主要垭口 / 山峰</div>
           <div class="d-passes"></div>
         </div>
         <div class="d-section">
-          <div class="d-st">📜 区域传说</div>
+          <div class="d-st" data-i18n="sec.detail.legend">📜 区域传说</div>
           <p class="d-legend"></p>
         </div>
         <div class="d-section">
-          <div class="d-st">🌄 招牌景色</div>
+          <div class="d-st" data-i18n="sec.detail.scenery">🌄 招牌景色</div>
           <p class="d-scenery"></p>
         </div>
-        <div class="d-hint">点击左侧地图可放大查看原图</div>
+        <div class="d-hint" data-i18n="sec.detail.hint">点击左侧地图可放大查看原图</div>
       </div>
     </div>
   </div>
@@ -242,6 +248,7 @@
   <script src="sections-data.js"></script>
   <script>
   (function(){
+    const t = window.GHTI18N.t;
     const data = window.GHT_SECTIONS || [];
     // 完成状态由首页实际轨迹动态决定；重置后 ght_region_measured 被清空 → 全部回到「计划」
     data.forEach(r => { r.measured = false; });
@@ -255,19 +262,29 @@
     const planN = data.length - measN;
     const totalKm = Math.round(data.reduce((s, r) => s + (r.dist_km || 0), 0));
     const measKm = Math.round(data.filter(r => r.measured).reduce((s, r) => s + (r.dist_km || 0), 0));
-    const noteEl = document.getElementById('dataNote');
-    if (noteEl) {
-      if (measN === 0) {
-        noteEl.innerHTML = `数据说明：全部 <b>${data.length} 段</b>的距离 / 爬升 / 下降 / 垭口均来自已导入的<b>预设路线</b>（计划 / 参考里程，约 ${totalKm.toLocaleString('en-US')} km）。实际徒步轨迹将在 11 月出发后逐段上传，届时自动更新为实测值。`;
-      } else {
-        const planKm = totalKm - measKm;
-        noteEl.innerHTML = `数据说明：已实测 <b>${measN} 段</b>（约 ${measKm.toLocaleString('en-US')} km）的距离 / 爬升 / 下降 / 垭口来自<b>已上传的实测轨迹</b>；其余 <b>${planN} 段</b>为 <b>计划 / 参考</b>里程（约 ${planKm.toLocaleString('en-US')} km），待轨迹上传后将自动更新为实测值。`;
+
+    // 动态 chrome（数据说明 + 过滤计数）随语言切换重渲染
+    function refreshChrome(){
+      const noteEl = document.getElementById('dataNote');
+      if (noteEl) {
+        if (measN === 0) {
+          noteEl.innerHTML = t('sec.note.all')
+            .replace('{n}', data.length)
+            .replace('{km}', totalKm.toLocaleString('en-US'));
+        } else {
+          const planKm = totalKm - measKm;
+          noteEl.innerHTML = t('sec.note.part')
+            .replace('{m}', measN)
+            .replace('{mk}', measKm.toLocaleString('en-US'))
+            .replace('{p}', planN)
+            .replace('{pk}', planKm.toLocaleString('en-US'));
+        }
       }
+      const fMeas = document.getElementById('fMeas');
+      const fPlan = document.getElementById('fPlan');
+      if (fMeas) fMeas.textContent = t('sec.filter.meas') + ' ' + measN;
+      if (fPlan) fPlan.textContent = t('sec.filter.plan') + ' ' + planN;
     }
-    const fMeas = document.getElementById('fMeas');
-    const fPlan = document.getElementById('fPlan');
-    if (fMeas) fMeas.textContent = `完成 ${measN}`;
-    if (fPlan) fPlan.textContent = `计划 ${planN}`;
     const track = document.getElementById('track');
     const dotsEl = document.getElementById('cfDots');
     let filter='all';
@@ -283,13 +300,13 @@
 
     function cardHTML(o,i){
       const rc=o.color, rb=o.cborder;
-      const status = o.measured ? '<span class="cfc-status meas">完成</span>' : '<span class="cfc-status plan">计划</span>';
+      const status = o.measured ? '<span class="cfc-status meas">'+t('sec.badge.meas')+'</span>' : '<span class="cfc-status plan">'+t('sec.badge.plan')+'</span>';
       return `<div class="cfc" data-i="${i}" style="--rc:${rc};--rb:${rb}">
         <div class="cfc-img">
           <img loading="lazy" src="${o.index}" alt="${esc(o.zh)} 区域地图" width="300" height="230">
           <span class="cfc-num">${String(o.num).padStart(2,'0')}</span>
           ${status}
-          <button class="cfc-view" data-i="${i}">查看大图 ↗</button>
+          <button class="cfc-view" data-i="${i}">${t('sec.view')}</button>
         </div>
       </div>`;
     }
@@ -371,11 +388,11 @@
       detail.querySelector('.d-zh').textContent=o.zh;
       detail.querySelector('.d-en').textContent=o.en;
       const st=detail.querySelector('.d-status');
-      st.textContent=o.measured?'完成 · 来自轨迹':'计划 · 参考里程';
+      st.textContent=t(o.measured?'sec.status.meas':'sec.status.plan');
       st.className='d-status '+(o.measured?'meas':'plan');
       const img=detail.querySelector('.d-img'); img.src=o.detail; img.alt=o.zh+' 区域地图';
       const dv=detail.querySelector('.d-dist');
-      dv.innerHTML=`${fmt(o.dist_km)}<small>km${o.measured?'':' · 参考'}</small>`;
+      dv.innerHTML=`${fmt(o.dist_km)}<small>km${o.measured?'':t('sec.ref')}</small>`;
       dv.classList.toggle('ref', !o.measured);
       detail.querySelector('.d-asc').textContent=fmt(o.asc_m)+' m';
       detail.querySelector('.d-desc').textContent=fmt(o.desc_m)+' m';
@@ -411,6 +428,14 @@
     lb.addEventListener('click',e=>{if(e.target===lb){lb.classList.remove('open');lbOpen=false;}});
 
     render();
+    refreshChrome();
+
+    // 语言切换时：刷新动态 chrome、重建卡片（覆盖徽标/按钮文案）、重开详情
+    window.onLangChange = function(){
+      refreshChrome();
+      render();
+      if (detailOpen) openDetail(active);
+    };
   })();
   </script>
 </body>

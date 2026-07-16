@@ -1844,7 +1844,7 @@ const APP = {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  I18N (中文 / English)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-let currentLang = 'zh';
+let currentLang = (function(){ try { return localStorage.getItem('ght_lang') || 'zh'; } catch(e){ return 'zh'; } })();
 const I18N = {
   zh: {
     'nav.dashboard': '仪表盘', 'nav.sections': '路段', 'nav.itinerary': '行程', 'nav.datamgmt': '数据管理',
@@ -1904,6 +1904,7 @@ function applyLang() {
 const _langBtn = document.querySelector('.lang-btn');
 if (_langBtn) _langBtn.addEventListener('click', function () {
   currentLang = currentLang === 'zh' ? 'en' : 'zh';
+  try { localStorage.setItem('ght_lang', currentLang); } catch(e) {}
   applyLang();
   const active = document.querySelector('.tn-tab.active');
   if (active) showView(active.dataset.view);

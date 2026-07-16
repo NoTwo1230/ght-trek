@@ -6,6 +6,7 @@
 <meta name="ght-api" content="https://ght-api.wangchen19861230.workers.dev">
 <title>GHT 远征日志 · 时间线</title>
 <script src="sections-data.js"></script>
+<script src="lang.js"></script>
 <style>
   :root{
     --bg:#0a0d12; --bg-soft:#0f141d; --panel:rgba(255,255,255,.035);
@@ -39,6 +40,10 @@
   .backbtn{font-size:12.5px;color:var(--text);background:var(--panel-2);border:1px solid var(--border);
     border-radius:8px;padding:7px 13px;text-decoration:none;cursor:pointer;transition:.18s;white-space:nowrap}
   .backbtn:hover{color:#fff;border-color:rgba(255,255,255,.22)}
+  .lang-btn{margin-left:14px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-family:inherit;
+    background:var(--panel-2);color:var(--text);border:1px solid var(--border);
+    border-radius:8px;padding:7px 13px;font-size:12.5px;transition:.18s;white-space:nowrap}
+  .lang-btn:hover{color:#fff;border-color:rgba(255,255,255,.22)}
 
   /* 页头 */
   .page-head{max-width:920px;margin:0 auto;padding:30px 22px 6px}
@@ -125,30 +130,31 @@
   <div class="topbar">
     <div class="brand">
       <span class="logo">🏔️</span>
-      <span>GHT <span class="sub">大喜马拉雅高线</span></span>
+      <span>GHT <span class="sub" data-i18n="brand.sub">大喜马拉雅高线</span></span>
     </div>
     <div class="spacer"></div>
-    <a class="backbtn" href="index.html">← 回主页</a>
+    <button class="lang-btn" type="button">中文 ▾</button>
+    <a class="backbtn" href="index.html" data-i18n="jo.back">← 回主页</a>
   </div>
 
   <div class="page-head">
-    <h1>📝 远征日志</h1>
-    <div class="en">JOURNAL · 时间线 · 最新在前</div>
-    <p class="sub">从 Phungling 到 Darchula 的全程纪实。沿途随笔按时间倒序排列，最新发布在最上方。山里信号不稳，只发文字、不传照片。</p>
+    <h1 data-i18n="jo.title">📝 远征日志</h1>
+    <div class="en" data-i18n="jo.en">JOURNAL · 时间线 · 最新在前</div>
+    <p class="sub" data-i18n="jo.sub">从 Phungling 到 Darchula 的全程纪实。沿途随笔按时间倒序排列，最新发布在最上方。山里信号不稳，只发文字、不传照片。</p>
   </div>
 
   <div class="stats" id="stats">
-    <div class="stat"><div class="v" id="st-total">0<small>篇</small></div><div class="k">总日志</div></div>
-    <div class="stat"><div class="v green" id="st-dist">0<small>km</small></div><div class="k">已记录里程</div></div>
-    <div class="stat"><div class="v gold" id="st-gain">0<small>km</small></div><div class="k">累计爬升</div></div>
-    <div class="stat"><div class="v accent" id="st-sec">0<small>段</small></div><div class="k">覆盖路段</div></div>
+    <div class="stat"><div class="v" id="st-total">0<small>篇</small></div><div class="k" data-i18n="jo.total">总日志</div></div>
+    <div class="stat"><div class="v green" id="st-dist">0<small>km</small></div><div class="k" data-i18n="jo.dist">已记录里程</div></div>
+    <div class="stat"><div class="v gold" id="st-gain">0<small>km</small></div><div class="k" data-i18n="jo.gain">累计爬升</div></div>
+    <div class="stat"><div class="v accent" id="st-sec">0<small>段</small></div><div class="k" data-i18n="jo.sec">覆盖路段</div></div>
   </div>
 
   <div class="filters">
-    <span class="chip active" data-filter="all">全部</span>
-    <span class="chip" data-filter="text">✍️ 手写随笔</span>
+    <span class="chip active" data-filter="all" data-i18n="jo.f.all">全部</span>
+    <span class="chip" data-filter="text" data-i18n="jo.f.text">✍️ 手写随笔</span>
     <span class="spacer"></span>
-    <span class="hint">最新在前</span>
+    <span class="hint" data-i18n="jo.f.newest">最新在前</span>
   </div>
 
   <div class="composer" id="composer"></div>
@@ -156,6 +162,7 @@
   <div class="feed" id="feed"></div>
 
 <script>
+  const t = window.GHTI18N.t;
   // ── 路段元数据（来自 sections-data.js 的 window.GHT_SECTIONS）──
   const SECTIONS = (window.GHT_SECTIONS || []).map((r, i) => ({
     num: i + 1, id: r.id, zh: r.zh || r.en || ('第' + (i + 1) + '段'),
@@ -274,7 +281,7 @@
     const pass = (e) => filter === 'all' || (filter === 'text' ? !e.dailyStats : !!e.dailyStats);
     const shown = logEntries.filter(pass);
     if (!shown.length) {
-      feed.innerHTML = `<div class="empty">暂无日志。<br>主人可在此页面发布随笔。</div>`;
+      feed.innerHTML = '<div class="empty">' + t('jo.empty') + '</div>';
       return;
     }
     // 平铺：新 → 旧（load() 已按日期倒序），不再按路段分组
@@ -318,9 +325,9 @@
     if (!getOwnerToken()) {
       box.innerHTML = `
         <div class="composer-box">
-          <label>🔒 主人解锁后可发布日志（输入与主页相同的主人密码）</label>
-          <input type="password" id="jPwd" class="j-pwd" placeholder="密码" autocomplete="off" onkeydown="if(event.key==='Enter')unlockJournal()">
-          <button class="btn-pub" id="jUnlock">解锁</button>
+          <label>${t('jo.unlock.label')}</label>
+          <input type="password" id="jPwd" class="j-pwd" placeholder="${t('jo.unlock.pwd')}" autocomplete="off" onkeydown="if(event.key==='Enter')unlockJournal()">
+          <button class="btn-pub" id="jUnlock">${t('jo.unlock.btn')}</button>
           <div class="j-pwd-err" id="jPwdErr" hidden></div>
         </div>`;
       const ub = document.getElementById('jUnlock');
@@ -329,8 +336,8 @@
     }
     box.innerHTML = `
       <div class="composer-box">
-        <textarea id="jText" rows="3" placeholder="记点什么…（山里信号不稳，先记着）"></textarea>
-        <button class="btn-pub" id="jPub">发布</button>
+        <textarea id="jText" rows="3" placeholder="${t('jo.composer.ph')}"></textarea>
+        <button class="btn-pub" id="jPub">${t('jo.composer.btn')}</button>
       </div>`;
     const btn = document.getElementById('jPub');
     if (btn) btn.addEventListener('click', addLogEntry);
@@ -346,7 +353,7 @@
     if (err) err.hidden = true;
     const r = await journalLogin(pwd);
     if (r.ok) { setOwnerToken(r.token); renderComposer(); }
-    else if (err) { err.hidden = false; err.textContent = r.msg || '密码错误'; }
+    else if (err) { err.hidden = false; err.textContent = r.msg || t('jo.unlock.err'); }
   }
 
   function addLogEntry() {
@@ -382,6 +389,13 @@
   window.addEventListener('storage', function (e) {
     if (e.key === TOKEN_KEY) renderComposer();
   });
+
+  // 语言切换：重渲染信息流与发布框（均为动态 chrome；日志正文保持原文不翻译）
+  window.onLangChange = function () {
+    const cur = document.querySelector('.filters .chip.active')?.dataset.filter || 'all';
+    renderFeed(cur);
+    renderComposer();
+  };
 </script>
 </body>
 </html>
