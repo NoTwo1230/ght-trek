@@ -1476,14 +1476,23 @@ function sectionForPoint(pt) {
       for (const r of ranges) {
         if (bi >= r.startIndex && bi <= r.endIndex) return r;
       }
-      // 落在区间缝隙时取中点最近者
-      let br = ranges[0], bd = Infinity;
-      for (const r of ranges) {
-        const mid = (r.startIndex + r.endIndex) / 2;
-        const dd = Math.abs(mid - bi);
-        if (dd < bd) { bd = dd; br = r; }
+      // 落在区间缝隙：在 bi 附近窗口扫描「真实轨迹点」，取地理最近者所属 range。
+      // 旧逻辑用 range 中点回退，会把紧邻东段缝隙的点误判到最东区域；窗口最近点可正确归属到相邻段。
+      let bestI = bi, bestD = best;
+      const lo = Math.max(0, bi - 40), hi = Math.min(pts.length - 1, bi + 40);
+      for (let i = lo; i <= hi; i++) {
+        const d = haversine(pt.lat, pt.lon, pts[i].lat, pts[i].lon);
+        if (d < bestD) { bestD = d; bestI = i; }
       }
-      return br;
+      for (const r of ranges) {
+        if (bestI >= r.startIndex && bestI <= r.endIndex) return r;
+      }
+      // 极端情况仍不在任何 range：退回最近锚点（与无预设轨迹分支一致）
+      const fi = findParkIndexForPoint(pt.lat, pt.lon);
+      if (fi >= 0 && window.GHT_SECTIONS[fi]) {
+        return { sectionId: fi + 1, regionZh: window.GHT_SECTIONS[fi].zh, regionId: window.GHT_SECTIONS[fi].id };
+      }
+      return ranges[0];
     }
   }
   return null;
@@ -1554,6 +1563,10 @@ function buildItineraryFromSegments(valid, restDays) {
       to: toName,
       fromLat: startPt ? startPt.lat : null,
       fromLon: startPt ? startPt.lon : null,
+      // 独立的「当天真实起点坐标」：天际衔接逻辑(line 1618+)会覆盖 fromLat/Lon，
+      // 但区域归类必须永远基于当天自己的真实起点，故用 origStart* 隔离存储，不被污染。
+      origStartLat: startPt ? startPt.lat : null,
+      origStartLon: startPt ? startPt.lon : null,
       toLat: endPt ? endPt.lat : null,
       toLon: endPt ? endPt.lon : null,
       plannedDistance: Math.round(stats.distance * 100) / 100,
@@ -1598,6 +1611,9 @@ function buildItineraryFromSegments(valid, restDays) {
       sectionName: '',
       from: '🏕️ 休息日',
       to: '🏕️ 休息日',
+      // 休息日无当天轨迹起点，origStart 回退到衔接后的 fromLat/Lon（即停留地坐标），归类仍正确
+      origStartLat: null,
+      origStartLon: null,
       plannedDistance: 0,
       plannedHours: 0,
       plannedElevGain: 0,
@@ -4975,8 +4991,12 @@ if (APP.itinerary.length && (APP.sectionRanges && APP.sectionRanges.length || AP
   try {
     let changed = false;
     APP.itinerary.forEach(d => {
-      if (d.fromLat != null && d.fromLon != null) {
-        const r = sectionForPoint({ lat: d.fromLat, lon: d.fromLon });
+      // 区域归类永远基于「当天真实起点」(origStart*，天际衔接不会覆盖它)；
+      // 旧数据无该字段时回退到 fromLat/Lon。这修复了 D20 等因衔接坐标污染被错判成最东段的问题。
+      const lat = (d.origStartLat != null) ? d.origStartLat : d.fromLat;
+      const lon = (d.origStartLon != null) ? d.origStartLon : d.fromLon;
+      if (lat != null && lon != null) {
+        const r = sectionForPoint({ lat: lat, lon: lon });
         if (r && r.sectionId && r.sectionId !== d.sectionId) {
           d.sectionId = r.sectionId;
           if (r.regionZh) d.sectionName = r.regionZh;
