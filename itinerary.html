@@ -789,7 +789,7 @@ function dayDetail(d){
     <span class="chip2 ${chipCls}">${stInfo.t}</span>
     <span class="dd-sub">第 <b>${d.sectionId}</b> 段 · ${esc(region.zh)}</span>
     <span class="dd-delay">${d.delayed
-      ? ['weather','injured','tired','other'].map(r => '<button class="dd-dbtn' + (d.delayReason === r ? ' on' : '') + '" onclick="event.stopPropagation();toggleDelay(' + d.day + ",'" + r + ')" title="' + delayLabel(r) + '">' + DELAY_ICON[r] + '</button>').join('')
+      ? ['weather','injured','tired','other'].map(r => '<button class="dd-dbtn' + (d.delayReason === r ? ' on' : '') + '" onclick="event.stopPropagation();toggleDelay(' + d.day + ",'" + r + '\')" title="' + delayLabel(r) + '">' + DELAY_ICON[r] + '</button>').join('')
       : '<button class="dd-dbtn" onclick="event.stopPropagation();toggleDelay(' + d.day + ')" title="' + t('it.legend.delay') + '">☁️</button>'
     }</span>
   </div>`;
