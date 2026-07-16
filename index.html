@@ -1424,18 +1424,34 @@ function fmtCoordLabel(pt) {
 }
 
 // Nearest waypoint label to a point (within maxDist meters). Prefers camps.
+// 改进：① 跳过「无名标注」(空 desc/name)，避免最近的标注却无名、被当成未匹配而回退到坐标泄露；
+//       ② 软回退：略超 maxDist(≤2×) 仍取最近命名点，覆盖某些营地标注略偏远的场景。
 function nearestWaypointLabel(waypoints, pt, maxDist) {
   if (!waypoints || !waypoints.length || !pt) return null;
   let best = null, bestD = Infinity, bestCamp = null, bestCampD = Infinity;
   waypoints.forEach(w => {
+    const nm = (w.desc || w.name || '').trim();
+    if (!nm) return;                        // 跳过无名标注，杜绝「最近却无名」触发坐标泄露
     const d = haversine(pt.lat, pt.lon, w.lat, w.lon);
     if (d < bestD) { bestD = d; best = w; }
     if (w._type === 'camp' && d < bestCampD) { bestCampD = d; bestCamp = w; }
   });
   const chosen = bestCamp || best;
+  if (!chosen) return null;
   const chosenD = bestCamp ? bestCampD : bestD;
-  if (chosen && chosenD <= maxDist) return (chosen.desc || chosen.name || '').trim();
+  const label = (chosen.desc || chosen.name || '').trim();
+  if (chosenD <= maxDist) return label;
+  if (chosenD <= maxDist * 2) return label;   // 软回退：略超出阈值也取最近命名点
   return null;
+}
+
+// 坐标泄露防护：某点附近无命名标注时，回退到「区域名+营地」而非裸坐标
+// （如 27.86°N 86.92°E 这类裸坐标出现在行程/实际轨迹面板，既不美观也无信息量）。
+function friendlyPointLabel(pt) {
+  if (!pt) return '—';
+  const sec = sectionForPoint(pt);
+  if (sec && sec.regionZh) return sec.regionZh + '营地';
+  return fmtCoordLabel(pt);                 // 仅极端无预设场景才退回裸坐标
 }
 
 // Which 13-region a point is closest to (by entry anchor)
@@ -1549,9 +1565,9 @@ function buildItineraryFromSegments(valid, restDays) {
     const isFirstDay = (seg.dayNum != null && seg.dayNum === firstDayNum);
     const fromName = isFirstDay
       ? (APP.startPlaceName || '起点')
-      : (nearestWaypointLabel(allWpts, startPt, 6000) || fmtCoordLabel(startPt));
+      : (nearestWaypointLabel(allWpts, startPt, 6000) || friendlyPointLabel(startPt));
     const toName = nearestWaypointLabel(allWpts, endPt, 6000)
-      || fmtCoordLabel(endPt);
+      || friendlyPointLabel(endPt);
 
     const sec = sectionForPoint(startPt);
 
@@ -1748,8 +1764,8 @@ function matchItineraryToActuals() {
     const pts = track.trackPoints || [];
     const startPt = pts[0] || null;
     const endPt = pts.length ? pts[pts.length - 1] : null;
-    const actFrom = startPt ? (nearestWaypointLabel(wpts, startPt, 6000) || fmtCoordLabel(startPt)) : '—';
-    const actTo = endPt ? (nearestWaypointLabel(wpts, endPt, 6000) || fmtCoordLabel(endPt)) : '—';
+    const actFrom = startPt ? (nearestWaypointLabel(wpts, startPt, 6000) || friendlyPointLabel(startPt)) : '—';
+    const actTo = endPt ? (nearestWaypointLabel(wpts, endPt, 6000) || friendlyPointLabel(endPt)) : '—';
 
     day.actual = {
       distance: track.distance,
