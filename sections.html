@@ -417,8 +417,9 @@
       detail.querySelector('.d-max').textContent=fmt(o.max_ele)+' m';
       detail.querySelector('.d-min').textContent=fmt(o.min_ele)+' m';
       detail.querySelector('.d-passes').innerHTML=passesHTML(o);
-      detail.querySelector('.d-legend').textContent=o.legend;
-      detail.querySelector('.d-scenery').textContent=o.scenery;
+      const _lang = window.GHTI18N.getLang();
+      detail.querySelector('.d-legend').textContent = _lang === 'en' ? (o.legend_en || o.legend) : o.legend;
+      detail.querySelector('.d-scenery').textContent = _lang === 'en' ? (o.scenery_en || o.scenery) : o.scenery;
       detail.classList.add('open'); detailOpen=true;
       document.body.style.overflow='hidden';
     }

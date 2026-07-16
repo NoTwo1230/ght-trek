@@ -1198,9 +1198,9 @@
     </div>
     <nav class="topnav-tabs" aria-label="主导航">
       <button class="tn-tab active" data-view="dashboard">Dashboard</button>
-      <a class="tn-ext" href="itinerary.html" target="_blank" rel="noopener" title="计划 vs 实际 · 行程对比 →">📅 行程对比 ↗</a>
-      <a class="tn-ext" href="sections.html" target="_blank" rel="noopener" title="路段进度 · 按 已完成/进行中/未完成 分组 →">🏔️ 路段 ↗</a>
-      <a class="tn-ext" href="journal.html" target="_blank" rel="noopener" title="远征日志 · 按路段分组 →">📝 日志 ↗</a>
+      <a class="tn-ext" id="navItinerary" href="itinerary.html" target="_blank" rel="noopener" title="计划 vs 实际 · 行程对比 →">📅 行程对比 ↗</a>
+      <a class="tn-ext" id="navSections" href="sections.html" target="_blank" rel="noopener" title="路段进度 · 按 已完成/进行中/未完成 分组 →">🏔️ 路段 ↗</a>
+      <a class="tn-ext" id="navJournal" href="journal.html" target="_blank" rel="noopener" title="远征日志 · 按路段分组 →">📝 日志 ↗</a>
     </nav>
     <div class="topnav-right">
       <button class="lang-btn">中文 ▾</button>
@@ -1880,6 +1880,8 @@ let currentLang = (function(){ try { return localStorage.getItem('ght_lang') || 
 const I18N = {
   zh: {
     'nav.dashboard': '仪表盘', 'nav.sections': '路段', 'nav.itinerary': '行程', 'nav.datamgmt': '数据管理',
+    'nav.itinerary.full': '行程对比', 'nav.sections.full': '路段', 'nav.journal.full': '日志',
+    'nav.itinerary.title': '计划 vs 实际 · 行程对比', 'nav.sections.title': '路段进度 · 按 已完成/进行中/未完成 分组', 'nav.journal.title': '远征日志 · 按路段分组',
     'brand.sub': '大喜马拉雅高线',
     'pos.prefix': '📍 当前位置:',
     'basemap.terrain': '户外图 (Esri 地形 · 默认)', 'basemap.topo': '地形图 (等高线)', 'basemap.dark': '暗色图 (OpenStreetMap)',
@@ -1895,6 +1897,8 @@ const I18N = {
   },
   en: {
     'nav.dashboard': 'Dashboard', 'nav.sections': 'Sections', 'nav.itinerary': 'Itinerary', 'nav.datamgmt': 'Data',
+    'nav.itinerary.full': 'Itinerary', 'nav.sections.full': 'Sections', 'nav.journal.full': 'Journal',
+    'nav.itinerary.title': 'Planned vs actual · itinerary', 'nav.sections.title': 'Section progress · grouped by done/in-progress/todo', 'nav.journal.title': 'Expedition journal · grouped by section',
     'brand.sub': 'GREAT HIMALAYA TRAIL',
     'pos.prefix': '📍 Current location:',
     'basemap.terrain': 'Terrain (Esri Topo · default)', 'basemap.topo': 'Topographic (Contours)', 'basemap.dark': 'Dark (OpenStreetMap)',
@@ -1928,6 +1932,13 @@ function applyLang() {
   const sub = document.querySelector('.brand .sub'); if (sub) sub.textContent = t('brand.sub');
   document.querySelectorAll('.basemap-btn').forEach((el, i) => { el.title = t(['basemap.terrain', 'basemap.topo', 'basemap.dark'][i]); });
   const dm = document.getElementById('btnDataMgmt'); if (dm) dm.textContent = '🔧 ' + t('nav.datamgmt');
+  // 顶栏三个外链（行程对比 / 路段 / 日志）此前硬编码中文、未进翻译循环 → 补上 i18n
+  const ni = document.getElementById('navItinerary');
+  if (ni) { ni.textContent = '📅 ' + t('nav.itinerary.full') + ' ↗'; ni.title = t('nav.itinerary.title'); }
+  const ns = document.getElementById('navSections');
+  if (ns) { ns.textContent = '🏔️ ' + t('nav.sections.full') + ' ↗'; ns.title = t('nav.sections.title'); }
+  const nj = document.getElementById('navJournal');
+  if (nj) { nj.textContent = '📝 ' + t('nav.journal.full') + ' ↗'; nj.title = t('nav.journal.title'); }
   const dmt = document.getElementById('dmTitle'); if (dmt) dmt.textContent = t('dm.title');
   const dph = document.getElementById('dmPwdHint'); if (dph) dph.textContent = t('dm.pwdHint');
   const du = document.getElementById('dmUnlock'); if (du) du.textContent = t('dm.unlock');
@@ -2461,8 +2472,7 @@ function drawElevationProfile() {
     if (section) { sectionName = section.name; sectionNameEn = section.nameEn; }
   }
 
-  const elevStr = APP.currentPosition && APP.currentPosition.elev != null
-    ? ' · ⛰️ ' + Math.round(APP.currentPosition.elev).toLocaleString() + 'm' : '';
+  const elevStr = getDisplayElevStr();
 
   const region13 = currentRegion13();
   const locName = region13 ? region13.zh : (sectionNameEn || sectionName || '—');
@@ -2560,6 +2570,20 @@ function getNextPass() {
 
 function fmtNum(n, d) { return (n == null || isNaN(n)) ? '—' : Number(n).toLocaleString(undefined, { maximumFractionDigits: d == null ? 0 : d }); }
 
+// 当前海拔显示值：仅实时追踪时取 GPS 当前点海拔；未出发/无轨迹时改用预设起点海拔
+// （更接近「当前营地海拔」），避免陈旧 localStorage ght_current_pos(上次 GPS 终点) 被误当成「当前海拔」。
+function getDisplayElev() {
+  const hasLive = APP.currentPosition && APP.actualTracks && APP.actualTracks.length;
+  if (hasLive && APP.currentPosition.elev != null) return Math.round(APP.currentPosition.elev);
+  const tp = APP.presetTrack && APP.presetTrack.trackPoints;
+  if (tp && tp.length && tp[0].elev != null) return Math.round(tp[0].elev);
+  return null;
+}
+function getDisplayElevStr() {
+  const e = getDisplayElev();
+  return e != null ? ' · ⛰️ ' + e.toLocaleString() + 'm' : '';
+}
+
 // ── A. 征途总进度 ──
 function progressCardHTML() {
   const pct = APP.progressPercentage || APP.progressPct || 0;
@@ -2588,8 +2612,7 @@ function currentStatusHTML() {
   const sec = currentSectionInfo();
   const idx = currentSectionIdx();
   const prov = getProv(ghtSections[idx] ? ghtSections[idx].province : '');
-  const elev = (APP.currentPosition && APP.currentPosition.elev != null) ? Math.round(APP.currentPosition.elev)
-    : (APP.maxElev || (APP.presetTrack && APP.presetTrack.stats ? APP.presetTrack.stats.maxElev : null));
+  const elev = getDisplayElev();
   const np = getNextPass();
   const nextDay = (APP.itinerary || []).find(d => !d.actual);
   let eta = '—';
@@ -2786,8 +2809,7 @@ function renderInfoBar() {
   else if (totalDays) slipHTML = `<span class="info-slip on">按计划</span>`;
 
   const elevGain = getCumulativeElevGain ? Math.round(getCumulativeElevGain()) : 0;
-  const maxElev = (APP.currentPosition && APP.currentPosition.elev != null) ? Math.round(APP.currentPosition.elev)
-                 : (APP.maxElev || 0);
+  const maxElev = getDisplayElev() || 0;
 
   el.innerHTML = `
     <div class="info-progress-row">
@@ -2850,7 +2872,7 @@ function renderProgress() {
       <div class="big-pct">${APP.progressPct}%</div>
       <div class="pct-sub">
         ${(APP.completedDistance/1000).toFixed(1)} / ${APP.totalDistance} km
-        ${APP.currentPosition && APP.currentPosition.elev != null ? ' · ⛰️ ' + Math.round(APP.currentPosition.elev).toLocaleString() + 'm' : ''}
+        ${getDisplayElevStr()}
       </div>
     </div>
 
@@ -5029,7 +5051,8 @@ try { matchItineraryToActuals(); } catch(e) {}
 // Load current position
 try {
   const savedPos = localStorage.getItem('ght_current_pos');
-  if (savedPos) APP.currentPosition = JSON.parse(savedPos);
+  // 仅当存在实际轨迹时才恢复「当前位置」；否则陈旧 GPS 终点会误显示为当前海拔/地图标记。
+  if (savedPos && APP.actualTracks && APP.actualTracks.length) APP.currentPosition = JSON.parse(savedPos);
 } catch(e) {}
 
 // Load total distance
