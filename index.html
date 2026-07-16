@@ -4401,19 +4401,27 @@ function mergeGPXSegments(segments) {
 // 无名点退化为纯坐标(3位≈111m)。避免「垭口清单」/ 地图出现重名且落差≤1m 的重复项。
 function dedupeWaypoints(wps) {
   if (!wps || !wps.length) return wps || [];
-  const seen = new Set();
   const out = [];
   for (const w of wps) {
     const name = (w.desc || w.name || '').trim();
-    // 海拔按 5m 分桶，吸收 1m 量测误差（重名且落差仅 1m 视为同一点）
-    const elevB = (w.elev != null && isFinite(w.elev)) ? Math.round(w.elev / 5) : '';
-    // 命名点用 2 位小数(~1.1km)容差；无名点用 3 位(~111m)避免误并
-    const lat = w.lat != null ? w.lat.toFixed(name ? 2 : 3) : '';
-    const lon = w.lon != null ? w.lon.toFixed(name ? 2 : 3) : '';
-    const key = name ? (name + '|' + elevB + '|' + lat + ',' + lon) : (lat + ',' + lon);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(w);
+    let merged = false;
+    if (name) {
+      // 同名垭口：坐标 5km 内视为同一座（覆盖 GPX 重复打点 / 精度误差）。
+      // 仅按坐标距离判定，避免把「同名且同海拔但相距甚远」的真实垭口（如双 Renjo La）误并。
+      for (const o of out) {
+        if ((o.desc || o.name || '').trim() !== name) continue;
+        if (o.lat != null && w.lat != null) {
+          if (haversine(o.lat, o.lon, w.lat, w.lon) <= 5000) { merged = true; break; }
+        } else if (o.elev != null && w.elev != null && Math.abs(o.elev - w.elev) <= 20) {
+          merged = true; break; // 无坐标时退化为海拔近似(≤20m)
+        }
+      }
+    } else {
+      // 无名点：维持原坐标容差(3 位小数 ≈ 111m)
+      const key = w.lat.toFixed(3) + ',' + w.lon.toFixed(3);
+      if (out.some(o => (o.lat.toFixed(3) + ',' + o.lon.toFixed(3)) === key)) merged = true;
+    }
+    if (!merged) out.push(w);
   }
   return out;
 }
