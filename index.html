@@ -2608,7 +2608,9 @@ function todaySummaryHTML() {
     cell(s && s.avgSpeed ? s.avgSpeed + '' : '—', t('today.speed')) +
     cell(s ? fmtNum(s.maxElev) + 'm' : '—', t('today.max')) +
     '</div>' +
-    (s && s.date ? '<div style="font-size:10px;color:var(--text-dim);margin-top:8px;text-align:center;">' + t('today.dateLbl') + s.date + (last.dayNum ? ' · Day ' + last.dayNum : '') + '</div>' : '<div style="font-size:10px;color:var(--text-dim);margin-top:8px;text-align:center;">' + t('today.nodata') + '</div>') +
+    (!s ? '<div style="font-size:10px;color:var(--text-dim);margin-top:8px;text-align:center;">' + t('today.nodata') + '</div>'
+        : (last.date ? '<div style="font-size:10px;color:var(--text-dim);margin-top:8px;text-align:center;">' + t('today.dateLbl') + last.date + (last.dayNum ? ' · Day ' + last.dayNum : '') + '</div>'
+                     : (last.dayNum ? '<div style="font-size:10px;color:var(--text-dim);margin-top:8px;text-align:center;">Day ' + last.dayNum + '</div>' : ''))) +
     '</div>';
 }
 
