@@ -64,6 +64,14 @@ window.GHT_SECTIONS = [
     "min_ele": 1779,
     "passes": [
       {
+        "name": "Sherpani Col",
+        "ele": 6180
+      },
+      {
+        "name": "Amphu Laptsa La BC",
+        "ele": 5800
+      },
+      {
         "name": "Lumba Samba Pass High Camp",
         "ele": 5150
       },
@@ -108,14 +116,6 @@ window.GHT_SECTIONS = [
     "max_ele": 6124,
     "min_ele": 3786,
     "passes": [
-      {
-        "name": "垭口 6120m",
-        "ele": 6120
-      },
-      {
-        "name": "Amphu Laptsa La BC South 2",
-        "ele": 5800
-      },
       {
         "name": "垭口 5517m",
         "ele": 5520

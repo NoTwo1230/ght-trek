@@ -246,10 +246,15 @@
   </div>
 
   <script src="sections-data.js"></script>
+  <script src="ght-regions.js"></script>
   <script>
   (function(){
     const t = window.GHTI18N.t;
     const data = window.GHT_SECTIONS || [];
+    // 真实垭口/山峰：取自已导入的预设 GPX（按 Voronoi 锚点归属到各路段）。
+    // 未导入预设时返回 null，passesHTML 自动回退到 sections-data.js 的静态种子数据。
+    const regionPasses = (window.GHT_REGIONS && window.GHT_REGIONS.getRegionPasses)
+      ? window.GHT_REGIONS.getRegionPasses() : null;
     // 完成状态由首页实际轨迹动态决定；重置后 ght_region_measured 被清空 → 全部回到「计划」
     data.forEach(r => { r.measured = false; });
     try {
@@ -293,9 +298,22 @@
 
     function fmt(n){ return n==null?'—':n.toLocaleString('en-US'); }
     function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+    // 静态种子数据里 name 常内嵌海拔(如「垭口 6120m」)，与 ele 重复显示；
+    // 渲染前剥离尾随海拔，避免「6120m6120m」「BC South 25800m」类重复。
+    function cleanPassName(name, ele){
+      let s = String(name||'').trim();
+      if (ele != null) s = s.replace(/\s*\d{3,4}(?:\.\d+)?\s*m?\s*$/i, '').trim();
+      return s || (ele != null ? '垭口' : '未命名');
+    }
     function passesHTML(o){
-      if(!o.passes||!o.passes.length) return '<span class="pchip" style="opacity:.6">暂无高垭口</span>';
-      return o.passes.map(p=>`<span class="pchip">${esc(p.name)}${p.ele!=null?`<b>${p.ele}m</b>`:''}</span>`).join('');
+      // 优先用真实 GPX 垭口（按路段归属），否则回退静态种子数据
+      const dyn = (regionPasses && regionPasses[o.id] && regionPasses[o.id].length)
+        ? regionPasses[o.id] : (o.passes || []);
+      if(!dyn.length) return '<span class="pchip" style="opacity:.6">暂无高垭口</span>';
+      // GPX 可能含重复标注点，按名称去重
+      const seen = {};
+      const list = dyn.filter(p=>{ const k=(p.name||'').trim().toLowerCase(); if(seen[k]) return false; seen[k]=1; return true; });
+      return list.map(p=>`<span class="pchip">${esc(cleanPassName(p.name, p.ele))} ${p.ele!=null?`<b>${p.ele}m</b>`:''}</span>`).join('');
     }
 
     function cardHTML(o,i){
