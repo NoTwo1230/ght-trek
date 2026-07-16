@@ -763,6 +763,8 @@
   }
   .itinerary-day:hover .btn-edit-day { opacity: 1; }
   .btn-edit-day:hover { color: var(--accent) !important; }
+  .delay-pick { display: inline-flex; gap: 3px; vertical-align: middle; }
+  .dp-btn { opacity: 1 !important; }
 
   .itineray-edit-form {
     padding: 10px;
@@ -1827,9 +1829,10 @@ function getItinerarySummary() {
     if (d.actual) { actualTotal += d.actual.distance; elevGainTotal += d.actual.elevGain; }
   });
 
-  const aheadDays = APP.itinerary.filter(d => d.actual && !d.weatherDelay && d.actual.onTrack === 'ahead').length;
-  const behindDays = APP.itinerary.filter(d => d.actual && !d.weatherDelay && d.actual.onTrack === 'behind').length;
-  const onTrackDays = APP.itinerary.filter(d => d.actual && !d.weatherDelay && d.actual.onTrack === 'on-track').length;
+  const delayedDays = APP.itinerary.filter(d => d.delayed).length;
+  const aheadDays = APP.itinerary.filter(d => d.actual && !d.delayed && d.actual.onTrack === 'ahead').length;
+  const behindDays = APP.itinerary.filter(d => (d.actual && !d.delayed && d.actual.onTrack === 'behind') || d.delayed).length;
+  const onTrackDays = APP.itinerary.filter(d => d.actual && !d.delayed && d.actual.onTrack === 'on-track').length;
 
   // Find today（按轨迹自动推算的日期判断，无需手动设定出发日）
   let todayIdx = -1;
@@ -1944,6 +1947,8 @@ function applyLang() {
   const du = document.getElementById('dmUnlock'); if (du) du.textContent = t('dm.unlock');
   const de = document.getElementById('dmPwdErr'); if (de) de.textContent = t('dm.pwdErr');
 }
+const DELAY_ICON = { weather: '☁️', injured: '🩹', tired: '😴', other: '⚠️' };
+function delayLabel(reason) { return t('it.delay.' + (reason || 'other')); }
 const _langBtn = document.querySelector('.lang-btn');
 if (_langBtn) _langBtn.addEventListener('click', function () {
   currentLang = currentLang === 'zh' ? 'en' : 'zh';
@@ -3080,7 +3085,7 @@ function getMissingDays() {
   const hasActual = APP.itinerary.some(d => d.actual);
   if (!hasActual) return [];
   return APP.itinerary.filter(d =>
-    !d.actual && !d.isRestDay && !d.weatherDelay &&
+    !d.actual && !d.isRestDay && !d.delayed &&
     APP.itinerary.some(x => x.actual && x.day > d.day)
   ).map(d => d.day);
 }
@@ -3131,7 +3136,7 @@ function renderItinerary() {
     <div style="background:rgba(255,169,77,0.14);border:1px solid rgba(255,169,77,0.4);color:#FFA94D;padding:8px 12px;border-radius:8px;font-size:12px;margin:4px 0 12px;line-height:1.8;">
       ⚠️ 行程途中缺少 GPS 轨迹：${missing.map(d => 'Day ' + d).join('、')}。是否为休息 / 天气延误？
       <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;">
-        ${missing.map(d => `<button onclick="toggleWeatherDelay(${d})" style="background:rgba(255,169,77,0.18);border:1px solid rgba(255,169,77,0.5);color:#FFA94D;padding:3px 9px;border-radius:6px;cursor:pointer;font-size:11px;">☁️ Day${d} 天气延误</button><button onclick="markDayAsRest(${d})" style="background:rgba(63,185,80,0.16);border:1px solid rgba(63,185,80,0.5);color:var(--green);padding:3px 9px;border-radius:6px;cursor:pointer;font-size:11px;">🏕️ Day${d} 休息</button>`).join('')}
+        ${missing.map(d => `<button onclick="toggleDelay(${d},'weather')" style="background:rgba(255,169,77,0.18);border:1px solid rgba(255,169,77,0.5);color:#FFA94D;padding:3px 9px;border-radius:6px;cursor:pointer;font-size:11px;">☁️ Day${d} 天气延误</button><button onclick="markDayAsRest(${d})" style="background:rgba(63,185,80,0.16);border:1px solid rgba(63,185,80,0.5);color:var(--green);padding:3px 9px;border-radius:6px;cursor:pointer;font-size:11px;">🏕️ Day${d} 休息</button>`).join('')}
       </div>
     </div>` : '';
   summaryHTML += missingWarnHTML;
@@ -3189,9 +3194,9 @@ function renderItinerary() {
       if (day.isRestDay) {
         actCol = `<div class="col"><div class="col-title act-t">📡 实际</div>
           <div style="margin-top:6px;color:var(--green);font-size:12px;">🏕️ 休息 · 未行进</div></div>`;
-      } else if (day.weatherDelay) {
+      } else if (day.delayed) {
         actCol = `<div class="col"><div class="col-title act-t">📡 实际</div>
-          <div style="margin-top:6px;color:#FFA94D;font-size:12px;">☁️ 天气延误 · 未行进</div></div>`;
+          <div style="margin-top:6px;color:#FFA94D;font-size:12px;">${delayLabel(day.delayReason)} · ${currentLang === 'en' ? 'no progress' : '未行进'}</div></div>`;
       } else {
         actCol = `<div class="col"><div class="col-title act-t">📡 实际</div>
           <div class="route" style="margin-top:6px;">⏳ 等待 GPS</div></div>`;
@@ -3227,13 +3232,16 @@ function renderItinerary() {
         <div>
           <span class="day-num" style="color:${sectionColor}">Day ${day.day}</span>
           ${day.isRestDay ? '<span class="chip rest">🏕️ 休息</span>' : ''}
-          ${day.weatherDelay ? '<span class="chip delay">☁️ 延误</span>' : ''}
+          ${day.delayed ? '<span class="chip delay">' + delayLabel(day.delayReason) + '</span>' : ''}
           ${isToday ? '<span class="chip today">今天</span>' : ''}
           ${statusChip}
         </div>
         <div style="display:flex;align-items:center;gap:6px;">
           ${APP.isOwner ? '<button class="btn-edit-day" onclick="event.stopPropagation();editItineraryDay(' + day.day + ')" title="编辑行程" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:13px;padding:2px 4px;">✏️</button>' : ''}
-          ${APP.isOwner ? '<button class="btn-edit-day" onclick="event.stopPropagation();toggleWeatherDelay(' + day.day + ')" title="' + (day.weatherDelay ? '取消天气延误标记' : '标记天气延误 / 计划外休整') + '" style="background:none;border:none;color:' + (day.weatherDelay ? '#FFA94D' : 'var(--text-dim)') + ';cursor:pointer;font-size:13px;padding:2px 4px;">☁️</button>' : ''}
+          ${APP.isOwner ? (day.delayed
+            ? '<span class="delay-pick">' + ['weather','injured','tired','other'].map(r => '<button class="dp-btn' + (day.delayReason === r ? ' on' : '') + '" onclick="event.stopPropagation();toggleDelay(' + day.day + ",'" + r + '\')" title="' + delayLabel(r) + '" style="background:' + (day.delayReason === r ? 'rgba(255,169,77,.3)' : 'none') + ';border:1px solid rgba(255,169,77,.4);color:#FFA94D;cursor:pointer;font-size:13px;padding:2px 4px;line-height:1;border-radius:5px;">' + DELAY_ICON[r] + '</button>').join('') + '</span>'
+            : '<button class="btn-edit-day" onclick="event.stopPropagation();toggleDelay(' + day.day + ')" title="标记延误（天气 / 受伤 / 疲惫 / 其他）" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:13px;padding:2px 4px;">☁️</button>'
+          ) : ''}
           <span style="font-size:10px;color:var(--text-dim);">${plannedShort}</span>
         </div>
       </div>
@@ -3313,12 +3321,19 @@ function cancelEditDay(dayNum) {
   if (APP.activeTab === 'itinerary') openPanel('itinerary');
 }
 
-// 手动标记某天为「天气延误 / 计划外休整」：该天不计入快慢统计，后续计划日自动顺延
-function toggleWeatherDelay(dayNum) {
+// 手动标记某天为「延误」（原因：天气/受伤/疲惫/其他）。计划日不变（不顺延后续）；
+// 延误那天计入「落后」统计。reason 指定则从该原因切换（已是该原因则取消），不指定则 toggle 默认 'other'。
+function toggleDelay(dayNum, reason) {
   if (!APP.isOwner) return;
   const day = APP.itinerary.find(d => d.day === dayNum);
   if (!day) return;
-  day.weatherDelay = !day.weatherDelay;
+  if (reason) {
+    day.delayed = !(day.delayed && day.delayReason === reason);
+    if (day.delayed) day.delayReason = reason;
+  } else {
+    day.delayed = !day.delayed;
+    if (day.delayed && !day.delayReason) day.delayReason = 'other';
+  }
   saveItinerary();
   if (APP.activeTab === 'itinerary') openPanel('itinerary');
 }

@@ -586,10 +586,11 @@ function fmtPlannedShort(startDate, dayNum){ const d=getPlannedDate(startDate, d
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
 /* ── 状态 ── */
+function delayLabel(reason){ return t('it.delay.' + (reason || 'other')); }
 function statusOf(d){
   if(d.actual) return d.actual.onTrack;          // 'ahead' | 'behind' | 'on-track'
   if(d.isRestDay) return 'rest';
-  if(d.weatherDelay) return 'delay';
+  if(d.delayed) return 'delay';
   return 'wait';
 }
 const STATUS = {
@@ -610,9 +611,10 @@ function renderSummary(data){
   const daysWithData = planned.filter(d=>d.actual).length;
   const plannedTotal = Math.round(planned.reduce((s,d)=>s+(+d.plannedDistance||0),0)*10)/10;
   const actualTotal = Math.round(planned.reduce((s,d)=>s+(d.actual?+d.actual.distance:0),0)*10)/10;
-  const ahead = planned.filter(d=>d.actual&&!d.weatherDelay&&d.actual.onTrack==='ahead').length;
-  const behind= planned.filter(d=>d.actual&&!d.weatherDelay&&d.actual.onTrack==='behind').length;
-  const onTrack=planned.filter(d=>d.actual&&!d.weatherDelay&&d.actual.onTrack==='on-track').length;
+  const delayedCount = planned.filter(d=>d.delayed).length;
+  const ahead = planned.filter(d=>d.actual&&!d.delayed&&d.actual.onTrack==='ahead').length;
+  const behind= planned.filter(d=>(d.actual&&!d.delayed&&d.actual.onTrack==='behind')||d.delayed).length;
+  const onTrack=planned.filter(d=>d.actual&&!d.delayed&&d.actual.onTrack==='on-track').length;
   const pctDone = totalDays? Math.round(daysWithData/totalDays*100):0;
 
   let slip='';
@@ -686,7 +688,7 @@ function renderCalendar(){
         const st = statusOf(day);
         const cls = ['chip'];
         if(day.isRestDay) cls.push('is-rest');
-        if(day.weatherDelay) cls.push('is-delay');
+        if(day.delayed) cls.push('is-delay');
         const planDate = getPlannedDate(DATA.startDate, day.day);
         const ghost = (MODE==='actual' && day.actual && day.actual.date !== planDate)
           ? `<div class="ghost">原计划 ${esc(shortYmd(planDate))}</div>` : '';
@@ -756,12 +758,12 @@ function dayDetail(d){
       <div class="row"><span class="k">${t('it.drawer.asc')}</span><span class="v plan">${(+d.plannedElevGain||0).toLocaleString()}m</span></div>
       <div class="row"><span class="k">${t('it.drawer.desc')}</span><span class="v plan">${(+d.plannedElevLoss||0).toLocaleString()}m</span></div>
       ${d.passes&&d.passes.length?`<div class="passes">${t('it.drawer.passes')}<span class="tag">${esc(d.passes.join('、'))}</span></div>`:''}
-      ${d.isRestDay?`<div class="passes">${t('it.drawer.rest')}</div>`:''}${d.weatherDelay?`<div class="passes">${t('it.drawer.delay')}</div>`:''}
+      ${d.isRestDay?`<div class="passes">${t('it.drawer.rest')}</div>`:''}${d.delayed?`<div class="passes">${delayLabel(d.delayReason)}</div>`:''}
     </div>`;
 
   let actCol;
   if(!d.actual){
-    let msg = d.isRestDay ? t('it.pending.rest') : d.weatherDelay ? t('it.pending.delay') : t('it.pending.wait');
+    let msg = d.isRestDay ? t('it.pending.rest') : d.delayed ? delayLabel(d.delayReason) + (GHTI18N.getLang()==='en'?' · no progress':' · 未行进') : t('it.pending.wait');
     actCol = `<div class="col actual"><div class="col-title">${t('it.drawer.actual')}</div><div class="pending">${msg}</div></div>`;
   } else {
     const a = d.actual;
