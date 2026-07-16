@@ -3731,9 +3731,7 @@ function calculateGPXStats(gpxData) {
     const p1 = trackPoints[i - 1];
     const p2 = trackPoints[i];
 
-    // Skip across segment breaks (non-continuous jumps) so they don't inflate distance
-    if (p2._break) continue;
-
+    // 预设=计划路线：端到端计入全程距离与爬升，不再跨断点跳过（与连续绘制一致）
     distance += haversine(p1.lat, p1.lon, p2.lat, p2.lon);
 
     if (p1.elev != null && p2.elev != null && !isNaN(p1.elev) && !isNaN(p2.elev)) {
@@ -3838,8 +3836,8 @@ function calculateTrackDistances(trackPoints) {
   const distances = [0];
   for (let i = 1; i < trackPoints.length; i++) {
     const p1 = trackPoints[i - 1], p2 = trackPoints[i];
-    // Don't accumulate distance across segment breaks
-    const d = p2._break ? 0 : haversine(p1.lat, p1.lon, p2.lat, p2.lon);
+    // 不再跨断点跳过：保持与 calculateGPXStats / 连续绘制一致
+    const d = haversine(p1.lat, p1.lon, p2.lat, p2.lon);
     distances.push(distances[distances.length - 1] + d);
   }
   return distances;
@@ -4802,6 +4800,7 @@ function addActualTrack(gpxData, stats) {
 function setAsPreset(gpxData, stats) {
   gpxData.distances = calculateTrackDistances(gpxData.trackPoints);
   gpxData.waypoints = dedupeWaypoints(gpxData.waypoints); // 去除 GPX 重复标注点（同名同海拔）
+  gpxData.stats = stats;                                  // 把统计(距离/爬升/最高点)挂到预设轨迹，供征途总进度卡读取
   APP.presetTrack = gpxData;
   // Sync rest days from dayRange (batch import) or clear (single file)
   APP.presetRestDays = (gpxData.dayRange && gpxData.dayRange.restDays) ? gpxData.dayRange.restDays : [];
