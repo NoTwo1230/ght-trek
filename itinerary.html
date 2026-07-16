@@ -223,6 +223,17 @@
   .chip2.delay { background: rgba(210,153,34,.14); color: var(--yellow); border-color: rgba(210,153,34,.32); }
   .chip2.wait { background: rgba(139,148,158,.12); color: var(--text-dim); border-color: rgba(139,148,158,.28); }
 
+  /* ── 延误按钮（详情抽屉头部）── */
+  .dd-delay { margin-left: auto; display: inline-flex; gap: 4px; align-items: center; }
+  .dd-dbtn {
+    background: none; border: 1px solid var(--border-light);
+    color: var(--text-dim); cursor: pointer;
+    font-size: 14px; padding: 3px 6px; border-radius: 6px;
+    line-height: 1; transition: all .15s;
+  }
+  .dd-dbtn:hover { color: #FFA94D; border-color: rgba(255,169,77,.5); background: rgba(255,169,77,.08); }
+  .dd-dbtn.on { color: #FFA94D; border-color: rgba(255,169,77,.5); background: rgba(255,169,77,.18); }
+
   /* 计划 / 实际 双栏（抽屉内） */
   .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px; }
   .col { border-radius: 11px; padding: 12px 14px; border: 1px solid transparent; }
@@ -587,6 +598,35 @@ function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;'
 
 /* ── 状态 ── */
 function delayLabel(reason){ return t('it.delay.' + (reason || 'other')); }
+
+const DELAY_ICON = { weather: '☁️', injured: '🩹', tired: '😴', other: '⚠️' };
+
+function toggleDelay(dayNum, reason) {
+  if (!DATA || !DATA.planned.length) return;
+  const day = DATA.planned.find(d => d.day === dayNum);
+  if (!day) return;
+  if (day.delayed && day.delayReason === reason) {
+    // 点击已选原因 = 取消延误
+    day.delayed = false;
+    day.delayReason = null;
+  } else {
+    day.delayed = true;
+    day.delayReason = reason || 'other';
+  }
+  saveItinerary();
+  // 刷新显示
+  render();
+  // 如果抽屉开着，重新打开以刷新内容
+  const drawer = document.getElementById('drawer');
+  if (drawer.classList.contains('open')) {
+    const key = drawer.dataset.openKey;
+    if (key) openDrawer(key, MAP[key] || []);
+  }
+}
+
+function saveItinerary() {
+  try { localStorage.setItem(LS.itinerary, JSON.stringify(DATA.planned)); } catch(e) {}
+}
 function statusOf(d){
   if(d.actual) return d.actual.onTrack;          // 'ahead' | 'behind' | 'on-track'
   if(d.isRestDay) return 'rest';
@@ -748,6 +788,10 @@ function dayDetail(d){
     <span class="day-badge"><span class="dot" style="background:${col}"></span><span class="num">Day ${d.day}</span></span>
     <span class="chip2 ${chipCls}">${stInfo.t}</span>
     <span class="dd-sub">第 <b>${d.sectionId}</b> 段 · ${esc(region.zh)}</span>
+    <span class="dd-delay">${d.delayed
+      ? ['weather','injured','tired','other'].map(r => '<button class="dd-dbtn' + (d.delayReason === r ? ' on' : '') + '" onclick="event.stopPropagation();toggleDelay(' + d.day + ",'" + r + ')" title="' + delayLabel(r) + '">' + DELAY_ICON[r] + '</button>').join('')
+      : '<button class="dd-dbtn" onclick="event.stopPropagation();toggleDelay(' + d.day + ')" title="' + t('it.legend.delay') + '">☁️</button>'
+    }</span>
   </div>`;
   const meta = `<div class="dd-sub" style="margin:2px 0 8px">计划 ${planDate||'—'}${d.actual&&d.actual.date?` · 实际 ${esc(shortYmd(d.actual.date))}`:''}</div>`;
 
@@ -805,6 +849,7 @@ function openDrawer(key, list){
   document.getElementById('scrim').classList.add('open');
   document.getElementById('drawer').classList.add('open');
   document.getElementById('drawer').setAttribute('aria-hidden','false');
+  document.getElementById('drawer').dataset.openKey = key;
 }
 function closeDrawer(){
   document.getElementById('scrim').classList.remove('open');
