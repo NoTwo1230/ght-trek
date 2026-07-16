@@ -1143,8 +1143,6 @@
   .pass-check { width: 15px; height: 15px; border-radius: 50%; flex-shrink: 0; background: var(--green); color: #0a0e14; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
   .pass-row.done { opacity: .5; }
   .pass-row.done .pass-name { text-decoration: line-through; text-decoration-color: rgba(255,255,255,.35); }
-  .pass-row[data-pass] { cursor: pointer; }
-  .pass-row[data-pass]:hover { background: rgba(255,255,255,.04); }
 
   /* upload card */
   .upload-zone { text-align: center; }
@@ -2619,10 +2617,6 @@ function passCovered(wpt, R) {
   return (APP.actualTracks || []).some(t => ptNearSegment(wpt, t.trackPoints || [], R));
 }
 // 主人手动「已翻越」记录（localStorage 持久化，用于 GPS 信号弱未覆盖时补记）
-const PASS_DONE_KEY = 'ght_passDone';
-function loadPassDone() { try { return new Set(JSON.parse(localStorage.getItem(PASS_DONE_KEY) || '[]')); } catch (e) { return new Set(); } }
-function savePassDone(set) { try { localStorage.setItem(PASS_DONE_KEY, JSON.stringify(Array.from(set))); } catch (e) {} }
-
 // ── 垭口翻越列表（与预设轨迹实时同步）──
 function computePassList() {
   const wps = (APP.presetTrack && APP.presetTrack.waypoints) || [];
@@ -2631,13 +2625,12 @@ function computePassList() {
     const reason = wps.length ? 'unrecognized' : (APP.presetTrack ? 'noWpt' : 'noPreset');
     return { passes: [], done: 0, total: 0, wpCount: wps.length, reason };
   }
-  const override = loadPassDone();
   const presetPts = (APP.presetTrack && APP.presetTrack.trackPoints) || [];
   const R = 500;
   passes = passes.map(w => {
     const nm = (w.desc || w.name || '').trim();
     const auto = passCovered(w, R);
-    const done = auto || (nm && override.has(nm));
+    const done = auto;
     let idx = Infinity;
     if (presetPts.length) {
       let best = Infinity, bi = -1;
@@ -2668,8 +2661,7 @@ function passesHTML() {
       const cls = 'pass-row' + (p.done ? ' done' : '');
       const mark = p.done ? '<span class="pass-check">✓</span>' : '<span class="pass-dot"></span>';
       const elev = p.elev != null ? fmtNum(p.elev) + 'm' : '';
-      const toggle = APP.isOwner ? ' data-pass="' + encodeURIComponent(p.nm) + '" title="点击切换翻越状态"' : '';
-      return '<div class="' + cls + '"' + toggle + '>' + mark +
+      return '<div class="' + cls + '">' + mark +
         '<span class="pass-name">' + (p.nm || '未命名') + '</span>' +
         (elev ? '<span class="pass-elev">' + elev + '</span>' : '') + '</div>';
     }).join('');
@@ -2679,22 +2671,6 @@ function passesHTML() {
   return '<div class="card-h"><span>垭口清单</span><span class="en">PASS CHECKLIST</span></div>' +
     summary +
     '<div class="card-b pass-list">' + rows + (total ? '<a class="more-link" href="sections.html" target="_blank" rel="noopener">' + t('pass.all') + '</a>' : '') + '</div>';
-}
-
-// 主人点击手动记录/取消垭口翻越
-function togglePassDone(key) {
-  const name = decodeURIComponent(key);
-  const s = loadPassDone();
-  if (s.has(name)) s.delete(name); else s.add(name);
-  savePassDone(s);
-  renderDashboard();
-}
-// 绑定垭口点击（仅主人可交互）
-function bindPassList() {
-  if (!APP.isOwner) return;
-  document.querySelectorAll('.pass-row[data-pass]').forEach(el => {
-    el.onclick = () => togglePassDone(el.dataset.pass);
-  });
 }
 
 // ── I. 上传 / 管理 ──
@@ -2728,7 +2704,6 @@ function renderDashboard() {
   setCard('cardPasses', passesHTML());
   updateLiveStatus();
   if (typeof bindSectionClickHandlers === 'function') { try { bindSectionClickHandlers(); } catch (e) {} }
-  bindPassList();
 }
 
 function renderInfoBar() {
