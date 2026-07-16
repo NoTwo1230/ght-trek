@@ -2545,7 +2545,7 @@ function progressCardHTML() {
     '<div class="pc-bar"><i style="width:' + Math.min(100, pct) + '%"></i></div>' +
     '<div class="pc-stats">' +
     '<div class="pc-stat"><div class="v">' + fmtNum(doneKm, 0) + '</div><div class="l">' + t('prog.done') + '</div></div>' +
-    '<div class="pc-stat"><div class="v">+' + (gain ? fmtNum(gain) : '—') + '</div><div class="l">累计爬升</div></div>' +
+    '<div class="pc-stat"><div class="v">' + (gain ? fmtNum(gain) : '—') + '</div><div class="l">累计爬升</div></div>' +
     '<div class="pc-stat"><div class="v">' + fmtNum(totalKm, 0) + '</div><div class="l">' + t('prog.total') + '</div></div>' +
     '</div></div>';
 }
