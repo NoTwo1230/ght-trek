@@ -1853,7 +1853,7 @@ const I18N = {
     'brand.sub': '大喜马拉雅高线',
     'pos.prefix': '📍 当前位置:',
     'basemap.terrain': '户外图 (Esri 地形 · 默认)', 'basemap.topo': '地形图 (等高线)', 'basemap.dark': '暗色图 (OpenStreetMap)',
-    'prog.done': '已完成 km', 'prog.left': '剩余 km', 'prog.total': '总计 km',
+    'prog.done': '已完成 km', 'prog.total': '总计 km',
     'st.camp': '当前营地', 'st.area': '所在区域', 'st.elev': '当前海拔', 'st.pass': '下一垭口', 'st.eta': '预计抵达',
     'today.dist': '距离', 'today.gain': '爬升', 'today.loss': '下降', 'today.move': '移动时间', 'today.speed': '均速 km/h', 'today.max': '最高海拔',
     'today.dateLbl': '数据日期：', 'today.nodata': '暂无今日 GPS 数据',
@@ -2537,9 +2537,9 @@ function progressCardHTML() {
   const days = APP.itinerary || [];
   const totalDays = days.length;
   const doneDays = days.filter(d => d.actual).length;
-  // 累积爬升 / 最高点（原「远征概况」的字段，已合并进本卡）
-  const gain = getCumulativeElevGain() || (APP.presetTrack && APP.presetTrack.stats ? APP.presetTrack.stats.elevGain : 0);
-  const maxElev = (APP.maxElev) || (APP.presetTrack && APP.presetTrack.stats ? APP.presetTrack.stats.maxElev : null);
+  // 累积爬升：从预设轨迹读取（预设=目标路线，与 GPX 预设统计保持一致，不再依赖实际轨迹）
+  const gain = (APP.presetTrack && APP.presetTrack.stats && APP.presetTrack.stats.elevGain)
+    ? APP.presetTrack.stats.elevGain : 0;
   return '<div class="card-h"><span>征途总进度</span><span class="en">EXPEDITION PROGRESS</span></div>' +
     '<div class="card-b">' +
     '<div class="pc-pct">' + pct.toFixed(1) + '<small>%</small></div>' +
@@ -2547,12 +2547,8 @@ function progressCardHTML() {
     '<div class="pc-bar"><i style="width:' + Math.min(100, pct) + '%"></i></div>' +
     '<div class="pc-stats">' +
     '<div class="pc-stat"><div class="v">' + fmtNum(doneKm, 0) + '</div><div class="l">' + t('prog.done') + '</div></div>' +
-    '<div class="pc-stat"><div class="v">' + fmtNum(totalKm - doneKm, 0) + '</div><div class="l">' + t('prog.left') + '</div></div>' +
-    '<div class="pc-stat"><div class="v">' + fmtNum(totalKm, 0) + '</div><div class="l">' + t('prog.total') + '</div></div>' +
-    '</div>' +
-    '<div class="pc-stats" style="margin-top:8px;">' +
     '<div class="pc-stat"><div class="v">+' + (gain ? fmtNum(gain) : '—') + '</div><div class="l">累计爬升</div></div>' +
-    '<div class="pc-stat"><div class="v">' + (maxElev ? fmtNum(maxElev) + 'm' : '—') + '</div><div class="l">最高点</div></div>' +
+    '<div class="pc-stat"><div class="v">' + fmtNum(totalKm, 0) + '</div><div class="l">' + t('prog.total') + '</div></div>' +
     '</div></div>';
 }
 
