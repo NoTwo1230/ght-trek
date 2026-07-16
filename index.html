@@ -4406,12 +4406,12 @@ function dedupeWaypoints(wps) {
     const name = (w.desc || w.name || '').trim();
     let merged = false;
     if (name) {
-      // 同名垭口：坐标 5km 内视为同一座（覆盖 GPX 重复打点 / 精度误差）。
+      // 同名垭口：坐标 500m 内视为同一座（覆盖 GPX 重复打点 / 精度误差）。
       // 仅按坐标距离判定，避免把「同名且同海拔但相距甚远」的真实垭口（如双 Renjo La）误并。
       for (const o of out) {
         if ((o.desc || o.name || '').trim() !== name) continue;
         if (o.lat != null && w.lat != null) {
-          if (haversine(o.lat, o.lon, w.lat, w.lon) <= 5000) { merged = true; break; }
+          if (haversine(o.lat, o.lon, w.lat, w.lon) <= 500) { merged = true; break; }
         } else if (o.elev != null && w.elev != null && Math.abs(o.elev - w.elev) <= 20) {
           merged = true; break; // 无坐标时退化为海拔近似(≤20m)
         }
