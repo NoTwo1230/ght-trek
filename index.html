@@ -3671,8 +3671,8 @@ function parseGPX(xmlText) {
 
     // 垭口/山口判定 —— 覆盖：英文(la/pass/bhanjyang…)、藏语转写、PeakVisor tagId(saddle/pass/col)、
     // Garmin/OSM 的 sym/type 字段、以及中文(垭口/山口/达坂/鞍部)。
-    const isPass = descLower.match(/\b(la|pass|bhanjyang|labtsa|lapcha|lekh)\b/i) ||
-                   nameLower.match(/\b(la|pass|bhanjyang|labtsa|lapcha|lekh)\b/i) ||
+    const isPass = descLower.match(/\b(la|pass|bhanjyang|labtsa|lapcha|lekh|col)\b/i) ||
+                   nameLower.match(/\b(la|pass|bhanjyang|labtsa|lapcha|lekh|col)\b/i) ||
                    (wpt.desc || '').includes('La ') || (wpt.desc || '').includes(' Pass') ||
                    (wpt.name || '').includes('La ') || (wpt.name || '').includes(' Pass') ||
                    tagIdLow.includes('saddle') || tagIdLow.includes('mountain_pass') ||
@@ -4109,6 +4109,13 @@ function renderAllTracks() {
 
   // 1. Draw preset track sections — 未走部分用原区域色实线（已走部分交给青色实际轨迹）
   if (APP.presetTrack && APP.presetTrack.trackPoints.length >= 2) {
+    // 兜底连续底线：先画一整条贯穿全程的细浅色线，桥接各区域段端点之间的物理缝隙，
+    // 避免「段与段独立 polyline」在端点间距较大时产生视觉「断开」。彩色分段线叠在其上。
+    const _baseCoords = APP.presetTrack.trackPoints.map(p => [p.lat, p.lon]);
+    L.polyline(_baseCoords, {
+      color: '#cfd8e3', weight: 3, opacity: 0.5, lineCap: 'round', lineJoin: 'round'
+    }).addTo(uploadedTrackGroup);
+
     if (APP.sectionRanges && APP.sectionRanges.length > 0) {
       // Draw by national park sections (each with its own color)
       APP.sectionRanges.forEach((range, idx) => {
