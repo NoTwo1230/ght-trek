@@ -1136,9 +1136,9 @@
   .pass-summary-num { font-size: 12px; font-weight: 700; color: var(--text); white-space: nowrap; }
   .pass-summary-bar { flex: 1; height: 5px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; }
   .pass-summary-bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--green), var(--accent)); transition: width .4s ease; }
-  /* 即将翻越列表：桌面端随右栏剩余高度填充(尽量一屏)，超出才滚动；小屏用 max-height 兜底 */
-  .pass-list { flex: 1 1 auto; min-height: 140px; max-height: calc(100vh - 260px); overflow-y: auto; }
-  #cardPasses { display: flex; flex-direction: column; min-height: 0; }
+  /* 垭口清单：桌面端随右栏剩余高度填充(占满整列、尽量一屏)，超出才滚动；小屏用 max-height 兜底 */
+  #cardPasses { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+  .pass-list { flex: 1 1 auto; min-height: 140px; overflow-y: auto; }
   #cardPasses .card-b { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
   .pass-check { width: 15px; height: 15px; border-radius: 50%; flex-shrink: 0; background: var(--green); color: #0a0e14; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
   .pass-row.done { opacity: .5; }
@@ -1170,6 +1170,7 @@
   @media (max-width: 920px) {
     .dash-grid { grid-template-columns: 1fr; grid-auto-rows: min-content; overflow-y: auto; }
     .col-left, .col-right { border: none; border-bottom: 1px solid var(--border); }
+    .col-right .pass-list { max-height: 60vh; }
     .col-center { min-height: 62vh; }
     .topnav .brand .sub { display: none; }
   }
@@ -1249,7 +1250,6 @@
 
     <!-- RIGHT COLUMN -->
     <aside class="col-right">
-      <section class="card" id="cardInfo"></section>
       <section class="card" id="cardPasses"></section>
     </aside>
 
@@ -2537,6 +2537,9 @@ function progressCardHTML() {
   const days = APP.itinerary || [];
   const totalDays = days.length;
   const doneDays = days.filter(d => d.actual).length;
+  // 累积爬升 / 最高点（原「远征概况」的字段，已合并进本卡）
+  const gain = getCumulativeElevGain() || (APP.presetTrack && APP.presetTrack.stats ? APP.presetTrack.stats.elevGain : 0);
+  const maxElev = (APP.maxElev) || (APP.presetTrack && APP.presetTrack.stats ? APP.presetTrack.stats.maxElev : null);
   return '<div class="card-h"><span>征途总进度</span><span class="en">EXPEDITION PROGRESS</span></div>' +
     '<div class="card-b">' +
     '<div class="pc-pct">' + pct.toFixed(1) + '<small>%</small></div>' +
@@ -2546,6 +2549,10 @@ function progressCardHTML() {
     '<div class="pc-stat"><div class="v">' + fmtNum(doneKm, 0) + '</div><div class="l">' + t('prog.done') + '</div></div>' +
     '<div class="pc-stat"><div class="v">' + fmtNum(totalKm - doneKm, 0) + '</div><div class="l">' + t('prog.left') + '</div></div>' +
     '<div class="pc-stat"><div class="v">' + fmtNum(totalKm, 0) + '</div><div class="l">' + t('prog.total') + '</div></div>' +
+    '</div>' +
+    '<div class="pc-stats" style="margin-top:8px;">' +
+    '<div class="pc-stat"><div class="v">+' + (gain ? fmtNum(gain) : '—') + '</div><div class="l">累计爬升</div></div>' +
+    '<div class="pc-stat"><div class="v">' + (maxElev ? fmtNum(maxElev) + 'm' : '—') + '</div><div class="l">最高点</div></div>' +
     '</div></div>';
 }
 
@@ -2610,30 +2617,6 @@ function todaySummaryHTML() {
     '</div>';
 }
 
-// ── D. 远征概况 ──
-function expedInfoHTML() {
-  const gain = getCumulativeElevGain() || (APP.presetTrack && APP.presetTrack.stats ? APP.presetTrack.stats.elevGain : 0);
-  const maxElev = (APP.maxElev) || (APP.presetTrack && APP.presetTrack.stats ? APP.presetTrack.stats.maxElev : null);
-  const wps = (APP.presetTrack && APP.presetTrack.waypoints) || [];
-  const nPasses = wps.filter(w => w._type === 'pass' || w._type === 'peak').length;
-  const nCamps = wps.filter(w => w._type === 'camp').length;
-  let endDate = '—';
-  if (APP.itineraryStartDate && APP.itinerary.length) {
-    const base = new Date(APP.itineraryStartDate + 'T00:00:00');
-    base.setDate(base.getDate() + APP.itinerary.length - 1);
-    endDate = base.toISOString().slice(0, 10);
-  }
-  const meta = (k, v) => '<div class="k">' + k + '</div><div class="v">' + v + '</div>';
-  return '<div class="card-h"><span>远征概况</span><span class="en">EXPEDITION INFO</span></div>' +
-    '<div class="card-b"><div class="ei-meta">' +
-    meta(t('ei.from'), APP.startPlaceName || '—') +
-    meta(t('ei.gain'), gain ? '+' + fmtNum(gain) + 'm' : '—') +
-    meta(t('ei.max'), maxElev ? fmtNum(maxElev) + 'm' : '—') +
-    meta(t('ei.passes'), nPasses + ' / ' + nCamps) +
-    meta(t('ei.end'), endDate) +
-    '</div></div>';
-}
-
 // ── 垭口覆盖判定：实际轨迹(任一段,半径内)经过即算翻越 ──
 function passCovered(wpt, R) {
   if (!wpt) return false;
@@ -2675,7 +2658,7 @@ function computePassList() {
   return { passes, done, total: passes.length };
 }
 
-// ── F. 即将翻越垭口 ──
+// ── F. 垭口清单（与预设轨迹实时同步）──
 function passesHTML() {
   const { passes, done, total, reason, wpCount } = computePassList();
   let rows = '';
@@ -2697,7 +2680,7 @@ function passesHTML() {
   }
   const summary = total ? '<div class="pass-summary"><span class="pass-summary-num">⛰️ ' + done + ' / ' + total + '</span>' +
     '<div class="pass-summary-bar"><i style="width:' + (total ? Math.round(done / total * 100) : 0) + '%"></i></div></div>' : '';
-  return '<div class="card-h"><span>即将翻越</span><span class="en">UPCOMING PASSES</span></div>' +
+  return '<div class="card-h"><span>垭口清单</span><span class="en">PASS CHECKLIST</span></div>' +
     summary +
     '<div class="card-b pass-list">' + rows + (total ? '<a class="more-link" href="sections.html" target="_blank" rel="noopener">' + t('pass.all') + '</a>' : '') + '</div>';
 }
@@ -2746,7 +2729,6 @@ function renderDashboard() {
   setCard('cardProgress', progressCardHTML());
   setCard('cardStatus', currentStatusHTML());
   setCard('cardToday', todaySummaryHTML());
-  setCard('cardInfo', expedInfoHTML());
   setCard('cardPasses', passesHTML());
   updateLiveStatus();
   if (typeof bindSectionClickHandlers === 'function') { try { bindSectionClickHandlers(); } catch (e) {} }
@@ -4105,71 +4087,6 @@ function splitByBreaks(points) {
   return segments;
 }
 
-// 按某个布尔标记（_walked）把点数组切成连续 run。
-function splitByFlag(points, flag) {
-  if (!points || points.length === 0) return [];
-  const runs = [];
-  let cur = { on: !!points[0][flag], pts: [points[0]] };
-  for (let i = 1; i < points.length; i++) {
-    const on = !!points[i][flag];
-    if (on === cur.on) cur.pts.push(points[i]);
-    else { runs.push(cur); cur = { on: on, pts: [points[i]] }; }
-  }
-  runs.push(cur);
-  return runs;
-}
-
-// 平滑滤波：把短于 minLen 的孤立 run 合并到邻居（取邻居的 flag 值），
-// 消除因采样密度差异导致的 _walked 高频跳变（轨迹碎裂）。
-// minLen 默认 5 个点（约 500-800m），只影响视觉渲染，不修改原始数据。
-function smoothRuns(runs, points, flag, minLen) {
-  if (!runs || runs.length <= 1 || !minLen) return runs;
-  minLen = minLen || 5;
-  // 标记需要吞并的短 run 索引：首尾的短 run 吞进唯一邻居；中间的短 run 取较长邻的方向。
-  for (let i = 0; i < runs.length; i++) {
-    if (runs[i].pts.length >= minLen) continue;
-    // 决定吞到哪边：优先合并到较长的邻居（保留更多连续性）
-    var leftLen = i > 0 ? runs[i - 1].pts.length : 0;
-    var rightLen = i < runs.length - 1 ? runs[i + 1].pts.length : 0;
-    var target = (rightLen > leftLen) ? i + 1 : i - 1;
-    if (target < 0) target = i + 1;     // 第一个 run 只能向右合
-    if (target >= runs.length) target = i - 1; // 最后一个 run 只能向左合
-    // 把当前 run 的点的 flag 改成目标方向
-    var targetVal = runs[target] && runs[target].on !== undefined ? !!runs[target].on : false;
-    for (var j = 0; j < runs[i].pts.length; j++) {
-      runs[i].pts[j][flag] = targetVal;
-    }
-    runs[i].on = targetVal;
-  }
-  return runs;
-}
-
-// ── 空间网格索引：把 O(P·A) 的距离扫描降到近邻查询，导入/重绘不卡 ──
-function buildPointGrid(points, cellDeg) {
-  const grid = new Map();
-  for (let i = 0; i < points.length; i++) {
-    const p = points[i];
-    const key = Math.round(p.lat / cellDeg) + '_' + Math.round(p.lon / cellDeg);
-    let arr = grid.get(key);
-    if (!arr) { arr = []; grid.set(key, arr); }
-    arr.push(p);
-  }
-  return grid;
-}
-function isNearGrid(grid, lat, lon, cellDeg, maxDistM) {
-  const cx = Math.round(lat / cellDeg), cy = Math.round(lon / cellDeg);
-  for (let dx = -1; dx <= 1; dx++) {
-    for (let dy = -1; dy <= 1; dy++) {
-      const arr = grid.get((cx + dx) + '_' + (cy + dy));
-      if (!arr) continue;
-      for (let k = 0; k < arr.length; k++) {
-        if (haversine(lat, lon, arr[k].lat, arr[k].lon) <= maxDistM) return true;
-      }
-    }
-  }
-  return false;
-}
-
 // 绘制一段轨迹：计划=区域色边框+白色虚线中心；已完成=金色填充+醒目边框+白光晕
 // 把一条 style 画成若干 polyline 层（glow / border / inner / dashed）。
 function drawRun(pts, style, layerGroup, popupHtml) {
@@ -4202,20 +4119,11 @@ function drawRun(pts, style, layerGroup, popupHtml) {
   if (popupHtml) border.bindPopup(popupHtml);
 }
 
-// 预设轨迹「逐点保真」绘制（2026-07-15 调整）：
-//  · 走过部分（_walked=true）→ 不画，已交由青色实际轨迹表达
-//  · 没走部分（_walked=false）→ 保持原区域色描边（实线，无金色填充、无虚线）
+// 预设轨迹：作为「目标计划线」整条连续绘制（保留各区域原色）。不按 _walked 切分，
+// 因此绝不会断开；实际走过的部分由上方青色实际轨迹叠加表达（预设在下、实际在上）。
 function drawPresetFidelity(points, color, layerGroup, popupHtml) {
-  var runs = splitByFlag(points, '_walked');
-  smoothRuns(runs, points, '_walked', 5);
-  // 重新切一次（smoothRuns 已修改点的 _walked 值，重新分 run 得到干净的段）
-  runs = splitByFlag(points, '_walked');
-  for (var ri = 0; ri < runs.length; ri++) {
-    var run = runs[ri];
-    if (run.on) continue;                 // 走过部分交给青色实际轨迹
-    var style = getSectionStyle(color);
-    drawRun(run.pts, style, layerGroup, popupHtml);
-  }
+  const style = getSectionStyle(color);
+  drawRun(points, style, layerGroup, popupHtml);
 }
 
 // 每段名称标签已按用户要求移除（地图上不再显示区域名标签）。
@@ -4226,16 +4134,6 @@ function drawPresetFidelity(points, color, layerGroup, popupHtml) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function renderAllTracks() {
   uploadedTrackGroup.clearLayers();
-
-  // 0. 逐点保真预计算：哪个预设点被实际轨迹覆盖（_walked）。
-  //    用空间网格把 O(P·A) 降到近邻查询。
-  const NEAR_M = 250;
-  const allActual = [];
-  APP.actualTracks.forEach(t => { for (let i = 0; i < t.trackPoints.length; i++) allActual.push(t.trackPoints[i]); });
-  if (APP.presetTrack && APP.presetTrack.trackPoints.length >= 2 && allActual.length) {
-    const actualGrid = buildPointGrid(allActual, 0.003);
-    APP.presetTrack.trackPoints.forEach(p => { p._walked = isNearGrid(actualGrid, p.lat, p.lon, 0.003, NEAR_M); });
-  }
 
   // 1. Draw preset track sections — 未走部分用原区域色实线（已走部分交给青色实际轨迹）
   if (APP.presetTrack && APP.presetTrack.trackPoints.length >= 2) {
@@ -4528,17 +4426,20 @@ function mergeGPXSegments(segments) {
 }
 
 // 标注点去重：同名 + 同海拔 + 坐标在 ~100m 内 视为同一点（吸收 GPX 重复导出 / 浮点噪声）。
-// 无名点退化为纯坐标(3位≈111m)去重。避免「即将翻越」/ 地图出现重名同海拔的重复项。
+// 命名点：名称|海拔(5m分桶，吸收1m量测误差)|坐标(2位≈1.1km) 去重；
+// 无名点退化为纯坐标(3位≈111m)。避免「垭口清单」/ 地图出现重名且落差≤1m 的重复项。
 function dedupeWaypoints(wps) {
   if (!wps || !wps.length) return wps || [];
   const seen = new Set();
   const out = [];
   for (const w of wps) {
     const name = (w.desc || w.name || '').trim();
-    const elev = (w.elev != null && isFinite(w.elev)) ? Math.round(w.elev) : '';
-    const lat = w.lat != null ? w.lat.toFixed(3) : '';
-    const lon = w.lon != null ? w.lon.toFixed(3) : '';
-    const key = name ? (name + '|' + elev + '|' + lat + ',' + lon) : (lat + ',' + lon);
+    // 海拔按 5m 分桶，吸收 1m 量测误差（重名且落差仅 1m 视为同一点）
+    const elevB = (w.elev != null && isFinite(w.elev)) ? Math.round(w.elev / 5) : '';
+    // 命名点用 2 位小数(~1.1km)容差；无名点用 3 位(~111m)避免误并
+    const lat = w.lat != null ? w.lat.toFixed(name ? 2 : 3) : '';
+    const lon = w.lon != null ? w.lon.toFixed(name ? 2 : 3) : '';
+    const key = name ? (name + '|' + elevB + '|' + lat + ',' + lon) : (lat + ',' + lon);
     if (seen.has(key)) continue;
     seen.add(key);
     out.push(w);
