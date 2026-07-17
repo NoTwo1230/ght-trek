@@ -12,7 +12,7 @@
 浏览器 (Cloudflare Pages 托管 index.html)
    │  fetch 带 Bearer token
    ▼
-Cloudflare Worker  (https://ght-api.notwo.workers.dev)
+Cloudflare Worker  (https://ght-api.gjt6nrf4jz.workers.dev)
    │  读/写
    ▼
 Cloudflare KV 命名空间 GHT
@@ -54,7 +54,7 @@ git push -u origin main
    - **Environment Variables**：添加两条（明文即可）：
      - `ADMIN_PWD` = 你的上传密码（例如 `ght2026`）
      - `SECRET` = 任意一串随机字符（例如 `a9f3-…` 长一点），用于签发登录 token
-4. 记下 Worker 地址：`https://ght-api.notwo.workers.dev`
+4. 记下 Worker 地址：`https://ght-api.gjt6nrf4jz.workers.dev`
 
 ### ④ 回填后端地址 + 重新部署
 1. 打开 `index.html`，找到这一行：
@@ -63,7 +63,7 @@ git push -u origin main
    ```
    把 `content` 填成你的 Worker 地址，例如：
    ```html
-   <meta name="ght-api" content="https://ght-api.notwo.workers.dev">
+   <meta name="ght-api" content="https://ght-api.gjt6nrf4jz.workers.dev">
    ```
 2. 保存 → 推送到 GitHub → Cloudflare Pages 会自动重新部署。
 
