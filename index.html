@@ -1043,12 +1043,17 @@
     transition: all 0.15s;
   }
   .tn-ext:hover { color: #fff; background: var(--accent); }
-  .topnav-right { display: flex; align-items: center; gap: 8px; }
-  .lang-btn, .top-btn {
+  .topnav-right { display: flex; align-items: center; gap: 12px; }
+  .top-btn {
     background: var(--bg); border: 1px solid var(--border); color: var(--text-dim);
-    border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; font-family: inherit;
+    border-radius: 8px; padding: 7px 13px; font-size: 12px; cursor: pointer; font-family: inherit;
   }
-  .lang-btn:hover, .top-btn:hover { color: var(--text); border-color: var(--accent); }
+  .top-btn:hover { color: var(--text); border-color: var(--accent); }
+  .lang-btn {
+    background: rgba(255,255,255,.04); border: 1px solid var(--border-light); color: var(--text);
+    border-radius: 8px; padding: 7px 13px; font-size: 12px; cursor: pointer; font-family: inherit;
+  }
+  .lang-btn:hover { color: #fff; border-color: var(--accent); background: rgba(88,166,255,.08); }
 
   /* ── DASH GRID ── */
   .dash-grid {
@@ -1205,8 +1210,8 @@
       <a class="tn-ext" id="navJournal" href="journal.html" target="_blank" rel="noopener" title="远征日志 · 按路段分组 →">📝 日志 ↗</a>
     </nav>
     <div class="topnav-right">
-      <button class="lang-btn">中文 ▾</button>
       <button class="top-btn" id="btnDataMgmt" onclick="openDataModal()">🔧 数据管理</button>
+      <button class="lang-btn">中文 ▾</button>
     </div>
   </header>
 

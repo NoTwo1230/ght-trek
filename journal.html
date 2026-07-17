@@ -37,12 +37,12 @@
     background:linear-gradient(135deg,var(--accent),#9b6cff);display:grid;place-items:center;font-size:13px}
   .brand .sub{font-weight:400;font-size:11px;color:var(--text-dim);letter-spacing:1px}
   .topbar .spacer{flex:1}
-  .backbtn{font-size:12.5px;color:var(--text);background:var(--panel-2);border:1px solid var(--border);
+  .backbtn{margin-left:auto;font-size:12.5px;color:var(--text);background:var(--panel-2);border:1px solid var(--border);
     border-radius:8px;padding:7px 13px;text-decoration:none;cursor:pointer;transition:.18s;white-space:nowrap}
   .backbtn:hover{color:#fff;border-color:rgba(255,255,255,.22)}
   .lang-btn{margin-left:14px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-family:inherit;
     background:var(--panel-2);color:var(--text);border:1px solid var(--border);
-    border-radius:8px;padding:7px 13px;font-size:12.5px;transition:.18s;white-space:nowrap}
+    border-radius:8px;padding:7px 13px;font-size:12px;transition:.18s;white-space:nowrap}
   .lang-btn:hover{color:#fff;border-color:rgba(255,255,255,.22)}
 
   /* 页头 */
@@ -132,9 +132,8 @@
       <span class="logo">🏔️</span>
       <span>GHT <span class="sub" data-i18n="brand.sub">大喜马拉雅高线</span></span>
     </div>
-    <div class="spacer"></div>
-    <button class="lang-btn" type="button">中文 ▾</button>
     <a class="backbtn" href="index.html" data-i18n="jo.back">← 回主页</a>
+    <button class="lang-btn" type="button">中文 ▾</button>
   </div>
 
   <div class="page-head">
