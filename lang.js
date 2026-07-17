@@ -1,7 +1,7 @@
 /* ════════════════════════════════════════════════════════════
    GHT 共享多语言引擎（中文 / English）
    - 任何页面只需 <script src="lang.js"></script> 并在导航里放一个
-     <button class="lang-btn">中文 ▾</button>，即可获得中/英切换。
+     <button class="lang-btn">Language ▾</button>，即可获得中/英切换。
    - 静态文案：在元素上加 data-i18n="key"（文本）/ data-i18n-ph / data-i18n-title。
    - 动态渲染的文案：在页面脚本里用 window.GHTI18N.t('key')，
      并定义 window.onLangChange = fn 以便在切换语言时重渲染。
@@ -19,7 +19,7 @@
       'back.map': '🗺️ 返回地图',
       'back.home': '← 回主页',
       'back.main': '← 返回主站',
-      'lang.btn': '中文 ▾',
+      'lang.btn': 'Language ▾',
 
       /* itinerary.html */
       'it.title': '行程日历',
@@ -158,7 +158,7 @@
       'back.map': '🗺️ Back to map',
       'back.home': '← Back home',
       'back.main': '← Back to main site',
-      'lang.btn': 'EN ▾',
+      'lang.btn': 'Language ▾',
 
       'it.title': 'Itinerary Calendar',
       'it.sub': 'Planned vs actual trek',

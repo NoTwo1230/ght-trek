@@ -1211,7 +1211,7 @@
     </nav>
     <div class="topnav-right">
       <button class="top-btn" id="btnDataMgmt" onclick="openDataModal()">🔧 数据管理</button>
-      <button class="lang-btn">中文 ▾</button>
+      <button class="lang-btn">Language ▾</button>
     </div>
   </header>
 
@@ -1935,7 +1935,7 @@ function getProv(pid) { return currentLang === 'en' ? getProvEN(pid) : getProvZH
 function applyLang() {
   document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
   const lb = document.querySelector('.lang-btn');
-  if (lb) lb.textContent = currentLang === 'zh' ? '中文 ▾' : 'EN ▾';
+  if (lb) lb.textContent = 'Language ▾';
   document.querySelectorAll('.tn-tab').forEach(el => { el.textContent = t('nav.' + el.dataset.view); });
   const sub = document.querySelector('.brand .sub'); if (sub) sub.textContent = t('brand.sub');
   document.querySelectorAll('.basemap-btn').forEach((el, i) => { el.title = t(['basemap.terrain', 'basemap.topo', 'basemap.dark'][i]); });
