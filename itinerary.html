@@ -673,17 +673,20 @@ function renderSummary(data){
   else if(overallSlip<0) slip=`<div class="slip-note">${t('it.slip.early').replace('{n}', Math.abs(overallSlip))}</div>`;
 
   return `
+    <!-- 进度概览 -->
     <div class="stat"><div class="v blue">${totalDays}</div><div class="l">${t('it.sum.total')}</div></div>
     <div class="stat"><div class="v green">${daysWithData} · ${pctDone}%</div><div class="l">${t('it.sum.recorded')}</div></div>
+    <div class="stat"><div class="v green">${ahead}</div><div class="l">${t('it.sum.ahead')}</div></div>
+    <div class="stat"><div class="v blue">${onTrack}</div><div class="l">${t('it.sum.ontrack')}</div></div>
+    <div class="stat"><div class="v red">${behind}</div><div class="l">${t('it.sum.behind')}</div></div>
+    <!-- 里程 -->
     <div class="stat"><div class="v">${plannedTotal}km</div><div class="l">${t('it.sum.planned')}</div></div>
     <div class="stat"><div class="v green">${actualTotal}km</div><div class="l">${t('it.sum.actual')}</div></div>
+    <!-- 海拔 -->
     <div class="stat"><div class="v blue">${plannedGain.toLocaleString()}m</div><div class="l">${t('it.sum.gainPlan')}</div></div>
     <div class="stat"><div class="v green">${actualGain.toLocaleString()}m</div><div class="l">${t('it.sum.gainDone')}</div></div>
     <div class="stat"><div class="v">${plannedLoss.toLocaleString()}m</div><div class="l">${t('it.sum.lossPlan')}</div></div>
     <div class="stat"><div class="v">${avgElev?avgElev.toLocaleString()+'m':'—'}</div><div class="l">${t('it.sum.avgElev')}</div></div>
-    <div class="stat"><div class="v green">${ahead}</div><div class="l">${t('it.sum.ahead')}</div></div>
-    <div class="stat"><div class="v blue">${onTrack}</div><div class="l">${t('it.sum.ontrack')}</div></div>
-    <div class="stat"><div class="v red">${behind}</div><div class="l">${t('it.sum.behind')}</div></div>
     ${slip}`;
 }
 
