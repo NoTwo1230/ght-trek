@@ -80,7 +80,7 @@
   .date{font-size:12.5px;color:var(--text-dim);font-weight:600}
   .day-badge{font-size:11px;color:var(--text-faint);background:rgba(255,255,255,.05);
     border:1px solid var(--border);border-radius:6px;padding:2px 8px}
-  .gps-badge{margin-left:auto;font-size:11px;color:var(--green);background:rgba(52,208,88,.1);
+  .gps-badge{font-size:11px;color:var(--green);background:rgba(52,208,88,.1);
     border:1px solid rgba(52,208,88,.3);border-radius:7px;padding:3px 9px;font-weight:600}
 
   .note{font-size:13.5px;color:var(--text);line-height:1.7;margin:2px 0 12px;white-space:pre-wrap;word-break:break-word}
@@ -100,6 +100,28 @@
 
   .empty{text-align:center;color:var(--text-dim);padding:64px 20px;font-size:14px;line-height:1.8}
   .empty a{color:var(--accent);text-decoration:none}
+
+  /* 删除按钮 + 密码确认弹窗 */
+  .ct-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+  .del-btn{background:var(--bg-soft);border:1px solid var(--border);color:var(--text-dim);
+    border-radius:7px;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;
+    cursor:pointer;font-size:13px;line-height:1;transition:.18s;padding:0}
+  .del-btn:hover{color:var(--orange);border-color:var(--orange);background:rgba(255,120,40,.08)}
+  .modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);
+    display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px}
+  .modal-mask[hidden]{display:none}
+  .modal{background:var(--panel);border:1px solid var(--border);border-radius:var(--r);
+    max-width:380px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  .modal h3{margin:0 0 8px;font-size:16px;color:var(--text)}
+  .modal p{margin:0 0 16px;font-size:13px;color:var(--text-dim);line-height:1.6}
+  .modal .j-pwd{margin-bottom:8px}
+  .modal-actions{display:flex;gap:10px;margin-top:6px}
+  .btn-cancel{flex:1;padding:9px;background:var(--bg-soft);border:1px solid var(--border);
+    color:var(--text);border-radius:8px;font-size:13px;cursor:pointer;transition:.18s}
+  .btn-cancel:hover{border-color:var(--text-dim)}
+  .btn-del{flex:1;padding:9px;background:var(--orange);border:none;color:#fff;
+    border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:.18s}
+  .btn-del:hover{filter:brightness(1.1)}
 
   /* 发布框（仅主人可见） */
   .composer{max-width:920px;margin:14px auto 0;padding:0 22px}
@@ -160,6 +182,20 @@
 
   <div class="feed" id="feed"></div>
 
+  <!-- 删除确认弹窗：需输入主人密码 -->
+  <div class="modal-mask" id="delModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true">
+      <h3 id="delTitle"></h3>
+      <p id="delDesc"></p>
+      <input type="password" id="delPwd" class="j-pwd" placeholder="" autocomplete="off" onkeydown="if(event.key==='Enter')doDelete()">
+      <div class="j-pwd-err" id="delErr" hidden></div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="delCancel" type="button"></button>
+        <button class="btn-del" id="delConfirm" type="button" onclick="doDelete()"></button>
+      </div>
+    </div>
+  </div>
+
 <script>
   const t = window.GHTI18N.t;
   // ── 路段元数据（来自 sections-data.js 的 window.GHT_SECTIONS）──
@@ -205,6 +241,12 @@
         if (d) actualByDate[d] = { dayNum: t.dayNum, points: t.trackPoints || [] };
       });
     } catch (e) {}
+    // 给缺 id 的条目补上稳定 id（删除时按 id 精确定位，避免按文本/日期误删）
+    let needSave = false;
+    logEntries.forEach((e, i) => {
+      if (!e.id) { e.id = 'le_' + Date.now().toString(36) + '_' + i; needSave = true; }
+    });
+    if (needSave) saveLogEntries();
     // 新 → 旧
     logEntries.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   }
@@ -261,13 +303,16 @@
     }
     const spark = isGps ? sparkline(meta.points, region.color) : '';
     const dayBadge = dayNum ? `<span class="day-badge">Day ${dayNum}</span>` : '';
+    // 仅主人态显示删除按钮；点击后弹密码确认框
+    const owner = !!getOwnerToken();
+    const delBtn = owner ? `<button class="del-btn" type="button" data-id="${escapeHtml(e.id || '')}" title="${t('jo.del.btn')}" aria-label="${t('jo.del.btn')}">🗑</button>` : '';
 
     return `<div class="entry" data-type="${isGps ? 'gps' : 'text'}">
       <div class="card">
         <div class="card-top">
           <span class="date">${escapeHtml(e.date || '—')}</span>
           ${dayBadge}
-          ${gpsBadge}
+          <span class="ct-right">${gpsBadge}${delBtn}</span>
         </div>
         <div class="note${isGps ? ' dim' : ''}">${escapeHtml(e.text || '')}</div>
         ${chips}${spark}
@@ -285,6 +330,10 @@
     }
     // 平铺：新 → 旧（load() 已按日期倒序），不再按路段分组
     feed.innerHTML = shown.map(e => entryCard(e, { color: 'var(--accent)' })).join('');
+    // 删除按钮用事件委托绑定（避免内联 onclick 的字符串参数转义坑）
+    feed.querySelectorAll('.del-btn').forEach(b => {
+      b.addEventListener('click', () => confirmDelete(b.dataset.id));
+    });
   }
 
   function renderStats() {
@@ -370,6 +419,41 @@
     renderFeed(document.querySelector('.filters .chip.active')?.dataset.filter || 'all');
   }
 
+  // ── 删除日志（需再次输入主人密码确认，防误删）──
+  let _delTargetId = null;
+  function confirmDelete(id) {
+    if (!getOwnerToken()) { renderComposer(); return; }   // 访客无删除按钮，双保险
+    _delTargetId = id;
+    const m = document.getElementById('delModal');
+    document.getElementById('delTitle').textContent = t('jo.del.title');
+    document.getElementById('delDesc').textContent = t('jo.del.desc');
+    document.getElementById('delPwd').value = '';
+    document.getElementById('delPwd').placeholder = t('jo.del.pwd');
+    document.getElementById('delConfirm').textContent = t('jo.del.confirm');
+    document.getElementById('delCancel').textContent = t('jo.del.cancel');
+    const err = document.getElementById('delErr'); err.hidden = true;
+    m.hidden = false;
+    setTimeout(() => { const p = document.getElementById('delPwd'); if (p) p.focus(); }, 40);
+  }
+  function closeDelModal() {
+    document.getElementById('delModal').hidden = true;
+    _delTargetId = null;
+  }
+  async function doDelete() {
+    if (!_delTargetId) return;
+    const pwd = document.getElementById('delPwd').value;
+    if (!pwd) return;
+    const err = document.getElementById('delErr');
+    err.hidden = true;
+    const r = await journalLogin(pwd);   // 复用主密码校验（后端 / 本地兜底）
+    if (!r.ok) { err.hidden = false; err.textContent = r.msg || t('jo.del.err'); return; }
+    logEntries = logEntries.filter(e => e.id !== _delTargetId);
+    saveLogEntries();
+    closeDelModal();
+    renderStats();
+    renderFeed(document.querySelector('.filters .chip.active')?.dataset.filter || 'all');
+  }
+
   // ── 启动 ──
   load();
   renderStats();
@@ -395,6 +479,13 @@
     renderFeed(cur);
     renderComposer();
   };
+
+  // 删除确认弹窗：取消 / 点遮罩 / ESC 关闭
+  const delMask = document.getElementById('delModal');
+  const delCancel = document.getElementById('delCancel');
+  if (delCancel) delCancel.addEventListener('click', closeDelModal);
+  if (delMask) delMask.addEventListener('click', e => { if (e.target === delMask) closeDelModal(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && delMask && !delMask.hidden) closeDelModal(); });
 </script>
 </body>
 </html>

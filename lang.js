@@ -144,7 +144,14 @@
       'jo.unlock.btn': '解锁',
       'jo.unlock.err': '密码错误',
       'jo.composer.ph': '记点什么…（山里信号不稳，先记着）',
-      'jo.composer.btn': '发布'
+      'jo.composer.btn': '发布',
+      'jo.del.btn': '删除',
+      'jo.del.title': '确认删除这条日志？',
+      'jo.del.desc': '此操作不可撤销。请输入主人密码以确认删除。',
+      'jo.del.pwd': '主人密码',
+      'jo.del.confirm': '确认删除',
+      'jo.del.cancel': '取消',
+      'jo.del.err': '密码错误，删除未执行'
     },
     en: {
       'brand.sub': 'GREAT HIMALAYA TRAIL',
@@ -273,7 +280,14 @@
       'jo.unlock.btn': 'Unlock',
       'jo.unlock.err': 'Wrong password',
       'jo.composer.ph': 'Jot something… (signal is unstable in the mountains, save it for now)',
-      'jo.composer.btn': 'Publish'
+      'jo.composer.btn': 'Publish',
+      'jo.del.btn': 'Delete',
+      'jo.del.title': 'Delete this journal entry?',
+      'jo.del.desc': 'This cannot be undone. Enter the master password to confirm deletion.',
+      'jo.del.pwd': 'Master password',
+      'jo.del.confirm': 'Delete',
+      'jo.del.cancel': 'Cancel',
+      'jo.del.err': 'Wrong password — entry not deleted'
     }
   };
 
