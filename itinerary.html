@@ -77,8 +77,13 @@
 
   /* ── 摘要条 ── */
   .summary {
-    display: flex; flex-wrap: wrap; gap: 10px;
     padding: 16px 20px 6px;
+  }
+  .stat-row { display: flex; flex-wrap: wrap; gap: 10px; width: 100%; }
+  .stat-row + .stat-row { margin-top: 10px; }
+  .stat-group-label {
+    width: 100%; font-size: 12px; font-weight: 600; color: var(--text-dim);
+    letter-spacing: .04em; padding: 2px 2px 0;
   }
   .stat {
     background: var(--panel); border: 1px solid var(--border);
@@ -328,7 +333,7 @@
     .seg button { padding: 5px 10px; font-size: 11px; }
     .legend { font-size: 10px; gap: 6px 10px; padding: 8px 10px; flex-wrap: wrap; }
     .drawer { width: 100%; }
-    .summary { padding: 12px 14px 4px; gap: 8px; }
+    .summary { padding: 12px 14px 4px; }
     .cal-head { margin-bottom: 10px; gap: 10px; }
   }
 
@@ -344,7 +349,7 @@
     .topbar .title small,
     .back-link span { display: none; }
     .back-link { padding: 6px 9px; font-size: 11px; }
-    .summary { padding: 10px 12px 4px; gap: 6px; }
+    .summary { padding: 10px 12px 4px; }
 
     /* 工具栏：位置基准标签隐藏，按钮缩小 */
     .toolbar { padding: 8px 12px; gap: 6px; flex-wrap: wrap; }
@@ -592,7 +597,7 @@ function buildDays(){
   let avgElev = 0;
   if (preset && preset.trackPoints && preset.trackPoints.length) {
     let sum = 0, n = 0;
-    preset.trackPoints.forEach(p => { if (p.ele != null) { sum += +p.ele; n++; } });
+    preset.trackPoints.forEach(p => { const e = (p.elev != null) ? p.elev : (p.ele != null ? p.ele : null); if (e != null) { sum += +e; n++; } });
     avgElev = n ? Math.round(sum / n) : 0;
   }
 
@@ -673,20 +678,23 @@ function renderSummary(data){
   else if(overallSlip<0) slip=`<div class="slip-note">${t('it.slip.early').replace('{n}', Math.abs(overallSlip))}</div>`;
 
   return `
-    <!-- 进度概览 -->
-    <div class="stat"><div class="v blue">${totalDays}</div><div class="l">${t('it.sum.total')}</div></div>
-    <div class="stat"><div class="v green">${daysWithData} · ${pctDone}%</div><div class="l">${t('it.sum.recorded')}</div></div>
-    <div class="stat"><div class="v green">${ahead}</div><div class="l">${t('it.sum.ahead')}</div></div>
-    <div class="stat"><div class="v blue">${onTrack}</div><div class="l">${t('it.sum.ontrack')}</div></div>
-    <div class="stat"><div class="v red">${behind}</div><div class="l">${t('it.sum.behind')}</div></div>
-    <!-- 里程 -->
-    <div class="stat"><div class="v">${plannedTotal}km</div><div class="l">${t('it.sum.planned')}</div></div>
-    <div class="stat"><div class="v green">${actualTotal}km</div><div class="l">${t('it.sum.actual')}</div></div>
-    <!-- 海拔 -->
-    <div class="stat"><div class="v blue">${plannedGain.toLocaleString()}m</div><div class="l">${t('it.sum.gainPlan')}</div></div>
-    <div class="stat"><div class="v green">${actualGain.toLocaleString()}m</div><div class="l">${t('it.sum.gainDone')}</div></div>
-    <div class="stat"><div class="v">${plannedLoss.toLocaleString()}m</div><div class="l">${t('it.sum.lossPlan')}</div></div>
-    <div class="stat"><div class="v">${avgElev?avgElev.toLocaleString()+'m':'—'}</div><div class="l">${t('it.sum.avgElev')}</div></div>
+    <div class="stat-row">
+      <div class="stat-group-label">${t('it.sum.groupProgress')}</div>
+      <div class="stat"><div class="v blue">${totalDays}</div><div class="l">${t('it.sum.total')}</div></div>
+      <div class="stat"><div class="v green">${daysWithData} · ${pctDone}%</div><div class="l">${t('it.sum.recorded')}</div></div>
+      <div class="stat"><div class="v green">${ahead}</div><div class="l">${t('it.sum.ahead')}</div></div>
+      <div class="stat"><div class="v blue">${onTrack}</div><div class="l">${t('it.sum.ontrack')}</div></div>
+      <div class="stat"><div class="v red">${behind}</div><div class="l">${t('it.sum.behind')}</div></div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-group-label">${t('it.sum.groupElev')}</div>
+      <div class="stat"><div class="v">${plannedTotal}km</div><div class="l">${t('it.sum.planned')}</div></div>
+      <div class="stat"><div class="v green">${actualTotal}km</div><div class="l">${t('it.sum.actual')}</div></div>
+      <div class="stat"><div class="v blue">${plannedGain.toLocaleString()}m</div><div class="l">${t('it.sum.gainPlan')}</div></div>
+      <div class="stat"><div class="v green">${actualGain.toLocaleString()}m</div><div class="l">${t('it.sum.gainDone')}</div></div>
+      <div class="stat"><div class="v">${plannedLoss.toLocaleString()}m</div><div class="l">${t('it.sum.lossPlan')}</div></div>
+      <div class="stat"><div class="v">${avgElev?avgElev.toLocaleString()+'m':'—'}</div><div class="l">${t('it.sum.avgElev')}</div></div>
+    </div>
     ${slip}`;
 }
 
