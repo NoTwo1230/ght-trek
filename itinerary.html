@@ -588,7 +588,15 @@ function buildDays(){
     overallSlip=best;
   }
 
-  return { planned, startDate, overallSlip, unmatched };
+  /* 路线平均海拔：预设轨迹点的海拔均值（计划路线特征，与上传进度无关） */
+  let avgElev = 0;
+  if (preset && preset.trackPoints && preset.trackPoints.length) {
+    let sum = 0, n = 0;
+    preset.trackPoints.forEach(p => { if (p.ele != null) { sum += +p.ele; n++; } });
+    avgElev = n ? Math.round(sum / n) : 0;
+  }
+
+  return { planned, startDate, overallSlip, unmatched, avgElev };
 }
 
 function getPlannedDate(startDate, dayNum){ return startDate ? addDays(startDate, dayNum-1) : null; }
@@ -646,11 +654,14 @@ const STATUS = {
    摘要
    ════════════════════════════════════════════════════════════ */
 function renderSummary(data){
-  const { planned, overallSlip } = data;
+  const { planned, overallSlip, avgElev } = data;
   const totalDays = planned.length;
   const daysWithData = planned.filter(d=>d.actual).length;
   const plannedTotal = Math.round(planned.reduce((s,d)=>s+(+d.plannedDistance||0),0)*10)/10;
   const actualTotal = Math.round(planned.reduce((s,d)=>s+(d.actual?+d.actual.distance:0),0)*10)/10;
+  const plannedGain = Math.round(planned.reduce((s,d)=>s+(+d.plannedElevGain||0),0));
+  const plannedLoss = Math.round(planned.reduce((s,d)=>s+(+d.plannedElevLoss||0),0));
+  const actualGain  = Math.round(planned.reduce((s,d)=>s+(d.actual?(+d.actual.elevGain||0):0),0));
   const delayedCount = planned.filter(d=>d.delayed).length;
   const ahead = planned.filter(d=>d.actual&&!d.delayed&&d.actual.onTrack==='ahead').length;
   const behind= planned.filter(d=>(d.actual&&!d.delayed&&d.actual.onTrack==='behind')||d.delayed).length;
@@ -666,6 +677,10 @@ function renderSummary(data){
     <div class="stat"><div class="v green">${daysWithData} · ${pctDone}%</div><div class="l">${t('it.sum.recorded')}</div></div>
     <div class="stat"><div class="v">${plannedTotal}km</div><div class="l">${t('it.sum.planned')}</div></div>
     <div class="stat"><div class="v green">${actualTotal}km</div><div class="l">${t('it.sum.actual')}</div></div>
+    <div class="stat"><div class="v blue">${plannedGain.toLocaleString()}m</div><div class="l">${t('it.sum.gainPlan')}</div></div>
+    <div class="stat"><div class="v green">${actualGain.toLocaleString()}m</div><div class="l">${t('it.sum.gainDone')}</div></div>
+    <div class="stat"><div class="v">${plannedLoss.toLocaleString()}m</div><div class="l">${t('it.sum.lossPlan')}</div></div>
+    <div class="stat"><div class="v">${avgElev?avgElev.toLocaleString()+'m':'—'}</div><div class="l">${t('it.sum.avgElev')}</div></div>
     <div class="stat"><div class="v green">${ahead}</div><div class="l">${t('it.sum.ahead')}</div></div>
     <div class="stat"><div class="v blue">${onTrack}</div><div class="l">${t('it.sum.ontrack')}</div></div>
     <div class="stat"><div class="v red">${behind}</div><div class="l">${t('it.sum.behind')}</div></div>
