@@ -4,7 +4,7 @@
 #   wrangler secret put ADMIN_PWD
 #   wrangler secret put SECRET
 
-name = "ght-api"
+name = "ght"
 main = "index.js"
 compatibility_date = "2024-09-23"
 

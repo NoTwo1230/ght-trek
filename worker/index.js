@@ -1,16 +1,20 @@
 /**
- * GHT Trek — Cloudflare Worker 后端（零绑定版）
+ * GHT Trek — Cloudflare Worker 后端
  *
- * 存储：仅用 Cloudflare 内置 Cache API（无需 KV / 无需 R2 / 无需任何绑定）
+ * 存储：使用绑定的 Cloudflare KV 命名空间（binding 名 GHT）
  *   - config       → 站点配置 JSON（语言 / 出发日期 / 名称等）
- *   - gpx:<name>   → 原始 GPX 文本（主人上传备份）
+ *   - gpx:<name>   → 原始 GPX 文本（主人上传备份，持久保存）
  *   - _index       → 轨迹文件名列表
  *
  * 环境变量（Variables，在 Worker Settings 里设）：
  *   - ADMIN_PWD  上传密码（如 ght2026）
  *   - SECRET     任意随机串，用于 HMAC 签发 token
  *
- * 部署：粘贴到 Worker 编辑器 → 设两个环境变量 → Deploy。完事。
+ * KV 绑定：在 wrangler.toml 的 kv_namespaces 配置 binding="GHT"（填真实命名空间 ID），
+ *          或在 Cloudflare 控制台 Worker → Settings → Variables → KV namespace bindings 绑定。
+ *          未绑定 GHT 时本 Worker 会返回 500（见 fetch 内检查）。
+ *
+ * 部署：粘贴到 Worker 编辑器（已绑定 GHT KV）→ 设两个环境变量 → Deploy。完事。
  */
 
 const CORS = {
@@ -53,37 +57,22 @@ async function isOwner(req, env) {
   return !!exp && getBearer(req) === exp;
 }
 
-// ── Cache API 封装（零绑定的 key-value 存储） ──────────────────
-// 用 caches.default（每个 Worker 自带，免费、无需绑定）
-// 以 URL 形式的 key 存取数据
-
-function cacheUrl(key) {
-  // Cache API 要求用 URL 做 key，这里用自定义 scheme
-  return new Request('http://ght.local/' + encodeURIComponent(key));
+// ── KV 封装（使用绑定的 GHT 命名空间） ──────────────────
+async function kvGet(ns, key) {
+  try { const v = await ns.get(key); return v != null ? v : null; } catch (e) { return null; }
 }
 
-async function cacheGet(cache, key) {
-  const res = await cache.match(cacheUrl(key));
-  if (!res) return null;
-  try { return await res.text(); } catch (e) { return null; }
-}
-
-async function cachePut(cache, key, value, ttlSeconds = 86400 * 30) {
+async function kvPut(ns, key, value) {
   const body = typeof value === 'string' ? value : JSON.stringify(value);
-  const res = new Response(body, {
-    headers: {
-      'Content-Type': 'application/json',
-      'Cache-Control': 'public, max-age=' + ttlSeconds,
-    },
-  });
-  await cache.put(cacheUrl(key), res);
+  await ns.put(key, body);
 }
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const path = url.pathname;
-    const cache = caches.default;
+    const ns = env.GHT;
+    if (!ns) return json({ error: 'KV namespace GHT not bound' }, 500);
 
     // CORS 预检
     if (request.method === 'OPTIONS') {
@@ -92,7 +81,7 @@ export default {
 
     // 公开：读取配置
     if (path === '/api/config' && request.method === 'GET') {
-      const raw = await cacheGet(cache, 'config');
+      const raw = await kvGet(ns, 'config');
       return json(raw ? JSON.parse(raw) : {});
     }
 
@@ -114,13 +103,13 @@ export default {
     if (path === '/api/config' && request.method === 'PUT') {
       let body;
       try { body = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400); }
-      await cachePut(cache, 'config', JSON.stringify(body));
+      await kvPut(ns, 'config', body);
       return json({ ok: true, ...body });
     }
 
     // 列出已备份轨迹
     if (path === '/api/tracks' && request.method === 'GET') {
-      const raw = await cacheGet(cache, '_index');
+      const raw = await kvGet(ns, '_index');
       const list = raw ? JSON.parse(raw) : [];
       return json({ ok: true, tracks: list });
     }
@@ -132,18 +121,18 @@ export default {
       const files = Array.isArray(body.files) ? body.files : [];
 
       // 读现有索引
-      const idxRaw = await cacheGet(cache, '_index');
+      const idxRaw = await kvGet(ns, '_index');
       const index = idxRaw ? JSON.parse(idxRaw) : [];
 
       for (const f of files) {
         if (f && typeof f.name === 'string' && typeof f.content === 'string') {
-          const safeName = f.name.replace(/[^\\w.\\-]/g, '_');
-          await cachePut(cache, 'gpx:' + safeName, f.content, 86400 * 90); // GPX 缓存 90 天
+          const safeName = f.name.replace(/[^\w.\-]/g, '_');
+          await kvPut(ns, 'gpx:' + safeName, f.content);
           if (!index.includes(safeName)) index.push(safeName);
         }
       }
       // 更新索引
-      await cachePut(cache, '_index', JSON.stringify(index));
+      await kvPut(ns, '_index', index);
       return json({ ok: true, count: files.length, tracks: index });
     }
 
