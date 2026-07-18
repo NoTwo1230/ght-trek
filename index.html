@@ -2617,6 +2617,9 @@ function progressCardHTML() {
     '</div></div>';
 }
 
+// 与子页面(sections.html 等)同款 HTML 转义，防自由文本注入 innerHTML（自 XSS 加固）
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>\"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
 // ── B. 当前状态 ──
 function currentStatusHTML() {
   const sec = currentSectionInfo();
@@ -2644,7 +2647,7 @@ function currentStatusHTML() {
     campSub = sec.name || '';
   } else {
     const startCamp = (APP.itinerary && APP.itinerary[0] && APP.itinerary[0].from) || APP.startPlaceName || '起点';
-    campVal = '🚩 ' + startCamp;
+    campVal = '🚩 ' + esc(startCamp);
     campSub = (sec.name || '起点') + ' · 未出发';
   }
 
@@ -2654,7 +2657,7 @@ function currentStatusHTML() {
     row('🏕️', t('st.camp'), campVal, campSub) +
     row('🗺️', t('st.area'), prov, '') +
     row('🔺', t('st.elev'), elev != null ? fmtNum(elev) + 'm' : '—', '') +
-    row('⛰️', t('st.pass'), np ? (np.name || np.desc || '未命名') : '—', np && np.elev != null ? fmtNum(np.elev) + 'm' : '') +
+    row('⛰️', t('st.pass'), np ? esc(np.name || np.desc || '未命名') : '—', np && np.elev != null ? fmtNum(np.elev) + 'm' : '') +
     row('⏱️', t('st.eta'), eta, '') +
     '</div>';
 }
@@ -2730,7 +2733,7 @@ function passesHTML() {
       const mark = p.done ? '<span class="pass-check">✓</span>' : '<span class="pass-dot"></span>';
       const elev = p.elev != null ? fmtNum(p.elev) + 'm' : '';
       return '<div class="' + cls + '">' + mark +
-        '<span class="pass-name">' + (p.nm || '未命名') + '</span>' +
+        '<span class="pass-name">' + esc(p.nm || '未命名') + '</span>' +
         (elev ? '<span class="pass-elev">' + elev + '</span>' : '') + '</div>';
     }).join('');
   }
@@ -2788,7 +2791,7 @@ function renderInfoBar() {
   const lastActual = [...days].reverse().find(d => d.actual);
   if (lastActual && lastActual.actual) {
     const a = lastActual.actual;
-    const arrow = a.actFrom && a.actTo ? `${a.actFrom} → ${a.actTo}` : '—';
+    const arrow = a.actFrom && a.actTo ? `${esc(a.actFrom)} → ${esc(a.actTo)}` : '—';
     todayHTML = `<div class="info-sub">
       <div class="t">📍 最近记录 · Day ${lastActual.day}</div>
       <div class="v">${arrow} <span class="dim">${a.distance != null ? a.distance.toFixed(1) : '?'}km · ${a.date || '?'}</span></div>
@@ -2802,8 +2805,8 @@ function renderInfoBar() {
   const nextDay = days.find(d => !d.actual);
   if (nextDay) {
     const restCls = nextDay.isRestDay ? ' rest' : '';
-    const passTxt = (nextDay.passes && nextDay.passes.length) ? ' · ⛰️ ' + nextDay.passes.join('/') : '';
-    const fromTxt = nextDay.from || '—', toTxt = nextDay.to || '—';
+    const passTxt = (nextDay.passes && nextDay.passes.length) ? ' · ⛰️ ' + nextDay.passes.map(esc).join('/') : '';
+    const fromTxt = esc(nextDay.from || '—'), toTxt = esc(nextDay.to || '—');
     nextHTML = `<div class="info-sub${restCls}">
       <div class="t">🗺️ 下一阶段 · Day ${nextDay.day}</div>
       <div class="v">${fromTxt} → ${toTxt}${passTxt} <span class="dim">${nextDay.plannedDistance || '?'}km</span></div>
@@ -3214,11 +3217,11 @@ function renderItinerary() {
         <div class="col">
           <div class="col-title act-t">📡 实际</div>
           <div class="stat-row"><span class="plan">📅 日期</span><span class="actual">${dateShort}</span></div>
-          <div class="stat-row"><span class="plan">📍 起点</span><span class="actual">${a.actFrom || '—'}</span></div>
-          <div class="stat-row"><span class="plan">📍 终点</span><span class="actual" ${endMismatch ? 'style="color:var(--red);"' : ''}>${a.actTo || '—'}</span></div>
+          <div class="stat-row"><span class="plan">📍 起点</span><span class="actual">${esc(a.actFrom || '—')}</span></div>
+          <div class="stat-row"><span class="plan">📍 终点</span><span class="actual" ${endMismatch ? 'style="color:var(--red);"' : ''}>${esc(a.actTo || '—')}</span></div>
           <div class="stat-row"><span class="plan">📏 距离</span><span class="actual">${a.distance.toFixed(1)}km</span></div>
           <div class="stat-row"><span class="plan">⬆️ 爬升</span><span class="actual">${a.elevGain}m</span></div>
-          <div class="stat-row"><span class="plan">📁 文件</span><span>${a.file}</span></div>
+          <div class="stat-row"><span class="plan">📁 文件</span><span>${esc(a.file)}</span></div>
           ${endMismatch ? `<div class="warn">⚠️ 实际终点≠计划终点（只走了一部分 / 路线有偏差）</div>` : ''}
         </div>`;
     }
