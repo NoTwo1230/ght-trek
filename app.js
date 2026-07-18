@@ -963,7 +963,8 @@ async function unlockData() {
   if (err) err.hidden = true;
   try {
     const r = await API.login(pwd);
-    if (r.ok && r.data && r.data.token) {
+    // 以服务端返回的 data.ok 为准（不再仅看 data.token），并透传服务端错误（含 SECRET 缺失）
+    if (r.data && r.data.ok && r.data.token) {
       API.setToken(r.data.token);
       APP.isOwner = true;
       const gate = document.getElementById('pwdGate');
@@ -974,7 +975,8 @@ async function unlockData() {
       if (typeof applyLang === 'function') applyLang();
       if (typeof showView === 'function') showView(APP.activeView || 'dashboard');
     } else {
-      if (err) { err.hidden = false; err.textContent = t('dm.pwdErr'); }
+      const msg = (r.data && r.data.message) ? r.data.message : t('dm.pwdErr');
+      if (err) { err.hidden = false; err.textContent = msg; }
     }
   } catch (e) {
     // 网络错误（后端未启动等）

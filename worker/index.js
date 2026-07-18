@@ -91,6 +91,10 @@ export default {
       try { pwd = (await request.json()).password || ''; } catch (e) {}
       if (pwd && pwd === env.ADMIN_PWD) {
         const token = await expectedToken(env);
+        // 密码正确但 SECRET 未配置 → 明确报错，避免返回 token:null 被前端误判为"密码错误"
+        if (!token) {
+          return json({ ok: false, error: 'secret_missing', message: '服务端未配置 SECRET，无法签发登录 token，请在 Worker 环境变量中设置 SECRET 后重试' }, 500);
+        }
         return json({ ok: true, token });
       }
       return json({ ok: false, error: 'bad password' }, 401);
