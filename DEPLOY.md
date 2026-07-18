@@ -17,7 +17,8 @@ Cloudflare Worker  (https://ght.gjt6nrf4jz.workers.dev)
    ▼
 Cloudflare KV 命名空间 GHT
    ├─ config        → 站点配置 JSON（语言/出发日期/名称…）
-   └─ gpx:<文件名>  → 原始 GPX 文本（主人上传备份）
+   ├─ gpx:<文件名>  → 原始 GPX 文本（主人上传备份）
+   └─ share:all     → 共享包（路线/实际轨迹/位置/日志/日程，所有人可读、仅主人可写）
 ```
 
 - 密码只存在 Worker 环境变量 `ADMIN_PWD`，前端只持有登录后下发的 HMAC token。
@@ -43,7 +44,7 @@ git push -u origin main
    - Build output directory：`/`（根目录）
 4. 点 **Save and Deploy**。完成后会得到一个 `https://ght-trek.<你的子域>.pages.dev` 地址。
 
-> 说明：项目里现在只有一个 `index.html`（前台主页面），直接被 Pages 托管，无需构建步骤。
+> 说明：项目前台文件为 `index.html` + `styles.css` + `app.js` + `journal.html`（已拆分，无需构建），Pages 直接托管根目录静态文件，构建命令留空即可。
 
 ### ③ 建后台 Cloudflare Worker
 1. 左侧 **Workers & Pages → Create → Worker** → 取名 `ght` → 点 **Deploy**（先随便部署一次占位）。
@@ -82,6 +83,33 @@ git push -u origin main
 - **绝不**把 Worker 的 `SECRET` 写进前端 HTML。
 - `ADMIN_PWD` 只在 Worker 环境变量里，前端永远看不到明文。
 - KV 中 `gpx:*` 仅主人登录后可写；`config` 公开可读（仅出发日期等无害信息）。
+
+---
+
+## 数据共享设计（全量共享）
+
+> 场景：A 电脑（主人）上传 / 修改内容后，任何访客（含未登录、不同设备）打开页面都能看到同一份。权限是「**其他人只观看，只有主人可增改**」。
+
+### 共享哪些数据
+| 数据 | 来源 | 共享后 |
+|------|------|--------|
+| 计划路线（预设轨迹 / 分段 / 休息日 / 总距离） | 主人上传 GPX 后 `setAsPreset` | 所有人打开即见 |
+| 已记录轨迹（actual） | 主人记录每日徒步 | 所有人打开即见 |
+| 实时位置（currentPosition） | 主人设定 / 上传 | 所有人打开即见「最近一次推送的位置」 |
+| 日志（journal） | `journal.html` 增删 | 所有人打开即见 |
+| 日程安排（itinerary） | 主人编辑 | 所有人打开即见 |
+
+### 机制
+- **存储**：KV 单键 `share:all`，整包原子写入（单人 owner 场景最简单，不易出现半同步状态）。
+- **读取接口 `GET /api/share`（公开，无需密码）**：返回 `share:all` 整包；无数据返回 `{ok:true, data:null}`。所有人（含未登录访客）打开页面即拉取并渲染，localStorage 退化为离线兜底。
+- **写入接口 `PUT /api/share`（仅主人）**：复用登录 token 鉴权（`isOwner`）；把当前 5 类数据打包整体写入 KV。主人每做一次变更（设路线 / 加实际轨迹 / 存位置 / 存日程 / 日志增删）自动推送一次。
+- **防互覆盖**：首页（`app.js`）与日志页（`journal.html`）是两个独立页面，各自只改自己那一片（前者路线/轨迹/位置/日程，后者日志），写入前先继承首次拉取的整包 `sharedCache`，再整体回写——谁都不会擦掉对方数据。
+- **冲突策略**：最后写入者胜（last-write-wins）。单人 / 单主人场景足够，无需加锁。
+- **实时位置粒度**：默认「基线推送」——位置在上传 / 手动设定时随共享包推一次，访客看到最近一次位置（零额外开销）。如需「接近实时直播」，可额外加每 ~30s 轮询 `GET /api/share`（未实现，按需再加）。
+
+### 部署要点
+- 本功能随 `worker/index.js` 的 `GET/PUT /api/share` 一同上线，**必须与前端 `app.js` / `journal.html` 同步发布**（任一方缺了都不会生效）。
+- 前置条件：`SECRET` 必须有值并 Deploy（否则主人 `PUT` 会被 401，共享写不进去）。详见下方「常见问题排查」第一条。
 
 ---
 
