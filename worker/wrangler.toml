@@ -10,5 +10,5 @@ compatibility_date = "2024-09-23"
 
 # KV 命名空间：先在 Cloudflare 后台建一个 KV，把它的 ID 填到下面
 kv_namespaces = [
-  { binding = "GHT", id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID" }
+  { binding = "GHT", id = "1d651f9e9cbf467881a882c98f725e8a" }
 ]
