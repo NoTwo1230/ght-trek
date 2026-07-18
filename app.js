@@ -3738,9 +3738,15 @@ function showGPXUploadResult(gpxData, stats) {
     try {
       const r = await API.getShare();
       if (!r.ok) return;                                // 服务端错误：保留本地，不自动种入
-      if (r.data && r.data.data) {                     // 服务端有共享内容：以服务端为准覆盖本地
+      if (r.data && r.data.data) {                     // 服务端有共享内容
         const b = r.data.data;
         sharedCache = b;
+        // 主人（已登录且本机有可共享数据）：以本地为准，立即同步上云，不覆盖本地
+        if (APP.isOwner && API.getToken() && hasLocalShareableData()) {
+          pushShare();
+          return;
+        }
+        // 其余情况（访客 / 主人本机为空）：以服务端为准渲染
         if (b.preset) APP.presetTrack = b.preset;
         if (b.totalDistance) APP.totalDistance = b.totalDistance;
         if (b.sections) APP.sectionRanges = b.sections;
@@ -3769,11 +3775,11 @@ function updateOwnerUI() {
 
 function clearAllData() {
   if (!confirm('⚠️ 此操作将清除所有数据，不可恢复！\n\n包括:\n- 预设轨迹\n- 实际轨迹\n- 日志\n- 路段进度\n- 行程安排\n\n确定继续？')) return;
-  // 统一清除所有以 ght 开头的本地存储键（避免遗漏新增键，例如 ght_start_place）
+  // 统一清除所有以 ght 开头的本地存储键（避免遗漏新增键，例如 ght_start_place）；但保留 ght_token —— 重置=清数据，不是登出
   const keys = [];
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
-    if (k && k.indexOf('ght') === 0) keys.push(k);
+    if (k && k.indexOf('ght') === 0 && k !== 'ght_token') keys.push(k);
   }
   keys.forEach(k => localStorage.removeItem(k));
   // 同时把内存中的关键计数清零，确保 reload 前已无残留
