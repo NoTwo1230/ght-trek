@@ -247,6 +247,10 @@
       renderFeed(document.querySelector('.filters .chip.active')?.dataset.filter || 'all');
     }
     if (b) sharedCache = b;
+    // 服务端无日志共享内容：主人且本机有日志 → 自动种入 KV（无需手动发布一次）
+    else if (getOwnerToken() && logEntries && logEntries.length) {
+      pushJournalShare();
+    }
   }
   // 解锁：有后端走 /api/login；无后端（本地预览）用主密码兜底，使离线也能测试发布
   async function journalLogin(pwd) {

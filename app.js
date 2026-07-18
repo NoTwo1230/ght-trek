@@ -3723,22 +3723,40 @@ function showGPXUploadResult(gpxData, stats) {
     API.putShare(bundle).catch(e => console.warn('[ght] 共享推送失败（不影响本地使用）', e));
   }
 
+  function hasLocalShareableData() {
+    try {
+      if (localStorage.getItem('ght_preset')) return true;
+      if (localStorage.getItem('ght_actual')) return true;
+      if (localStorage.getItem('ght_itinerary')) return true;
+      if (localStorage.getItem('ght_current_pos')) return true;
+      if (localStorage.getItem('ght_log')) return true;
+    } catch (e) {}
+    return false;
+  }
+
   async function loadShared() {
     if (!hasBackend()) return;
     try {
       const r = await API.getShare();
-      if (!r.ok || !r.data || !r.data.data) return;        // 服务端无共享内容：保留本地
-      const b = r.data.data;
-      sharedCache = b;
-      if (b.preset) APP.presetTrack = b.preset;
-      if (b.totalDistance) APP.totalDistance = b.totalDistance;
-      if (b.sections) APP.sectionRanges = b.sections;
-      if (b.segments) APP.presetSegments = b.segments;
-      if (b.restDays) APP.presetRestDays = b.restDays;
-      if (b.actual && b.actual.length) APP.actualTracks = b.actual;
-      if (b.pos) APP.currentPosition = b.pos;
-      if (b.itinerary && b.itinerary.length) { APP.itinerary = b.itinerary; APP.itineraryStartDate = b.itineraryStart || null; }
-      renderDashboard(); renderAllTracks(); updateProgressDOM(); drawElevationProfile();
+      if (!r.ok) return;                                // 服务端错误：保留本地，不自动种入
+      if (r.data && r.data.data) {                     // 服务端有共享内容：以服务端为准覆盖本地
+        const b = r.data.data;
+        sharedCache = b;
+        if (b.preset) APP.presetTrack = b.preset;
+        if (b.totalDistance) APP.totalDistance = b.totalDistance;
+        if (b.sections) APP.sectionRanges = b.sections;
+        if (b.segments) APP.presetSegments = b.segments;
+        if (b.restDays) APP.presetRestDays = b.restDays;
+        if (b.actual && b.actual.length) APP.actualTracks = b.actual;
+        if (b.pos) APP.currentPosition = b.pos;
+        if (b.itinerary && b.itinerary.length) { APP.itinerary = b.itinerary; APP.itineraryStartDate = b.itineraryStart || null; }
+        renderDashboard(); renderAllTracks(); updateProgressDOM(); drawElevationProfile();
+        return;
+      }
+      // 服务端无共享内容：主人且本机确有数据 → 自动种入 KV（无需手动保存一次）
+      if (APP.isOwner && API.getToken() && hasLocalShareableData()) {
+        pushShare();
+      }
     } catch (e) { /* 共享加载失败不影响本地渲染 */ }
   }
 
@@ -3897,10 +3915,11 @@ if (APP.itinerary.length && APP.actualTracks.length) {
 renderDashboard();
 renderAllTracks();
 
-// 后台静默恢复登录态并同步服务端配置；语言/日期若有变化则局部重渲染
+// 后台静默恢复登录态并同步服务端配置；语言/日期若有变化则局部重渲染。
+// 顺序很重要：loadShared 依赖 restoreSession 设好的 isOwner —— 只有主人(kv为空且本机有数据)才会自动种入共享包。
 restoreSession().then(() => {
   renderDashboard();
-}).catch(() => {});
-
-// 全量共享：所有人启动即从服务端拉取共享包（主人写入、访客观看），覆盖本地副本
-loadShared().catch(() => {});
+  loadShared().catch(() => {});
+}).catch(() => {
+  loadShared().catch(() => {});
+});
