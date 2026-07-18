@@ -100,6 +100,12 @@ export default {
       return json({ ok: false, error: 'bad password' }, 401);
     }
 
+    // 公开：读取共享包（所有人可看：计划路线 / 已记录轨迹 / 实时位置 / 日志 / 日程）
+    if (path === '/api/share' && request.method === 'GET') {
+      const raw = await kvGet(ns, 'share:all');
+      return json(raw ? { ok: true, data: JSON.parse(raw) } : { ok: true, data: null });
+    }
+
     // 以下接口需登录
     if (!await isOwner(request, env)) return json({ error: 'unauthorized' }, 401);
 
@@ -109,6 +115,15 @@ export default {
       try { body = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400); }
       await kvPut(ns, 'config', body);
       return json({ ok: true, ...body });
+    }
+
+    // 主人：写入共享包（全量覆盖；前端按分片合并写入，避免两个页面互相覆盖）
+    if (path === '/api/share' && request.method === 'PUT') {
+      let body;
+      try { body = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400); }
+      if (!body || typeof body !== 'object') return json({ error: 'bad payload' }, 400);
+      await kvPut(ns, 'share:all', body);
+      return json({ ok: true });
     }
 
     // 列出已备份轨迹

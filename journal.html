@@ -212,6 +212,42 @@
   function setOwnerToken(t) { try { if (t) localStorage.setItem(TOKEN_KEY, t); else localStorage.removeItem(TOKEN_KEY); } catch (e) {} }
   function apiBase() { const m = document.querySelector('meta[name="ght-api"]'); return (m && m.getAttribute('content') || '').trim().replace(/\/+$/, ''); }
   function hasBackend() { return !!apiBase(); }
+  // ── 全量共享（服务端 share:all：主人写入 / 所有人读取）──
+  let sharedCache = null;
+  function authHeader() { const t = getOwnerToken(); return t ? { 'Authorization': 'Bearer ' + t } : {}; }
+  async function getShare() {
+    if (!hasBackend()) return null;
+    try {
+      const res = await fetch(apiBase() + '/api/share', { method: 'GET' });
+      let d = null; try { d = await res.json(); } catch (e) {}
+      if (d && d.ok && d.data) return d.data;
+      return null;
+    } catch (e) { return null; }
+  }
+  async function putShare(bundle) {
+    if (!hasBackend()) return;
+    try {
+      await fetch(apiBase() + '/api/share', { method: 'PUT', headers: Object.assign({ 'Content-Type': 'application/json' }, authHeader()), body: JSON.stringify(bundle) });
+    } catch (e) { console.warn('[ght] 日志共享推送失败', e); }
+  }
+  function pushJournalShare() {
+    if (!getOwnerToken()) return;            // 仅主人可写
+    const bundle = (sharedCache && typeof sharedCache === 'object') ? JSON.parse(JSON.stringify(sharedCache)) : {};
+    bundle.journal = logEntries;             // 本页只负责 journal 分片，继承其余字段
+    sharedCache = bundle;
+    putShare(bundle);
+  }
+  async function loadSharedJournal() {
+    if (!hasBackend()) return;
+    const b = await getShare();
+    if (b && Array.isArray(b.journal) && b.journal.length) {
+      logEntries = b.journal;
+      saveLogEntries();                       // 写回本地，使首页 app.js 也能读到
+      renderStats();
+      renderFeed(document.querySelector('.filters .chip.active')?.dataset.filter || 'all');
+    }
+    if (b) sharedCache = b;
+  }
   // 解锁：有后端走 /api/login；无后端（本地预览）用主密码兜底，使离线也能测试发布
   async function journalLogin(pwd) {
     if (hasBackend()) {
@@ -416,6 +452,7 @@
     logEntries.push(entry);
     logEntries.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     saveLogEntries();
+    pushJournalShare();   // 日志发布同步到共享包
     if (ta) ta.value = '';
     renderStats();
     renderFeed(document.querySelector('.filters .chip.active')?.dataset.filter || 'all');
@@ -449,8 +486,10 @@
     err.hidden = true;
     const r = await journalLogin(pwd);   // 复用主密码校验（后端 / 本地兜底）
     if (!r.ok) { err.hidden = false; err.textContent = r.msg || t('jo.del.err'); return; }
+    setOwnerToken(r.token);              // 记住 token，供共享写入鉴权
     logEntries = logEntries.filter(e => e.id !== _delTargetId);
     saveLogEntries();
+    pushJournalShare();   // 日志删除同步到共享包
     closeDelModal();
     renderStats();
     renderFeed(document.querySelector('.filters .chip.active')?.dataset.filter || 'all');
@@ -458,6 +497,7 @@
 
   // ── 启动 ──
   load();
+  loadSharedJournal();   // 所有人启动即从服务端拉取共享日志（访客观看、主人编辑）
   renderStats();
   renderFeed('all');
   renderComposer();

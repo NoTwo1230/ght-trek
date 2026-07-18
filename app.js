@@ -889,6 +889,16 @@ const API = (function () {
     listTracks: async () => {
       if (!hasBackend()) return noBackend();
       return req('GET', '/api/tracks');             // 需鉴权，200 即 token 有效（续期校验）
+    },
+    getShare: async () => {
+      if (!hasBackend()) return { ok: true, status: 200, data: null };
+      return req('GET', '/api/share');
+    },
+    putShare: async (bundle) => {
+      if (!hasBackend()) return noBackend();
+      try {
+        return req('PUT', '/api/share', { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(bundle) });
+      } catch (e) { return noBackend(); }
     }
   };
 })();
@@ -2068,12 +2078,13 @@ function toggleDelay(dayNum, reason) {
   if (APP.activeTab === 'itinerary') openPanel('itinerary');
 }
 
-function saveItinerary() {
-  try {
-    localStorage.setItem('ght_itinerary', JSON.stringify(APP.itinerary));
-    localStorage.setItem('ght_itinerary_start', APP.itineraryStartDate || '');
-  } catch(e) {}
-}
+  function saveItinerary() {
+    try {
+      localStorage.setItem('ght_itinerary', JSON.stringify(APP.itinerary));
+      localStorage.setItem('ght_itinerary_start', APP.itineraryStartDate || '');
+    } catch(e) {}
+    pushShare();   // 日程变更同步到共享包
+  }
 
 // 设置出发日期：自动推算每日计划日程，并用于「快/慢/按计划」判定
 function setItineraryStartDate(v) {
@@ -3443,6 +3454,7 @@ function handleGPXUpload(event) {
         setAsPreset(merged, stats);
         APP.presetSegments = valid;
         persistPresetSegments(valid);
+        pushShare();   // 计划路线 + 分段同步到共享包
         applySegmentItinerary(valid, restDays);
         // 预设轨迹只作为「计划路线」写入行程安排（actual 仍为 null）。
         // 真正的「已记录 / 已完成」要等用户上传实际徒步轨迹后才会同步填充。
@@ -3488,6 +3500,7 @@ function handleGPXUpload(event) {
           } catch(e2) {}
         }
         matchItineraryToActuals();
+        pushShare();   // 已记录轨迹变更同步到共享包
         renderAllTracks();
         updateProgressDOM();
         openPanel(APP.activeTab || 'progress');
@@ -3497,6 +3510,7 @@ function handleGPXUpload(event) {
         setAsPreset(merged, stats);
         APP.presetSegments = valid;
         persistPresetSegments(valid);
+        pushShare();   // 计划路线 + 分段同步到共享包
         const ok = applySegmentItinerary(valid, restDays);
         matchItineraryToActuals();
         if (ok) saveItinerary();
@@ -3571,6 +3585,7 @@ function addActualTrack(gpxData, stats) {
       localStorage.setItem('ght_actual', JSON.stringify(dec));
     } catch(e2) {}
   }
+  pushShare();   // 单段实际轨迹变更同步到共享包
 
   if (dailyStats && dailyStats.date) {
     // 自动归类到对应路段：与地图一致，按预设轨迹几何顺序判定
@@ -3637,6 +3652,7 @@ function setAsPreset(gpxData, stats) {
   renderAllTracks();
 
   drawElevationProfile();
+  pushShare();   // 计划路线（含休息日/分段/总距离）同步到共享包
 }
 
 function showGPXUploadResult(gpxData, stats) {
@@ -3674,13 +3690,57 @@ function showGPXUploadResult(gpxData, stats) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  SAVE / LOAD (localStorage)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function saveCurrentPosition() {
-  try { localStorage.setItem('ght_current_pos', JSON.stringify(APP.currentPosition)); } catch(e) {}
-}
+  function saveCurrentPosition() {
+    try { localStorage.setItem('ght_current_pos', JSON.stringify(APP.currentPosition)); } catch(e) {}
+    pushShare();   // 实时位置变更同步到共享包
+  }
 
-function saveLogEntries() {
-  try { localStorage.setItem('ght_log', JSON.stringify(APP.logEntries)); } catch(e) {}
-}
+  function saveLogEntries() {
+    try { localStorage.setItem('ght_log', JSON.stringify(APP.logEntries)); } catch(e) {}
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  //  全量共享（服务端 share:all：主人写入 / 所有人读取）
+  //  分片 ownership：本页负责 preset/actual/pos/itinerary/segments/restDays/sections，
+  //  journal 由 journal.html 负责；两者都从 sharedCache 继承对方字段，合并写入，互不覆盖。
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  let sharedCache = null;
+
+  function pushShare() {
+    if (!APP.isOwner || !API.getToken()) return;          // 仅主人可写
+    const bundle = (sharedCache && typeof sharedCache === 'object') ? JSON.parse(JSON.stringify(sharedCache)) : {};
+    try { bundle.preset = APP.presetTrack ? decimatePresetTrack(APP.presetTrack, 4000) : null; }
+    catch (e) { bundle.preset = APP.presetTrack || null; }
+    bundle.actual = (APP.actualTracks || []).map(t => ({ ...t, trackPoints: decimateTrack(t.trackPoints || [], 700) }));
+    bundle.pos = APP.currentPosition || null;
+    bundle.itinerary = APP.itinerary || [];
+    bundle.itineraryStart = APP.itineraryStartDate || null;
+    bundle.segments = APP.presetSegments || null;
+    bundle.restDays = APP.presetRestDays || [];
+    bundle.sections = APP.sectionRanges || null;
+    bundle.totalDistance = APP.totalDistance || 0;
+    sharedCache = bundle;
+    API.putShare(bundle).catch(e => console.warn('[ght] 共享推送失败（不影响本地使用）', e));
+  }
+
+  async function loadShared() {
+    if (!hasBackend()) return;
+    try {
+      const r = await API.getShare();
+      if (!r.ok || !r.data || !r.data.data) return;        // 服务端无共享内容：保留本地
+      const b = r.data.data;
+      sharedCache = b;
+      if (b.preset) APP.presetTrack = b.preset;
+      if (b.totalDistance) APP.totalDistance = b.totalDistance;
+      if (b.sections) APP.sectionRanges = b.sections;
+      if (b.segments) APP.presetSegments = b.segments;
+      if (b.restDays) APP.presetRestDays = b.restDays;
+      if (b.actual && b.actual.length) APP.actualTracks = b.actual;
+      if (b.pos) APP.currentPosition = b.pos;
+      if (b.itinerary && b.itinerary.length) { APP.itinerary = b.itinerary; APP.itineraryStartDate = b.itineraryStart || null; }
+      renderDashboard(); renderAllTracks(); updateProgressDOM(); drawElevationProfile();
+    } catch (e) { /* 共享加载失败不影响本地渲染 */ }
+  }
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -3841,3 +3901,6 @@ renderAllTracks();
 restoreSession().then(() => {
   renderDashboard();
 }).catch(() => {});
+
+// 全量共享：所有人启动即从服务端拉取共享包（主人写入、访客观看），覆盖本地副本
+loadShared().catch(() => {});
