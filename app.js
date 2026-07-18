@@ -3735,7 +3735,6 @@ function showGPXUploadResult(gpxData, stats) {
   }
 
   async function loadShared() {
-    if (!hasBackend()) return;
     try {
       const r = await API.getShare();
       if (!r.ok) return;                                // 服务端错误：保留本地，不自动种入
