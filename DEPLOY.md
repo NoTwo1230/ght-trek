@@ -44,10 +44,9 @@ git push -u origin main
 4. 点 **Save and Deploy**。完成后会得到一个 `https://ght-trek.<你的子域>.pages.dev` 地址。
 
 > 说明：项目里现在只有一个 `index.html`（前台主页面），直接被 Pages 托管，无需构建步骤。
-> 如果之前配置过 `cp index-notwo.html index.html`，请务必**清空 Build command**，否则会因找不到源文件而构建失败。
 
 ### ③ 建后台 Cloudflare Worker
-1. 左侧 **Workers & Pages → Create → Worker** → 取名 `ght-api` → 点 **Deploy**（先随便部署一次占位）。
+1. 左侧 **Workers & Pages → Create → Worker** → 取名 `ght` → 点 **Deploy**（先随便部署一次占位）。
 2. 进入该 Worker → **Edit code**，把本仓库 `worker/index.js` 的**全部内容**粘贴进去 → **Deploy**。
 3. 进入该 Worker → **Settings → Variables**：
    - **KV namespace bindings**：点 Add binding，Variable name 填 `GHT`，绑一个你新建的 KV 命名空间（没有就先去 **Workers & Pages → KV** 建一个，名字随意）。
