@@ -16,9 +16,7 @@
   const I18N = {
     zh: {
       'brand.sub': '大喜马拉雅高线',
-      'back.map': '🗺️ 返回地图',
-      'back.home': '← 回主页',
-      'back.main': '← 返回主站',
+      'back.home': '← 返回首页',
       'lang.btn': 'Language ▾',
 
       /* itinerary.html */
@@ -139,7 +137,6 @@
       'jo.f.all': '全部',
       'jo.f.text': '✍️ 手写随笔',
       'jo.f.newest': '最新在前',
-      'jo.back': '← 回主页',
       'jo.empty': '暂无日志。<br>主人可在此页面发布随笔。',
       'jo.unlock.label': '🔒 主人解锁后可发布日志（输入与主页相同的主人密码）',
       'jo.unlock.pwd': '密码',
@@ -157,9 +154,7 @@
     },
     en: {
       'brand.sub': 'GREAT HIMALAYA TRAIL',
-      'back.map': '🗺️ Back to map',
-      'back.home': '← Back home',
-      'back.main': '← Back to main site',
+      'back.home': '← Back to home',
       'lang.btn': 'Language ▾',
 
       'it.title': 'Itinerary Calendar',
@@ -277,7 +272,6 @@
       'jo.f.all': 'All',
       'jo.f.text': '✍️ Journal notes',
       'jo.f.newest': 'Newest first',
-      'jo.back': '← Back home',
       'jo.empty': 'No logs yet.<br>Owner can publish notes on this page.',
       'jo.unlock.label': '🔒 Unlock as owner to publish (use the same master password as the home page)',
       'jo.unlock.pwd': 'Password',
