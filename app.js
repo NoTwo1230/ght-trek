@@ -3706,12 +3706,27 @@ function showGPXUploadResult(gpxData, stats) {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   let sharedCache = null;
 
+  // 实际轨迹按 date 归并：同一天以 updatedAt 最新者为准（无时间戳的旧条目视为最旧）
+  function mergeActualTracks(local, remote) {
+    const m = new Map();
+    (remote || []).forEach(t => { if (t && t.date) m.set(t.date, t); });
+    (local || []).forEach(t => {
+      if (!t || !t.date) return;
+      if (!t.updatedAt) t.updatedAt = 0;
+      const cur = m.get(t.date);
+      if (!cur || t.updatedAt >= cur.updatedAt) m.set(t.date, t);
+    });
+    return Array.from(m.values());
+  }
+
   function pushShare() {
     if (!APP.isOwner || !API.getToken()) return;          // 仅主人可写
     const bundle = (sharedCache && typeof sharedCache === 'object') ? JSON.parse(JSON.stringify(sharedCache)) : {};
+    // deletedIds（日志墓碑）随主包一起上云，绝不被清掉
+    bundle.deletedIds = (sharedCache && Array.isArray(sharedCache.deletedIds)) ? sharedCache.deletedIds : [];
     try { bundle.preset = APP.presetTrack ? decimatePresetTrack(APP.presetTrack, 4000) : null; }
     catch (e) { bundle.preset = APP.presetTrack || null; }
-    bundle.actual = (APP.actualTracks || []).map(t => ({ ...t, trackPoints: decimateTrack(t.trackPoints || [], 700) }));
+    bundle.actual = (APP.actualTracks || []).map(t => ({ ...t, updatedAt: t.updatedAt || Date.now(), trackPoints: decimateTrack(t.trackPoints || [], 700) }));
     bundle.pos = APP.currentPosition || null;
     bundle.itinerary = APP.itinerary || [];
     bundle.itineraryStart = APP.itineraryStartDate || null;
@@ -3741,20 +3756,19 @@ function showGPXUploadResult(gpxData, stats) {
       if (r.data && r.data.data) {                     // 服务端有共享内容
         const b = r.data.data;
         sharedCache = b;
-        // 主人（已登录且本机有可共享数据）：以本地为准，立即同步上云，不覆盖本地
-        if (APP.isOwner && API.getToken() && hasLocalShareableData()) {
-          pushShare();
-          return;
-        }
-        // 其余情况（访客 / 主人本机为空）：以服务端为准渲染
+        // 先按云端为准合并渲染（actual 按 date 归并、保留 updatedAt 最新者；其余字段维持主人本地优先语义）
         if (b.preset) APP.presetTrack = b.preset;
         if (b.totalDistance) APP.totalDistance = b.totalDistance;
         if (b.sections) APP.sectionRanges = b.sections;
         if (b.segments) APP.presetSegments = b.segments;
         if (b.restDays) APP.presetRestDays = b.restDays;
-        if (b.actual && b.actual.length) APP.actualTracks = b.actual;
+        if (b.actual && b.actual.length) APP.actualTracks = mergeActualTracks(APP.actualTracks, b.actual);
         if (b.pos) APP.currentPosition = b.pos;
         if (b.itinerary && b.itinerary.length) { APP.itinerary = b.itinerary; APP.itineraryStartDate = b.itineraryStart || null; }
+        // 主人（已登录且本机有可共享数据）：合并云端后再把本地编辑回推上云（sharedCache 已是云端 bundle，journal/deletedIds 被继承）
+        if (APP.isOwner && API.getToken() && hasLocalShareableData()) {
+          pushShare();
+        }
         renderDashboard(); renderAllTracks(); updateProgressDOM(); drawElevationProfile();
         return;
       }

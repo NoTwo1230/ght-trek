@@ -232,23 +232,27 @@
   }
   function pushJournalShare() {
     if (!getOwnerToken()) return;            // 仅主人可写
+    // 墓碑 = 云端已有 deletedIds ∪ 本机本地删除集合，确保删除在其他设备不复活
+    const deleted = new Set([...(sharedCache && sharedCache.deletedIds || []), ...localDeletedIds]);
+    const journal = mergeJournal(logEntries, sharedCache ? sharedCache.journal : null, deleted);
     const bundle = (sharedCache && typeof sharedCache === 'object') ? JSON.parse(JSON.stringify(sharedCache)) : {};
-    bundle.journal = logEntries;             // 本页只负责 journal 分片，继承其余字段
+    bundle.journal = journal;                // 合并后的 journal 分片，继承其余字段
+    bundle.deletedIds = [...deleted];        // 墓碑随包上云，永不过期
     sharedCache = bundle;
     putShare(bundle);
   }
   async function loadSharedJournal() {
     if (!hasBackend()) return;
     const b = await getShare();
-    if (b && Array.isArray(b.journal) && b.journal.length) {
-      logEntries = b.journal;
-      // 给云端拉来的条目补上稳定 id（与 load() 一致），避免删除时 data-id 为空导致卡住
-      logEntries.forEach((e, i) => { if (!e.id) e.id = 'le_' + Date.now().toString(36) + '_' + i; });
+    if (b) {
+      sharedCache = b;
+      // 合并云端而非整段覆盖：以 id 归并，最新 updatedAt 胜出，排除墓碑 id
+      const deleted = new Set(b.deletedIds || []);
+      logEntries = mergeJournal(logEntries, b.journal || [], deleted);
       saveLogEntries();                       // 写回本地，使首页 app.js 也能读到
       renderStats();
       renderFeed(document.querySelector('.filters .chip.active')?.dataset.filter || 'all');
     }
-    if (b) sharedCache = b;
     // 服务端无日志共享内容：主人且本机有日志 → 自动种入 KV（无需手动发布一次）
     else if (getOwnerToken() && logEntries && logEntries.length) {
       pushJournalShare();
@@ -268,6 +272,24 @@
     }
     if (pwd && pwd === MASTER_PWD) return { ok: true, token: 'local-' + Date.now() };
     return { ok: false, msg: '密码错误' };
+  }
+
+  // ── 日志合并（按 id 归并，最新 updatedAt 胜出；deletedIds 为墓碑，永不复活）──
+  let localDeletedIds = new Set();
+  function genId() { return 'le_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  function mergeJournal(local, remote, deletedIds) {
+    const deleted = new Set(deletedIds || []);
+    const m = new Map();
+    (remote || []).forEach(e => { if (e && e.id && !deleted.has(e.id)) m.set(e.id, e); }); // 不动 remote 原对象
+    (local || []).forEach(e => {
+      if (!e) return;
+      if (deleted.has(e.id)) return;           // 墓碑：即便本机仍有该条目也排除
+      if (!e.id) e.id = genId();               // 补稳定 id（旧条目）
+      if (!e.updatedAt) e.updatedAt = 0;       // 旧条目视为最旧，id 冲突时让云端赢
+      const cur = m.get(e.id);
+      if (!cur || e.updatedAt >= cur.updatedAt) m.set(e.id, e);
+    });
+    return Array.from(m.values()).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   }
 
   let logEntries = [];
@@ -454,7 +476,7 @@
     const text = (ta ? ta.value : '').trim();
     if (!text) return;
     const today = fmtNepalDate(new Date());
-    const entry = { id: 'le_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), date: today, text };
+    const entry = { id: 'le_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), date: today, text, updatedAt: Date.now() };
     logEntries.push(entry);
     logEntries.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     saveLogEntries();
@@ -493,6 +515,7 @@
     const r = await journalLogin(pwd);   // 复用主密码校验（后端 / 本地兜底）
     if (!r.ok) { err.hidden = false; err.textContent = r.msg || t('jo.del.err'); return; }
     setOwnerToken(r.token);              // 记住 token，供共享写入鉴权
+    localDeletedIds.add(_delTargetId);   // 墓碑：标记该 id 已删除，跨设备不再复活
     logEntries = logEntries.filter(e => e.id !== _delTargetId);
     saveLogEntries();
     pushJournalShare();   // 日志删除同步到共享包
@@ -502,11 +525,14 @@
   }
 
   // ── 启动 ──
-  load();
-  loadSharedJournal();   // 所有人启动即从服务端拉取共享日志（访客观看、主人编辑）
-  renderStats();
-  renderFeed('all');
-  renderComposer();
+  async function init() {
+    load();
+    await loadSharedJournal();   // 所有人启动即从服务端拉取并合并共享日志（访客观看、主人编辑）
+    renderStats();
+    renderFeed('all');
+    renderComposer();
+  }
+  init();
 
   document.querySelectorAll('.filters .chip').forEach(c => {
     c.addEventListener('click', () => {
