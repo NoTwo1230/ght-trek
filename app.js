@@ -1483,7 +1483,7 @@ function uploadHTML() {
     '<button class="btn primary" style="width:100%;" onclick="document.getElementById(\'gpxUpload\').click()">' + t('up.btn') + '</button>' +
     '<div class="upload-hint">' + t('up.hint') + '</div>' +
     '<div class="date-row">' + t('up.date') + '<input type="date" value="' + (APP.itineraryStartDate || '') + '" onchange="setItineraryStartDate(this.value)"></div>' +
-    (APP.isOwner ? '<div style="margin-top:10px;text-align:center;"><button class="btn-reset visible" id="btnReset" onclick="clearAllData()" style="font-size:11px;">' + t('up.reset') + '</button></div>' : '') +
+    (APP.isOwner ? '<div style="margin-top:10px;text-align:center;"><button class="btn-reset visible" id="btnReset" onclick="clearAllData()" style="font-size:11px;">' + t('up.reset') + '</button><button class="btn-reset visible" id="btnClearCloud" onclick="clearCloudShare()" style="font-size:11px;margin-left:8px;">清空云端</button></div>' : '') +
     '</div>';
 }
 
@@ -3773,7 +3773,7 @@ function updateOwnerUI() {
   // 主人模式由密码解锁控制（APP.isOwner），不再默认开启；重置/编辑按钮的可见性由各自渲染逻辑按 isOwner 决定
 }
 
-function clearAllData() {
+async function clearAllData() {
   if (!confirm('⚠️ 此操作将清除所有数据，不可恢复！\n\n包括:\n- 预设轨迹\n- 实际轨迹\n- 日志\n- 路段进度\n- 行程安排\n\n确定继续？')) return;
   // 统一清除所有以 ght 开头的本地存储键（避免遗漏新增键，例如 ght_start_place）；但保留 ght_token —— 重置=清数据，不是登出
   const keys = [];
@@ -3787,7 +3787,24 @@ function clearAllData() {
   APP.completedDistance = 0;
   APP.progressPercentage = 0;
   APP.progressPct = 0;
+  // 重置 = 清数据，同时清空云端共享（主人唯一编辑者模型）；非主人/无 token/无后端则跳过，不影响本地重置
+  if (APP.isOwner && API.getToken()) {
+    try { await API.putShare({ data: null }); } catch (e) { console.warn('[ght] 云端共享清空失败（不影响本地重置）', e); }
+  }
   location.reload();
+}
+
+// 主人专用：仅清空云端共享（KV），不影响本机数据。用于临时下架共享 / 清掉云端误写数据。
+async function clearCloudShare() {
+  if (!APP.isOwner || !API.getToken()) { alert('仅主人且已登录时可清空云端共享'); return; }
+  if (!confirm('⚠️ 此操作将清空云端共享数据，所有访客将暂时看不到轨迹。\n恢复需重新导入真实轨迹并刷新页面。\n\n确定继续？')) return;
+  try {
+    await API.putShare({ data: null });
+    alert('云端共享已清空。重新导入真实轨迹并刷新页面即可重新共享。');
+    location.reload();
+  } catch (e) {
+    alert('云端清空失败：' + (e && e.message ? e.message : e));
+  }
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
