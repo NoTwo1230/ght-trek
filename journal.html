@@ -238,12 +238,24 @@
     const bundle = (sharedCache && typeof sharedCache === 'object') ? JSON.parse(JSON.stringify(sharedCache)) : {};
     bundle.journal = journal;                // 合并后的 journal 分片，继承其余字段
     bundle.deletedIds = [...deleted];        // 墓碑随包上云，永不过期
+    delete bundle.clearedAt;                 // 真实写入即摘掉「已清空」标记，恢复为正常 bundle
     sharedCache = bundle;
+    try { localStorage.removeItem('ght_cleared_self'); } catch (e) {}  // 任何一次推送代表已恢复共享
     putShare(bundle);
   }
   async function loadSharedJournal() {
     if (!hasBackend()) return;
     const b = await getShare();
+    // 服务端收到「已清空」包：其他设备以空为准抹掉本地日志；发起方（ght_cleared_self）保留本机
+    if (b && b.clearedAt) {
+      if (!localStorage.getItem('ght_cleared_self')) {
+        logEntries = []; localDeletedIds = new Set(); saveLogEntries();
+      }
+      sharedCache = b;
+      renderStats();
+      renderFeed('all');
+      return;
+    }
     if (b) {
       sharedCache = b;
       // 合并云端而非整段覆盖：以 id 归并，最新 updatedAt 胜出，排除墓碑 id
@@ -452,9 +464,12 @@
       <div class="composer-box">
         <textarea id="jText" rows="3" placeholder="${t('jo.composer.ph')}"></textarea>
         <button class="btn-pub" id="jPub">${t('jo.composer.btn')}</button>
+        <button class="btn-pub" id="jRepublish" style="margin-top:8px;background:#3a7;" onclick="republishJournalShare()">🔄 重新发布共享</button>
       </div>`;
     const btn = document.getElementById('jPub');
     if (btn) btn.addEventListener('click', addLogEntry);
+    const rb = document.getElementById('jRepublish');
+    if (rb) rb.addEventListener('click', republishJournalShare);
   }
 
   // 在日志页直接解锁（不再需要跳回首页）
@@ -484,6 +499,15 @@
     if (ta) ta.value = '';
     renderStats();
     renderFeed(document.querySelector('.filters .chip.active')?.dataset.filter || 'all');
+  }
+
+  // 主人专用：把本机日志重新发布到云端（清掉「已清空」标记与发起方标记）
+  async function republishJournalShare() {
+    if (!getOwnerToken()) { renderComposer(); return; }
+    const fresh = await getShare();                 // 先以云端最新包（含 app 分片）为基底，避免覆盖刚由首页推上去的 app 数据
+    if (fresh) sharedCache = fresh;
+    pushJournalShare();   // 内部会 delete clearedAt + removeItem('ght_cleared_self')
+    alert('✅ 已将本机日志重新发布到云端');
   }
 
   // ── 删除日志（需再次输入主人密码确认，防误删）──

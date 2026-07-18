@@ -1483,7 +1483,7 @@ function uploadHTML() {
     '<button class="btn primary" style="width:100%;" onclick="document.getElementById(\'gpxUpload\').click()">' + t('up.btn') + '</button>' +
     '<div class="upload-hint">' + t('up.hint') + '</div>' +
     '<div class="date-row">' + t('up.date') + '<input type="date" value="' + (APP.itineraryStartDate || '') + '" onchange="setItineraryStartDate(this.value)"></div>' +
-    (APP.isOwner ? '<div style="margin-top:10px;text-align:center;"><button class="btn-reset visible" id="btnReset" onclick="clearAllData()" style="font-size:11px;">' + t('up.reset') + '</button><button class="btn-reset visible" id="btnClearCloud" onclick="clearCloudShare()" style="font-size:11px;margin-left:8px;">清空云端</button></div>' : '') +
+    (APP.isOwner ? '<div style="margin-top:10px;text-align:center;"><button class="btn-reset visible" id="btnReset" onclick="clearAllData()" style="font-size:11px;">' + t('up.reset') + '</button><button class="btn-reset visible" id="btnClearCloud" onclick="clearCloudShare()" style="font-size:11px;margin-left:8px;">清空云端</button><button class="btn-reset visible" id="btnRepublish" onclick="republishShare()" style="font-size:11px;margin-left:8px;">🔄 重新发布共享</button></div>' : '') +
     '</div>';
 }
 
@@ -3706,6 +3706,16 @@ function showGPXUploadResult(gpxData, stats) {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   let sharedCache = null;
 
+  // 真正的空共享包（带 clearedAt 时间戳）：用于「清空云端 / 重置数据」，
+  // 让其他设备以空为准抹掉本地共享数据，而非把本机内容误当作权威回推上云。
+  function emptyShareBundle() {
+    return {
+      preset: null, actual: [], pos: null, itinerary: [], itineraryStart: null,
+      segments: [], restDays: [], sections: [], totalDistance: 0,
+      journal: [], deletedIds: [], clearedAt: Date.now()
+    };
+  }
+
   // 实际轨迹按 date 归并：同一天以 updatedAt 最新者为准（无时间戳的旧条目视为最旧）
   function mergeActualTracks(local, remote) {
     const m = new Map();
@@ -3734,7 +3744,9 @@ function showGPXUploadResult(gpxData, stats) {
     bundle.restDays = APP.presetRestDays || [];
     bundle.sections = APP.sectionRanges || null;
     bundle.totalDistance = APP.totalDistance || 0;
+    delete bundle.clearedAt;   // 真实写入即摘掉「已清空」标记，恢复为正常 bundle
     sharedCache = bundle;
+    try { localStorage.removeItem('ght_cleared_self'); } catch (e) {}  // 任何一次推送代表已恢复共享
     API.putShare(bundle).catch(e => console.warn('[ght] 共享推送失败（不影响本地使用）', e));
   }
 
@@ -3753,8 +3765,20 @@ function showGPXUploadResult(gpxData, stats) {
     try {
       const r = await API.getShare();
       if (!r.ok) return;                                // 服务端错误：保留本地，不自动种入
-      if (r.data && r.data.data) {                     // 服务端有共享内容
-        const b = r.data.data;
+      const b = (r.data && r.data.data) ? r.data.data : null;
+      // 服务端收到「已清空」包：其他设备以空为准抹掉本地共享字段；发起方（ght_cleared_self）保留本机
+      if (b && b.clearedAt) {
+        if (!localStorage.getItem('ght_cleared_self')) {
+          APP.presetTrack = null; APP.totalDistance = 0; APP.sectionRanges = null;
+          APP.presetSegments = null; APP.presetRestDays = null; APP.actualTracks = [];
+          APP.currentPosition = null; APP.itinerary = []; APP.itineraryStartDate = null;
+          try { localStorage.removeItem('ght_log'); } catch (e) {}
+        }
+        sharedCache = b;
+        renderDashboard(); renderAllTracks(); updateProgressDOM(); drawElevationProfile();
+        return;                                         // 关键：不再走后面的 owner 回推分支
+      }
+      if (b) {                                          // 服务端有共享内容（正常 bundle）
         sharedCache = b;
         // 先按云端为准合并渲染（actual 按 date 归并、保留 updatedAt 最新者；其余字段维持主人本地优先语义）
         if (b.preset) APP.presetTrack = b.preset;
@@ -3801,25 +3825,34 @@ async function clearAllData() {
   APP.completedDistance = 0;
   APP.progressPercentage = 0;
   APP.progressPct = 0;
-  // 重置 = 清数据，同时清空云端共享（主人唯一编辑者模型）；非主人/无 token/无后端则跳过，不影响本地重置
+  // 重置 = 清数据，同时以「已清空」包清空云端共享（主人唯一编辑者模型）；其他设备会同步抹掉本地共享。非主人/无 token/无后端则跳过，不影响本地重置
   if (APP.isOwner && API.getToken()) {
-    try { await API.putShare({ data: null }); } catch (e) { console.warn('[ght] 云端共享清空失败（不影响本地重置）', e); }
+    try { await API.putShare(emptyShareBundle()); } catch (e) { console.warn('[ght] 云端共享清空失败（不影响本地重置）', e); }
   }
   location.reload();
 }
 
 // 主人专用：仅清空云端共享（KV），不影响本机数据。用于临时下架共享 / 清掉云端误写数据。
-async function clearCloudShare() {
-  if (!APP.isOwner || !API.getToken()) { alert('仅主人且已登录时可清空云端共享'); return; }
-  if (!confirm('⚠️ 此操作将清空云端共享数据，所有访客将暂时看不到轨迹。\n恢复需重新导入真实轨迹并刷新页面。\n\n确定继续？')) return;
-  try {
-    await API.putShare({ data: null });
-    alert('云端共享已清空。重新导入真实轨迹并刷新页面即可重新共享。');
-    location.reload();
-  } catch (e) {
-    alert('云端清空失败：' + (e && e.message ? e.message : e));
+  async function clearCloudShare() {
+    if (!APP.isOwner || !API.getToken()) { alert('仅主人且已登录时可清空云端共享'); return; }
+    if (!confirm('⚠️ 此操作将清空云端共享数据，所有访客将暂时看不到轨迹。\n恢复需重新导入真实轨迹并刷新页面。\n\n确定继续？')) return;
+    try {
+      try { localStorage.setItem('ght_cleared_self', '1'); } catch (e) {}  // 标记「我是发起方」，保留本机数据
+      await API.putShare(emptyShareBundle());
+      alert('云端共享已清空。所有设备将显示为空；本机数据已保留，可点「重新发布共享」恢复上云。');
+      location.reload();
+    } catch (e) {
+      alert('云端清空失败：' + (e && e.message ? e.message : e));
+    }
   }
-}
+
+  // 主人专用：把本机共享数据重新发布到云端（清掉「已清空」标记与发起方标记）
+  async function republishShare() {
+    if (!APP.isOwner || !API.getToken()) { alert('仅主人且已登录时可重新发布'); return; }
+    try { const r = await API.getShare(); if (r && r.ok && r.data && r.data.data) sharedCache = r.data.data; } catch (e) {}  // 以云端最新包为基底，保留 journal 分片
+    pushShare();   // 内部会 delete clearedAt + removeItem('ght_cleared_self')
+    alert('✅ 已将本机共享数据重新发布到云端');
+  }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  INITIALIZATION
