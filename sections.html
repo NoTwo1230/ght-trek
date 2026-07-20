@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap">
 <!-- 预加载首屏 coverflow 图片，消除白屏等待 -->
-<link rel="preload" as="image" href="assets/region-maps/kanchenjunga_index.png">
-<link rel="preload" as="image" href="assets/region-maps/makalu_index.png">
-<link rel="preload" as="image" href="assets/region-maps/everest_index.png">
+<link rel="preload" as="image" href="assets/region-maps/kanchenjunga_index.svg">
+<link rel="preload" as="image" href="assets/region-maps/makalu_index.svg">
+<link rel="preload" as="image" href="assets/region-maps/everest_index.svg">
 <style>
   :root{
     --bg:#0a0e14; --panel:#0d1219; --panel-alt:#11161f; --border:#1c2333;
@@ -65,12 +65,12 @@
   .cover-head h2{font-size:14px;font-weight:700;letter-spacing:.5px}
   .cover-head span{font-size:11.5px;color:var(--text-dim)}
   .cover-wrap{position:relative;max-width:1320px;margin:8px auto 6px;overflow:hidden;padding:0 10px}
-  .stage{position:relative;height:360px;perspective:1500px;display:flex;align-items:center;justify-content:center}
+  .stage{position:relative;height:400px;perspective:1500px;display:flex;align-items:center;justify-content:center}
   .track{position:relative;width:100%;height:100%}
-  .cfc{position:absolute;left:50%;top:50%;width:300px;height:230px;border-radius:16px;overflow:hidden;
+  .cfc{position:absolute;left:50%;top:50%;width:344px;height:270px;border-radius:16px;overflow:hidden;
     transform-style:preserve-3d;cursor:pointer;will-change:transform,opacity;
     transition:transform .55s cubic-bezier(.22,.61,.36,1),opacity .4s ease,box-shadow .4s ease;
-    box-shadow:0 10px 30px rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.06);background:#05080d}
+    box-shadow:0 10px 30px rgba(0,0,0,.45);border:2px solid #D4A84A;background:#05080d}
   .cfc.is-active{box-shadow:0 26px 60px rgba(0,0,0,.6),0 0 0 2px var(--rb),0 0 36px -6px var(--rc)}
   .cfc-img{position:relative;width:100%;height:100%}
   .cfc-img img{width:100%;height:100%;object-fit:cover;object-position:center top;display:block;
@@ -145,8 +145,8 @@
     display:none;align-items:center;justify-content:center;padding:24px;flex-direction:column;gap:14px}
   .lb.open{display:flex}
   .lb-cap{color:var(--text);font-size:14px;font-weight:600}
-  .lb-imgs{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;max-width:1000px}
-  .lb-imgs img{max-width:min(92vw,820px);max-height:80vh;border-radius:10px;border:1px solid var(--border-light);background:#05080d}
+  .lb-imgs{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;max-width:1200px}
+  .lb-imgs img{max-width:min(96vw,1000px);max-height:86vh;border-radius:10px;border:1px solid var(--border-light);background:#05080d}
   .lb-close{position:absolute;top:18px;right:22px;cursor:pointer;color:var(--text-dim);font-size:26px;line-height:1;
     background:none;border:none;transition:.2s;z-index:5}
   .lb-close:hover{color:var(--text)}
@@ -154,8 +154,8 @@
   @media(max-width:760px){
     .detail-card{grid-template-columns:1fr;max-height:94vh}
     .d-media{min-height:240px;max-height:38vh}
-    .stage{height:300px}
-    .cfc{width:240px;height:188px}
+    .stage{height:330px}
+    .cfc{width:280px;height:214px}
     .cf-arrow{width:36px;height:36px;font-size:19px}
   }
   @media(max-width:560px){
@@ -344,8 +344,8 @@
     function layout(){
       const cards = track.children;
       const W = window.innerWidth;
-      const spread = W<760?120:200;
-      const zDepth = W<760?60:130;
+      const spread = W<760?150:228;
+      const zDepth = W<760?70:150;
       const rot = 34;
       for(let i=0;i<cards.length;i++){
         const c=cards[i];

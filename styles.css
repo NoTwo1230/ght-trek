@@ -373,11 +373,36 @@
   }
   .map-legend .lg-row { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
   .map-legend .lg-sw { width: 16px; height: 4px; border-radius: 2px; flex-shrink: 0; }
-  .map-legend .lg-plan { background: linear-gradient(90deg, #a8521e, #b1319f, #2f63c4, #2f95c0, #c2315f, #9aa82f, #d2691e, #4a35c0, #e0b500, #2bb6b6, #c22929, #9c8f3e, #31b97e); }
-  .map-legend .lg-cyan { background: #1D9E75; }
+  .map-legend .lg-plan { background:
+      repeating-linear-gradient(90deg,#fff 0 5px,transparent 5px 10px) 0 0/100% 2px no-repeat,
+      repeating-linear-gradient(90deg,#fff 0 5px,transparent 5px 10px) 0 100%/100% 2px no-repeat;
+    height: 8px; border:1px solid rgba(255,255,255,.35); }
+  .map-legend .lg-cyan { background: #3fb950; }
   @media (max-width: 640px) {
     .map-legend { width: 160px; top: 8px; left: 8px; }
     .map-compass { top: 8px; right: 8px; }
+  }
+
+  /* ── 13-REGION TERRITORY OVERLAYS (prototype style) ── */
+  .region-info {
+    top: 50px; right: 12px;
+    padding: 12px 14px;
+    font-size: 12px;
+    max-width: 260px;
+    line-height: 1.45;
+  }
+  .region-info .ri-name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .region-info .ri-name span { font-weight: 400; color: var(--text-dim); font-size: 12px; }
+  .region-info .ri-park { color: #85B7EB; margin-top: 6px; font-weight: 500; }
+  .region-info .ri-meta { color: var(--text-dim); margin-top: 4px; }
+  .region-info .ri-dlist { color: var(--text-dim); margin-top: 6px; font-size: 11px; max-height: 64px; overflow-y: auto; }
+
+  .region-num {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: #fff; border: 2.5px solid #000;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
   }
 
   /* ── PROGRESS BAR (below map, hero level) ── */

@@ -11,7 +11,7 @@ const nepalProvinces = nepalProvinceData;
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ── 13-region entry anchors (GHT corridor, east → west) ──
 // Each anchor = where the track CROSSES INTO that region from the previous one.
-// Calibrated against region-maps/*_detail.png territorial boundaries so each
+// Calibrated against region-maps/*_detail.svg territorial boundaries so each
 // segment captures a visually distinct portion of the route.
 // Anchors recomputed from the REAL 80-day GPS track (47,479 pts / 1,602 km).
 // Each value is a point DEEP INSIDE that region's territory (the first track point of
@@ -774,50 +774,109 @@ new BasemapSwitcher().addTo(map);
 
 L.control.scale({ metric: true, imperial: false, position: 'bottomright', maxWidth: 120 }).addTo(map);
 
-// Province layer group
-const provinceLayerGroup = L.layerGroup().addTo(map);
+// 13-region territory layer group (prototype style)
+const regionLayerGroup = L.layerGroup().addTo(map);
 const uploadedTrackGroup = L.layerGroup().addTo(map);
 // 标注点图层：默认不加入地图；点开某路段详情时才按需显示该段的标注点
 const waypointLayer = L.layerGroup();
 
-// Draw province polygons with fill colors
-nepalProvinces.forEach(province => {
-  const feature = {
-    type: province.type,
-    coordinates: province.coordinates
-  };
-  const geoLayer = L.geoJSON(feature, {
-    style: {
-      color: province.color,
-      weight: 1.5,
-      opacity: province.name === '巴格马蒂省' ? 0.8 : 0.35,
-      fillColor: province.color,
-      fillOpacity: 0.08
-    }
-  });
-  geoLayer.bindTooltip(province.nameEn, {
-    permanent: false,
-    direction: 'center',
-    className: 'province-tooltip',
-    opacity: 0.9
-  });
-  geoLayer.addTo(provinceLayerGroup);
+// ── 13-region territory layer (prototype style) ──
+// 依赖 ght-region-map.js → window.GHT_REGION_MAP { districtToRegion, regions }
+(function buildRegionTerritories() {
+  const RM = window.GHT_REGION_MAP;
+  if (!RM) { console.warn('[region] GHT_REGION_MAP 未加载'); return; }
+  const { districtToRegion, regions } = RM;
 
-  // Store reference for later highlighting
-  geoLayer._provinceId = province.provinceId;
-  geoLayer._provinceColor = province.color;
-});
-
-// Highlight province function
-function highlightProvince(provinceId) {
-  provinceLayerGroup.eachLayer(layer => {
-    if (layer._provinceId === provinceId) {
-      layer.setStyle({ fillOpacity: 0.2, weight: 2.5, opacity: 1.0 });
-    } else {
-      layer.setStyle({ fillOpacity: 0.05, weight: 1.5, opacity: 0.3 });
+  function distNameOf(f) {
+    const p = f.properties || {};
+    return p.DIST_EN || p.DISTRICT || p.district || p.NAME || p.name || '';
+  }
+  function computeCentroid(geom) {
+    let coords = [];
+    if (geom.type === 'Polygon') coords = geom.coordinates[0];
+    else if (geom.type === 'MultiPolygon') {
+      let lg = geom.coordinates[0];
+      for (const p of geom.coordinates) { if (p[0].length > lg[0].length) lg = p; }
+      coords = lg[0];
     }
-  });
-}
+    let lat = 0, lon = 0;
+    for (const c of coords) { lat += c[1]; lon += c[0]; }
+    return [lat / coords.length, lon / coords.length];
+  }
+
+  const regionLayers = {};
+  const regionDistricts = {};
+  for (let i = 1; i <= 13; i++) regionDistricts[i] = { features: [], names: [] };
+  const uncolored = [];
+
+  function render(data) {
+    (data.features || []).forEach(f => {
+      const dname = distNameOf(f);
+      const rid = districtToRegion[dname];
+      if (rid) {
+        f.properties._rid = rid;
+        regionDistricts[rid].features.push(f);
+        if (dname && regionDistricts[rid].names.indexOf(dname) < 0) regionDistricts[rid].names.push(dname);
+      } else {
+        f.properties._rid = 0;
+        uncolored.push(f);
+      }
+    });
+
+    // 其余尼泊尔行政区（灰色上下文底）
+    if (uncolored.length) {
+      L.geoJSON({ type: 'FeatureCollection', features: uncolored }, {
+        style: () => ({ color: '#B4B2A9', weight: 0.5, fillColor: '#D3D1C7', fillOpacity: 0.18 })
+      }).addTo(regionLayerGroup);
+    }
+
+    for (let i = 1; i <= 13; i++) {
+      const r = regions[i];
+      const rd = regionDistricts[i];
+      if (!r || !rd.features.length) continue;
+      const layer = L.geoJSON({ type: 'FeatureCollection', features: rd.features }, {
+        style: () => ({ color: r.stroke, weight: 1, fillColor: r.color, fillOpacity: 0.5 }),
+        onEachFeature: (f, lyr) => {
+          const dname = distNameOf(f);
+          lyr.bindTooltip(
+            i + '. ' + r.zh + ' (' + r.en + ')\n' + r.park + '\n' + r.days + ' · ' + r.dist + 'km\n行政区: ' + dname,
+            { sticky: true, className: 'region-tooltip' }
+          );
+          lyr.on('mouseover', () => showRegionInfo(i));
+          lyr.on('mouseout', hideRegionInfo);
+        }
+      }).addTo(regionLayerGroup);
+      regionLayers[i] = layer;
+    }
+  }
+
+  function showRegionInfo(i) {
+    const r = regions[i];
+    const panel = document.getElementById('regionInfo');
+    if (!r || !panel) return;
+    panel.hidden = false;
+    const names = (regionDistricts[i].names || []).join(', ');
+    panel.innerHTML =
+      '<div class="ri-name">' + i + '. ' + r.zh + ' <span>' + r.en + '</span></div>' +
+      '<div class="ri-park">' + r.park + '</div>' +
+      '<div class="ri-meta">' + r.days + ' · ' + r.dist + 'km</div>' +
+      '<div class="ri-dlist">含行政区: ' + names + '</div>';
+  }
+  function hideRegionInfo() {
+    const panel = document.getElementById('regionInfo');
+    if (panel) panel.hidden = true;
+  }
+
+  function loadGeo() {
+    const local = 'assets/nepal-districts.geojson';
+    const cdn = 'https://cdn.jsdelivr.net/gh/mesaugat/geoJSON-Nepal@master/nepal-districts-new.geojson';
+    fetch(local).then(res => { if (!res.ok) throw new Error('local ' + res.status); return res.json(); })
+      .then(render)
+      .catch(() => fetch(cdn).then(res => { if (!res.ok) throw new Error('cdn ' + res.status); return res.json(); }).then(render))
+      .catch(err => console.warn('[region] 行政区 GeoJSON 加载失败:', err));
+  }
+  loadGeo();
+})();
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  PANEL NAVIGATION
@@ -2840,16 +2899,43 @@ const sectionColors = (window.GHT_SECTIONS || []).map(r => r.color);
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-const ACTUAL_TRACK_COLOR = '#1D9E75';   // 实际徒步轨迹青色
+const ACTUAL_TRACK_COLOR = '#3fb950';   // 实际徒步轨迹：实心绿色
 
-// 返回「预设未走段」样式：原区域色实线描边（无金色、无虚线）。
-function getSectionStyle(color) {
-  return {
-    glow:   null,
-    border: { color: color, weight: 5, opacity: 0.9, dashArray: undefined },
-    inner:  null,
-    dashed: null
+// 将一条经纬度折线沿垂直方向偏移 dist 米，返回新折线（用于绘制双平行虚线）。
+function offsetPolyline(coords, dist) {
+  const R = 111320;
+  const out = [];
+  for (let i = 0; i < coords.length; i++) {
+    const lat = coords[i][0], lng = coords[i][1];
+    const prev = coords[Math.max(0, i - 1)];
+    const next = coords[Math.min(coords.length - 1, i + 1)];
+    const dLat = next[0] - prev[0];
+    const dLng = next[1] - prev[1];
+    if (dLat === 0 && dLng === 0) { out.push([lat, lng]); continue; }
+    const dy = dLat * R;
+    const dx = dLng * R * Math.cos(lat * Math.PI / 180);
+    const len = Math.hypot(dx, dy) || 1;
+    const nx = -dy / len;
+    const ny = dx / len;
+    out.push([
+      lat + (ny / R) * dist,
+      lng + (nx / (R * Math.cos(lat * Math.PI / 180))) * dist
+    ]);
+  }
+  return out;
+}
+
+// 画「计划轨迹」：两条平行白色细虚线（效果 ≈ ═══）。
+function drawPlannedDoubleDashed(coords, layerGroup, popupHtml, weight, opacity) {
+  if (!coords || coords.length < 2) return;
+  const OFFSET = 1000; // 两线间距（米），继续调大以保证能看到双线间隙
+  const opts = {
+    color: '#ffffff', weight: weight || 1.6, opacity: (opacity == null ? 0.95 : opacity),
+    dashArray: '4,6', lineCap: 'round', lineJoin: 'round'
   };
+  L.polyline(offsetPolyline(coords, OFFSET), opts).addTo(layerGroup);
+  const r = L.polyline(offsetPolyline(coords, -OFFSET), opts).addTo(layerGroup);
+  if (popupHtml) r.bindPopup(popupHtml);
 }
 
 // Split a point array into continuous segments at break markers (cross-segment jumps)
@@ -2869,43 +2955,11 @@ function splitByBreaks(points) {
   return segments;
 }
 
-// 绘制一段轨迹：计划=区域色边框+白色虚线中心；已完成=金色填充+醒目边框+白光晕
-// 把一条 style 画成若干 polyline 层（glow / border / inner / dashed）。
-function drawRun(pts, style, layerGroup, popupHtml) {
-  if (!pts || pts.length < 2) return;
-  const coords = pts.map(p => [p.lat, p.lon]);
-  if (style.glow) {
-    L.polyline(coords, {
-      color: style.glow.color, weight: style.glow.weight,
-      opacity: style.glow.opacity, lineCap: 'round', lineJoin: 'round'
-    }).addTo(layerGroup);
-  }
-  const border = L.polyline(coords, {
-    color: style.border.color, weight: style.border.weight,
-    opacity: style.border.opacity, dashArray: style.border.dashArray,
-    lineCap: 'round', lineJoin: 'round'
-  }).addTo(layerGroup);
-  if (style.inner) {
-    L.polyline(coords, {
-      color: style.inner.color, weight: style.inner.weight,
-      opacity: style.inner.opacity, lineCap: 'round', lineJoin: 'round'
-    }).addTo(layerGroup);
-  }
-  if (style.dashed) {
-    L.polyline(coords, {
-      color: style.dashed.color, weight: style.dashed.weight,
-      opacity: style.dashed.opacity, dashArray: style.dashed.dashArray,
-      lineCap: 'round', lineJoin: 'round'
-    }).addTo(layerGroup);
-  }
-  if (popupHtml) border.bindPopup(popupHtml);
-}
-
-// 预设轨迹：作为「目标计划线」整条连续绘制（保留各区域原色）。不按 _walked 切分，
-// 因此绝不会断开；实际走过的部分由上方青色实际轨迹叠加表达（预设在下、实际在上）。
+// 预设轨迹：作为「目标计划线」整条连续绘制（两条平行白色细虚线，效果 ≈ ═══）。
+// 不按 _walked 切分，绝不会断开；实际走过的部分由上方绿色实际轨迹叠加表达（预设在下、实际在上）。
 function drawPresetFidelity(points, color, layerGroup, popupHtml) {
-  const style = getSectionStyle(color);
-  drawRun(points, style, layerGroup, popupHtml);
+  const coords = points.map(p => [p.lat, p.lon]);
+  drawPlannedDoubleDashed(coords, layerGroup, popupHtml, 1.6, 0.95);
 }
 
 // 每段名称标签已按用户要求移除（地图上不再显示区域名标签）。
@@ -2922,9 +2976,7 @@ function renderAllTracks() {
     // 兜底连续底线：先画一整条贯穿全程的细浅色线，桥接各区域段端点之间的物理缝隙，
     // 避免「段与段独立 polyline」在端点间距较大时产生视觉「断开」。彩色分段线叠在其上。
     const _baseCoords = APP.presetTrack.trackPoints.map(p => [p.lat, p.lon]);
-    L.polyline(_baseCoords, {
-      color: '#cfd8e3', weight: 3, opacity: 0.5, lineCap: 'round', lineJoin: 'round'
-    }).addTo(uploadedTrackGroup);
+    drawPlannedDoubleDashed(_baseCoords, uploadedTrackGroup, null, 1.6, 0.5);
 
     if (APP.sectionRanges && APP.sectionRanges.length > 0) {
       // Draw by national park sections (each with its own color)
@@ -2946,11 +2998,8 @@ function renderAllTracks() {
         const prefix = APP.presetTrack.trackPoints.slice(0, firstStartIdx);
         if (prefix.length >= 2) {
           const coords = prefix.map(p => [p.lat, p.lon]);
-          L.polyline(coords, {
-            color: APP.sectionRanges[0].regionColor || '#8b949e', weight: 5, opacity: 0.88,
-            lineCap: 'round', lineJoin: 'round'
-          }).bindPopup('<b>📍 起始段</b><br>起点 → 第一个区域入口<br>距离: ~' +
-            Math.round((APP.presetTrack.distances[firstStartIdx] || 0) / 1000) + 'km').addTo(uploadedTrackGroup);
+          drawPlannedDoubleDashed(coords, uploadedTrackGroup, '<b>📍 起始段</b><br>起点 → 第一个区域入口<br>距离: ~' +
+            Math.round((APP.presetTrack.distances[firstStartIdx] || 0) / 1000) + 'km', 1.6, 0.9);
         }
       }
 
@@ -2961,10 +3010,7 @@ function renderAllTracks() {
       const segs = splitByBreaks(APP.presetTrack.trackPoints);
       segs.forEach(seg => {
         const coords = seg.map(p => [p.lat, p.lon]);
-        L.polyline(coords, { color: '#ffffff', weight: 7, opacity: 0.5 }).addTo(uploadedTrackGroup);
-        L.polyline(coords, {
-          color: '#ff6b6b', weight: 4, opacity: 0.85
-        }).bindPopup('<b>📐 预设轨迹</b><br>距离: ~' + (APP.totalDistance || '—') + 'km').addTo(uploadedTrackGroup);
+        drawPlannedDoubleDashed(coords, uploadedTrackGroup, '<b>📐 预设轨迹</b><br>距离: ~' + (APP.totalDistance || '—') + 'km', 1.6, 0.9);
       });
     }
 
