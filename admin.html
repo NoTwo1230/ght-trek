@@ -24,25 +24,45 @@
   .admin-top a:hover,.admin-top button:hover{color:#fff;border-color:rgba(255,255,255,.22)}
 
   .admin-main{max-width:920px;margin:0 auto;padding:26px 22px 60px}
-  .admin-sec{background:var(--panel,rgba(255,255,255,.035));border:1px solid var(--border,rgba(255,255,255,.09));
-    border-radius:14px;padding:18px 20px;margin-bottom:20px}
-  .admin-sec h2{font-size:17px;font-weight:800;margin:0 0 4px;display:flex;align-items:center;gap:9px}
-  .admin-sec .en{font-size:11px;font-weight:600;color:var(--text-faint,#5b6675);letter-spacing:2px}
-  .admin-sec p.hint{color:var(--text-dim,#8b98a8);font-size:12.5px;margin:6px 0 14px;line-height:1.6}
 
-  /* 日志录入 */
-  .composer-box{background:var(--panel-2,rgba(255,255,255,.055));border:1px solid var(--border,rgba(255,255,255,.09));border-radius:12px;padding:14px 16px}
-  .composer-box label{display:block;font-size:11px;color:var(--text-dim,#8b98a8);margin-bottom:6px}
+  /* tabs */
+  .tabs{display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap}
+  .tab-btn{padding:9px 18px;background:var(--panel-2,rgba(255,255,255,.055));border:1px solid var(--border,rgba(255,255,255,.09));
+    border-radius:9px;font-size:13.5px;font-weight:600;cursor:pointer;color:var(--text-dim,#8b98a8);transition:.18s}
+  .tab-btn:hover{color:var(--text,#e6edf3);border-color:rgba(255,255,255,.2)}
+  .tab-btn.active{background:var(--accent,#4f9dff);color:#fff;border-color:var(--accent,#4f9dff)}
+  .tab-panel{display:none}
+  .tab-panel.active{display:block}
+
+  .sec-head{font-size:17px;font-weight:800;margin:0 0 4px;display:flex;align-items:center;gap:9px}
+  .sec-head .en{font-size:11px;font-weight:600;color:var(--text-faint,#5b6675);letter-spacing:2px}
+  .sec-hint{color:var(--text-dim,#8b98a8);font-size:12.5px;margin:6px 0 16px;line-height:1.6}
+
+  /* composer */
+  .composer-box{background:var(--panel-2,rgba(255,255,255,.055));border:1px solid var(--border,rgba(255,255,255,.09));border-radius:12px;padding:14px 16px;margin-bottom:22px}
   .composer-box textarea{width:100%;background:var(--bg-soft,#0f141d);border:1px solid var(--border,rgba(255,255,255,.09));
     border-radius:8px;color:var(--text,#e6edf3);padding:9px 11px;font-family:inherit;font-size:13px;box-sizing:border-box;resize:vertical;min-height:70px;line-height:1.6}
   .composer-box .btn-pub{margin-top:10px;width:100%;padding:10px;background:var(--accent,#4f9dff);color:#fff;
     border:none;border-radius:8px;font-size:13.5px;font-weight:600;cursor:pointer;transition:.18s}
   .composer-box .btn-pub:hover{filter:brightness(1.12)}
-  .composer-box input.j-pwd{width:100%;background:var(--bg-soft,#0f141d);border:1px solid var(--border,rgba(255,255,255,.09));
-    border-radius:8px;color:var(--text,#e6edf3);padding:9px 11px;font-family:inherit;font-size:13px;box-sizing:border-box;margin-bottom:8px}
-  .j-pwd-err{color:var(--orange,#ffa94d);font-size:12px;margin-top:8px}
+  .composer-box .btn-pub.ghost{background:var(--panel-2,rgba(255,255,255,.055));border:1px solid var(--border,rgba(255,255,255,.09));color:var(--text-dim,#8b98a8);margin-top:8px}
 
-  /* 配置表单 */
+  /* timeline */
+  .timeline{position:relative;padding-left:30px;margin-top:6px}
+  .timeline::before{content:'';position:absolute;left:10px;top:6px;bottom:6px;width:2px;background:var(--border,rgba(255,255,255,.12))}
+  .tl-item{position:relative;margin-bottom:18px}
+  .tl-node{position:absolute;left:-30px;top:5px;width:14px;height:14px;border-radius:50%;
+    background:var(--accent,#4f9dff);border:3px solid var(--bg,#0a0d12);box-shadow:0 0 0 3px rgba(79,157,255,.18)}
+  .tl-item.gps .tl-node{background:var(--green,#34d058);box-shadow:0 0 0 3px rgba(52,208,88,.18)}
+  .tl-date{font-size:12px;color:var(--text-dim,#8b98a8);font-weight:600;margin-bottom:7px;display:flex;align-items:center;gap:8px}
+  .tl-day{font-size:11px;color:var(--text-faint,#5b6675);background:rgba(255,255,255,.05);border:1px solid var(--border,rgba(255,255,255,.09));border-radius:6px;padding:2px 8px}
+  .tl-card{background:var(--panel,rgba(255,255,255,.035));border:1px solid var(--border,rgba(255,255,255,.09));border-radius:12px;padding:13px 15px}
+  .tl-text{font-size:13.5px;color:var(--text,#e6edf3);line-height:1.7;white-space:pre-wrap;word-break:break-word}
+  .tl-del{margin-left:auto;background:var(--bg-soft,#0f141d);border:1px solid var(--border,rgba(255,255,255,.09));color:var(--text-dim,#8b98a8);
+    border-radius:7px;width:26px;height:26px;cursor:pointer}
+  .tl-gps-tag{font-size:11px;color:var(--green,#34d058);background:rgba(52,208,88,.1);border:1px solid rgba(52,208,88,.3);border-radius:7px;padding:3px 9px;font-weight:600}
+
+  /* config */
   .cfg-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
   .cfg-row label{width:130px;font-size:13px;color:var(--text-dim,#8b98a8);flex:none}
   .cfg-row input,.cfg-row select{flex:1;background:var(--bg-soft,#0f141d);border:1px solid var(--border,rgba(255,255,255,.09));
@@ -51,11 +71,26 @@
   .cfg-save:hover{filter:brightness(1.12)}
   .cfg-msg{font-size:12.5px;margin-left:12px}
 
-  /* 轨迹上传提示卡（复用 app.js 数据弹窗之外，这里给个引导） */
-  .track-card{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  /* track card */
+  .track-card{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--panel,rgba(255,255,255,.035));
+    border:1px solid var(--border,rgba(255,255,255,.09));border-radius:14px;padding:20px}
   .track-card .btn-go{padding:11px 20px;background:var(--accent,#4f9dff);color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer}
   .track-card .btn-go:hover{filter:brightness(1.12)}
-  .track-note{font-size:12px;color:var(--text-dim,#8b98a8);margin-top:8px;line-height:1.6}
+  .track-note{font-size:12px;color:var(--text-dim,#8b98a8);line-height:1.6}
+
+  /* single login gate (replaces every per-section password) */
+  .login-gate{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
+    background:rgba(10,13,18,.96);backdrop-filter:blur(8px)}
+  .login-box{width:330px;background:var(--panel,rgba(255,255,255,.04));border:1px solid var(--border,rgba(255,255,255,.12));
+    border-radius:16px;padding:30px 28px;text-align:center}
+  .login-box .lb-title{font-size:16px;font-weight:800;margin-bottom:6px}
+  .login-box .lb-sub{font-size:12.5px;color:var(--text-dim,#8b98a8);margin-bottom:20px}
+  .login-box input{width:100%;background:var(--bg-soft,#0f141d);border:1px solid var(--border,rgba(255,255,255,.12));
+    border-radius:9px;color:var(--text,#e6edf3);padding:11px 13px;font-family:inherit;font-size:14px;box-sizing:border-box;margin-bottom:12px}
+  .login-box .btn-login{width:100%;padding:11px;background:var(--accent,#4f9dff);color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer}
+  .login-box .btn-login:hover{filter:brightness(1.12)}
+  .login-box .lb-err{color:var(--orange,#ffa94d);font-size:12.5px;margin-top:10px;min-height:16px}
+  .admin-main.locked{display:none}
 </style>
 </head>
 
@@ -63,6 +98,17 @@
 
   <!-- 复用 app.js 的轨迹处理管线需要一个地图容器；置为屏幕外 1px，不影响后台使用 -->
   <div id="map" style="position:absolute;width:1px;height:1px;left:-9999px;top:-9999px;overflow:hidden;opacity:0;pointer-events:none;"></div>
+
+  <!-- 单一登录（只需一次，解锁全部：日志 / 轨迹 / 配置） -->
+  <div class="login-gate" id="loginGate">
+    <div class="login-box">
+      <div class="lb-title">🔐 GHT 后台登录</div>
+      <div class="lb-sub">输入主人密码以管理日志、轨迹与配置</div>
+      <input type="password" id="loginPwd" placeholder="密码" autocomplete="off" onkeydown="if(event.key==='Enter')adminDoLogin()">
+      <button class="btn-login" id="loginBtn" type="button" onclick="adminDoLogin()">解锁</button>
+      <div class="lb-err" id="loginErr"></div>
+    </div>
+  </div>
 
   <header class="admin-top">
     <div class="brand">🏔️ GHT <span class="badge">后台 ADMIN</span></div>
@@ -72,30 +118,37 @@
     <button id="adminLogout" type="button">退出登录</button>
   </header>
 
-  <main class="admin-main">
+  <main class="admin-main locked" id="adminMain">
 
-    <!-- 1. 日志录入 -->
-    <section class="admin-sec">
-      <h2>📝 远征日志录入 <span class="en">JOURNAL</span></h2>
-      <p class="hint">在此发布沿途随笔，发布即同步到云端共享包，公众站与他人设备即时可见。只发文字、不传照片（山里信号不稳）。</p>
+    <!-- Tabs -->
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="journal" type="button">📝 日志</button>
+      <button class="tab-btn" data-tab="tracks" type="button">📍 轨迹</button>
+      <button class="tab-btn" data-tab="config" type="button">⚙️ 配置</button>
+    </nav>
+
+    <!-- 1. 日志（时间轴） -->
+    <section class="tab-panel active" id="tab-journal">
+      <h2 class="sec-head">📝 远征日志 <span class="en">JOURNAL</span></h2>
+      <p class="sec-hint">在此发布沿途随笔，发布即同步到云端共享包，公众站与他人设备即时可见。只发文字、不传照片（山里信号不稳）。</p>
       <div id="composer"></div>
-      <div class="feed" id="feed" style="margin-top:16px"></div>
+      <div class="timeline" id="feed"></div>
     </section>
 
-    <!-- 2. 轨迹上传 -->
-    <section class="admin-sec">
-      <h2>📍 轨迹上传 <span class="en">TRACKS</span></h2>
-      <p class="hint">上传 GPX 预设轨迹 / 实际徒步轨迹。处理管线与前台完全一致（抽稀、垭口识别、路段计算），上传即发布到云端。</p>
+    <!-- 2. 轨迹 -->
+    <section class="tab-panel" id="tab-tracks">
+      <h2 class="sec-head">📍 轨迹管理 <span class="en">TRACKS</span></h2>
+      <p class="sec-hint">上传 GPX 预设轨迹 / 实际徒步轨迹。处理管线与前台完全一致（抽稀、垭口识别、路段计算），上传即发布到云端。</p>
       <div class="track-card">
         <button class="btn-go" id="openTrackModal" type="button">打开轨迹管理</button>
-        <span class="track-note">需先解锁（输入主人密码）。上传后公众地图与海拔剖面自动更新。</span>
+        <span class="track-note">已解锁，无需再次输入密码。上传后公众地图与海拔剖面自动更新。</span>
       </div>
     </section>
 
-    <!-- 3. 站点配置 -->
-    <section class="admin-sec">
-      <h2>⚙️ 站点配置 <span class="en">CONFIG</span></h2>
-      <p class="hint">出发日期、远征名称、默认语言。保存后全设备生效。</p>
+    <!-- 3. 配置 -->
+    <section class="tab-panel" id="tab-config">
+      <h2 class="sec-head">⚙️ 站点配置 <span class="en">CONFIG</span></h2>
+      <p class="sec-hint">出发日期、远征名称、默认语言。保存后全设备生效。</p>
       <div class="cfg-row">
         <label>远征名称</label>
         <input type="text" id="cfgName" placeholder="如 GHT 2026">
@@ -142,7 +195,8 @@
   <script src="app.js?v=2"></script>
   <script>
   /* ============================================================
-     后台管理逻辑（日志录入 + 配置）。轨迹上传复用 app.js 弹窗。
+     后台管理逻辑（单一登录 + 日志/轨迹/配置 三 Tab）。
+     登录态与 app.js 共用 localStorage['ght_token']，故只需登录一次。
      ============================================================ */
   (function () {
     if (typeof window.API === 'undefined') {
@@ -156,21 +210,67 @@
     function apiBase() { const m = document.querySelector('meta[name="ght-api"]'); const v = (m && m.getAttribute('content') || '').trim().replace(/\/+$/, ''); return v || location.origin; }
     function hasBackend() { return true; }
     function authHeader() { const t = getOwnerToken(); return t ? { 'Authorization': 'Bearer ' + t } : {}; }
+    function escapeHtml(s) { return (s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+    function fmtNepalDate(d) {
+      const dt = (d instanceof Date) ? d : new Date(d);
+      if (isNaN(dt.getTime())) return null;
+      const nepal = new Date(dt.getTime() + NEPAL_OFFSET_MS);
+      const y = nepal.getUTCFullYear(), mo = String(nepal.getUTCMonth() + 1).padStart(2, '0'), da = String(nepal.getUTCDate()).padStart(2, '0');
+      return y + '-' + mo + '-' + da;
+    }
+    function genId() { return 'le_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+    // ── 单一登录：一次解锁，日志/轨迹/配置全部可用 ──
+    async function adminLogin(pwd) {
+      try {
+        const res = await fetch(apiBase() + '/api/login?_t=' + Date.now(), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pwd }) });
+        let data = null; try { data = await res.json(); } catch (e) {}
+        if (data && data.ok && data.token) return { ok: true, token: data.token };
+        const realMsg = (data && (data.message || data.error)) ? (data.message || data.error) : ('HTTP ' + res.status + ' 登录失败');
+        return { ok: false, msg: realMsg };
+      } catch (e) { return { ok: false, msg: '无法连接服务器（后端未启动？）' }; }
+    }
+    window.adminDoLogin = async function () {
+      const pi = document.getElementById('loginPwd');
+      const err = document.getElementById('loginErr');
+      if (!pi || !pi.value) { if (err) err.textContent = '请输入密码'; return; }
+      const r = await adminLogin(pi.value);
+      if (r.ok) {
+        // 同步全部登录态：localStorage token（本页日志）、app.js API token、APP.isOwner（轨迹弹窗免二次密码）
+        setOwnerToken(r.token);
+        if (typeof API.setToken === 'function') API.setToken(r.token);
+        if (window.APP) APP.isOwner = true;
+        enterAdmin();
+      } else if (err) { err.textContent = r.msg; }
+    };
+
+    function enterAdmin() {
+      const gate = document.getElementById('loginGate');
+      const main = document.getElementById('adminMain');
+      if (gate) gate.style.display = 'none';
+      if (main) main.classList.remove('locked');
+      renderComposer(); renderFeed();
+    }
+    function exitAdmin() {
+      setOwnerToken('');
+      if (typeof API.clearToken === 'function') API.clearToken();
+      if (window.APP) APP.isOwner = false;
+      location.reload();
+    }
 
     // ── 共享包读写（与 journal.html 同构）──
     let sharedCache = null;
     let localDeletedIds = new Set();
+    let logEntries = [];
     async function getShare() {
-      if (!hasBackend()) return null;
       try {
-        const res = await fetch(apiBase() + '/api/share', { method: 'GET' });
+        const res = await fetch(apiBase() + '/api/share?_t=' + Date.now(), { method: 'GET' });
         let d = null; try { d = await res.json(); } catch (e) {}
         if (d && d.ok && d.data) return d.data;
         return null;
       } catch (e) { return null; }
     }
     async function putShare(bundle) {
-      if (!hasBackend()) return;
       try { await fetch(apiBase() + '/api/share', { method: 'PUT', headers: Object.assign({ 'Content-Type': 'application/json' }, authHeader()), body: JSON.stringify(bundle) }); }
       catch (e) { console.warn('[admin] 共享推送失败', e); }
     }
@@ -186,19 +286,16 @@
       putShare(bundle);
     }
     async function loadSharedJournal() {
-      if (!hasBackend()) return;
       const b = await getShare();
       if (b) {
         sharedCache = b;
         const deleted = new Set(b.deletedIds || []);
         logEntries = mergeJournal(logEntries, b.journal || [], deleted);
-        renderFeed('all');
+        renderFeed();
       } else if (getOwnerToken() && logEntries.length) {
         pushJournalShare();
       }
     }
-
-    function genId() { return 'le_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
     function mergeJournal(local, remote, deletedIds) {
       const deleted = new Set(deletedIds || []);
       const m = new Map();
@@ -212,7 +309,6 @@
       });
       return Array.from(m.values()).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     }
-
     function loadLogLocal() {
       try { const raw = JSON.parse(localStorage.getItem('ght_log') || '[]'); if (Array.isArray(raw)) logEntries = raw; } catch (e) {}
       logEntries.forEach((e, i) => { if (!e.id) e.id = 'le_' + Date.now().toString(36) + '_' + i; });
@@ -220,80 +316,39 @@
     }
     function saveLogLocal() { try { localStorage.setItem('ght_log', JSON.stringify(logEntries)); } catch (e) {} }
 
-    // ── 登录（复用 app.js 的 /api/login）──
-    async function adminLogin(pwd) {
-      if (hasBackend()) {
-        try {
-          const res = await fetch(apiBase() + '/api/login?_t=' + Date.now(), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pwd }) });
-          let data = null; try { data = await res.json(); } catch (e) {}
-          if (data && data.ok && data.token) return { ok: true, token: data.token };
-          // 显示服务器真实错误（优先 message，其次 error 字段，避免一律显示"密码错误"掩盖真问题）
-          const realMsg = (data && (data.message || data.error)) ? (data.message || data.error) : ('HTTP ' + res.status + ' 登录失败');
-          return { ok: false, msg: realMsg };
-        } catch (e) { return { ok: false, msg: '无法连接服务器（后端未启动？）' }; }
-      }
-      return { ok: false, msg: '未配置后端地址' };
-    }
-
-    // ── 渲染 ──
-    let logEntries = [];
-    function escapeHtml(s) { return (s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
-    function fmtNepalDate(d) {
-      const dt = (d instanceof Date) ? d : new Date(d);
-      if (isNaN(dt.getTime())) return null;
-      const nepal = new Date(dt.getTime() + NEPAL_OFFSET_MS);
-      const y = nepal.getUTCFullYear(), mo = String(nepal.getUTCMonth() + 1).padStart(2, '0'), da = String(nepal.getUTCDate()).padStart(2, '0');
-      return y + '-' + mo + '-' + da;
-    }
-    function entryCard(e) {
-      const isGps = !!e.dailyStats;
-      const owner = !!getOwnerToken();
-      const delBtn = owner ? '<button class="del-btn" type="button" data-id="' + escapeHtml(e.id || '') + '" title="删除" style="background:var(--bg-soft);border:1px solid var(--border);color:var(--text-dim);border-radius:7px;width:26px;height:26px;cursor:pointer;margin-left:8px;">🗑</button>' : '';
-      const dayBadge = e.dayNum ? '<span style="font-size:11px;color:var(--text-faint);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:6px;padding:2px 8px;">Day ' + e.dayNum + '</span>' : '';
-      return '<div class="card" style="background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:13px 15px;margin-bottom:10px;">'
-        + '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">'
-        + '<span style="font-size:12.5px;color:var(--text-dim);font-weight:600;">' + escapeHtml(e.date || '—') + '</span>' + dayBadge
-        + '<span style="margin-left:auto;">' + (isGps ? '<span style="font-size:11px;color:var(--green);background:rgba(52,208,88,.1);border:1px solid rgba(52,208,88,.3);border-radius:7px;padding:3px 9px;font-weight:600;">📡 自动记录</span>' : '') + delBtn + '</span>'
-        + '</div>'
-        + '<div style="font-size:13.5px;color:var(--text);line-height:1.7;white-space:pre-wrap;word-break:break-word;">' + escapeHtml(e.text || '') + '</div>'
-        + '</div>';
-    }
-    function renderFeed(filter) {
-      const feed = document.getElementById('feed');
-      if (!feed) return;
-      const shown = logEntries.filter(e => filter === 'all' || (filter === 'gps' ? !!e.dailyStats : !e.dailyStats));
-      feed.innerHTML = shown.length ? shown.map(entryCard).join('') : '<div style="text-align:center;color:var(--text-dim);padding:30px;font-size:13px;">暂无日志</div>';
-      feed.querySelectorAll('.del-btn').forEach(b => b.addEventListener('click', () => confirmDelete(b.dataset.id)));
-    }
+    // ── 渲染：日志时间轴 ──
     function renderComposer() {
       const box = document.getElementById('composer');
       if (!box) return;
-      if (!getOwnerToken()) {
-        box.innerHTML = '<div class="composer-box">'
-          + '<label>解锁后可发布日志</label>'
-          + '<input type="password" id="jPwd" class="j-pwd" placeholder="主人密码" autocomplete="off" onkeydown="if(event.key===\'Enter\')adminUnlock()">'
-          + '<button class="btn-pub" id="jUnlock" onclick="adminUnlock()">解锁</button>'
-          + '<div class="j-pwd-err" id="jPwdErr" hidden></div></div>';
-        const ub = document.getElementById('jUnlock'); if (ub) ub.addEventListener('click', adminUnlock);
-        return;
-      }
       box.innerHTML = '<div class="composer-box">'
         + '<textarea id="jText" rows="3" placeholder="写下今天的故事…"></textarea>'
         + '<button class="btn-pub" id="jPub">发布日志</button>'
-        + '<button class="btn-pub" id="jRepublish" style="margin-top:8px;background:#3a7;" onclick="adminRepublish()">🔄 重新发布共享</button>'
+        + '<button class="btn-pub ghost" id="jRepublish" onclick="adminRepublish()">🔄 重新发布共享</button>'
         + '</div>';
       const btn = document.getElementById('jPub'); if (btn) btn.addEventListener('click', addLogEntry);
-      const rb = document.getElementById('jRepublish'); if (rb) rb.addEventListener('click', adminRepublish);
     }
-    window.adminUnlock = async function () {
-      const pi = document.getElementById('jPwd'); if (!pi) return;
-      const r = await adminLogin(pi.value);
-      const err = document.getElementById('jPwdErr');
-      if (r.ok) { setOwnerToken(r.token); renderComposer(); renderFeed('all'); }
-      else if (err) { err.hidden = false; err.textContent = r.msg; }
-    };
+    function renderFeed() {
+      const feed = document.getElementById('feed');
+      if (!feed) return;
+      if (!logEntries.length) {
+        feed.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:30px;font-size:13px;">暂无日志</div>';
+        return;
+      }
+      feed.innerHTML = logEntries.map(e => {
+        const isGps = !!e.dailyStats;
+        const delBtn = '<button class="tl-del" type="button" data-id="' + escapeHtml(e.id || '') + '" title="删除">🗑</button>';
+        const dayBadge = e.dayNum ? '<span class="tl-day">Day ' + e.dayNum + '</span>' : '';
+        const gpsTag = isGps ? '<span class="tl-gps-tag">📡 自动记录</span>' : '';
+        return '<div class="tl-item' + (isGps ? ' gps' : '') + '">'
+          + '<span class="tl-node"></span>'
+          + '<div class="tl-date">' + escapeHtml(e.date || '—') + dayBadge + gpsTag + delBtn + '</div>'
+          + '<div class="tl-card"><div class="tl-text">' + escapeHtml(e.text || '') + '</div></div>'
+          + '</div>';
+      }).join('');
+      feed.querySelectorAll('.tl-del').forEach(b => b.addEventListener('click', () => confirmDelete(b.dataset.id)));
+    }
     window.addLogEntry = function () {
-      if (!getOwnerToken()) { renderComposer(); return; }
+      if (!getOwnerToken()) { showLogin(); return; }
       const ta = document.getElementById('jText'); const text = (ta ? ta.value : '').trim();
       if (!text) return;
       const entry = { id: genId(), date: fmtNepalDate(new Date()), text, updatedAt: Date.now() };
@@ -301,17 +356,17 @@
       logEntries.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
       saveLogLocal(); pushJournalShare();
       if (ta) ta.value = '';
-      renderFeed('all');
+      renderFeed();
     };
     window.adminRepublish = async function () {
-      if (!getOwnerToken()) { renderComposer(); return; }
+      if (!getOwnerToken()) { showLogin(); return; }
       const fresh = await getShare(); if (fresh) sharedCache = fresh;
       pushJournalShare();
       alert('✅ 已重新发布到云端');
     };
     let _delId = null;
     window.confirmDelete = function (id) {
-      if (!getOwnerToken()) { renderComposer(); return; }
+      if (!getOwnerToken()) { showLogin(); return; }
       _delId = id;
       if (confirm('确定删除这条日志？此操作会同步到云端（他人设备不再显示）。')) doDelete();
     };
@@ -321,7 +376,7 @@
       logEntries = logEntries.filter(e => e.id !== _delId);
       saveLogLocal(); pushJournalShare();
       _delId = null;
-      renderFeed('all');
+      renderFeed();
     }
 
     // ── 配置 ──
@@ -343,21 +398,36 @@
       const msg = document.getElementById('cfgMsg');
       const r = await API.putConfig({ expeditionName: name, itineraryStartDate: start, language: lang });
       if (r && (r.ok || r.status === 200)) msg.textContent = '✅ 已保存';
-      else msg.textContent = '❌ 保存失败（需先解锁轨迹管理）';
+      else msg.textContent = '❌ 保存失败（需先登录）';
       setTimeout(() => { msg.textContent = ''; }, 2500);
     }
+
+    // ── Tabs ──
+    function switchTab(name) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
+    }
+    document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
 
     // ── 绑定 ──
     document.getElementById('openTrackModal').addEventListener('click', () => { if (typeof openDataModal === 'function') openDataModal(); });
     document.getElementById('cfgSave').addEventListener('click', saveConfig);
-    document.getElementById('adminLogout').addEventListener('click', () => { setOwnerToken(''); location.reload(); });
+    document.getElementById('adminLogout').addEventListener('click', exitAdmin);
+    // 若已登录（token 仍在），轨迹弹窗直接免密
+    if (getOwnerToken() && typeof API.setToken === 'function') API.setToken(getOwnerToken());
+    if (getOwnerToken() && window.APP) APP.isOwner = true;
 
     // ── 启动 ──
+    if (getOwnerToken()) {
+      enterAdmin();
+    } else {
+      const lp = document.getElementById('loginPwd'); if (lp) lp.focus();
+    }
     loadLogLocal();
     loadSharedJournal();
     loadConfig();
     renderComposer();
-    renderFeed('all');
+    renderFeed();
   })();
   </script>
 </body>
