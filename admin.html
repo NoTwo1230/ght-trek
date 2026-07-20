@@ -227,7 +227,9 @@
           const res = await fetch(apiBase() + '/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pwd }) });
           let data = null; try { data = await res.json(); } catch (e) {}
           if (data && data.ok && data.token) return { ok: true, token: data.token };
-          return { ok: false, msg: (data && data.message) ? data.message : '密码错误' };
+          // 显示服务器真实错误（优先 message，其次 error 字段，避免一律显示"密码错误"掩盖真问题）
+          const realMsg = (data && (data.message || data.error)) ? (data.message || data.error) : ('HTTP ' + res.status + ' 登录失败');
+          return { ok: false, msg: realMsg };
         } catch (e) { return { ok: false, msg: '无法连接服务器（后端未启动？）' }; }
       }
       return { ok: false, msg: '未配置后端地址' };
