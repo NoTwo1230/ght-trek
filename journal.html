@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="ght-api" content="https://ght.gjt6nrf4jz.workers.dev">
+<meta name="ght-api" content="">
 <title>GHT 远征日志 · 时间线</title>
 <script src="sections-data.js"></script>
 <script src="lang.js"></script>
@@ -208,8 +208,8 @@
   const MASTER_PWD = 'ght2026';   // 本地无后端时的主密码兜底（与 Worker 端一致）
   function getOwnerToken() { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; } }
   function setOwnerToken(t) { try { if (t) localStorage.setItem(TOKEN_KEY, t); else localStorage.removeItem(TOKEN_KEY); } catch (e) {} }
-  function apiBase() { const m = document.querySelector('meta[name="ght-api"]'); return (m && m.getAttribute('content') || '').trim().replace(/\/+$/, ''); }
-  function hasBackend() { return !!apiBase(); }
+  function apiBase() { const m = document.querySelector('meta[name="ght-api"]'); const v = (m && m.getAttribute('content') || '').trim().replace(/\/+$/, ''); return v || location.origin; }
+  function hasBackend() { return true; }
   // ── 全量共享（服务端 share:all：主人写入 / 所有人读取）──
   let sharedCache = null;
   function authHeader() { const t = getOwnerToken(); return t ? { 'Authorization': 'Bearer ' + t } : {}; }

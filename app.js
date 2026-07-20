@@ -899,9 +899,9 @@ const API = (function () {
     const m = document.querySelector('meta[name="' + name + '"]');
     return (m && m.getAttribute('content') || '').trim();
   }
-  // 后端地址：读 <meta name="ght-api">；为空 = 无后端（本地访客态）
-  function apiBase() { return metaVal('ght-api').replace(/\/+$/, ''); }
-  function hasBackend() { return !!apiBase(); }
+  // 后端地址：读 <meta name="ght-api">；为空则回退到当前域名（EdgeOne 同域部署）
+  function apiBase() { const v = metaVal('ght-api').replace(/\/+$/, ''); return v || location.origin; }
+  function hasBackend() { return !!metaVal('ght-api') || !!location.origin; }
   function getToken() { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; } }
   function setToken(t) { try { if (t) localStorage.setItem(TOKEN_KEY, t); else localStorage.removeItem(TOKEN_KEY); } catch (e) {} }
   function clearToken() { try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} }

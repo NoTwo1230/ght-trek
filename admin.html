@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- 后端地址：与公众站共用同一个 <meta name="ght-api">；留空 = 本地访客态（无法上传） -->
-<meta name="ght-api" content="https://ght.gjt6nrf4jz.workers.dev">
+<!-- 后端地址：EdgeOne 边缘函数与静态站同域运行，留空则自动使用当前域名 -->
+<meta name="ght-api" content="">
 <title>GHT 后台管理 · Admin</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -153,8 +153,8 @@
     const TOKEN_KEY = 'ght_token';
     function getOwnerToken() { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; } }
     function setOwnerToken(t) { try { if (t) localStorage.setItem(TOKEN_KEY, t); else localStorage.removeItem(TOKEN_KEY); } catch (e) {} }
-    function apiBase() { const m = document.querySelector('meta[name="ght-api"]'); return (m && m.getAttribute('content') || '').trim().replace(/\/+$/, ''); }
-    function hasBackend() { return !!apiBase(); }
+    function apiBase() { const m = document.querySelector('meta[name="ght-api"]'); const v = (m && m.getAttribute('content') || '').trim().replace(/\/+$/, ''); return v || location.origin; }
+    function hasBackend() { return true; }
     function authHeader() { const t = getOwnerToken(); return t ? { 'Authorization': 'Bearer ' + t } : {}; }
 
     // ── 共享包读写（与 journal.html 同构）──
