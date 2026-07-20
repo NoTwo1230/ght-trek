@@ -1,13 +1,13 @@
 /**
  * GHT Trek — EdgeOne Pages 边缘函数入口
  *
- * 从 worker/secure-index.js 适配而来，使用 EdgeOne Node Functions Handler 格式。
+ * 使用 EdgeOne Node Functions Handler 格式（export default onRequest）。
  *
  * 部署要求：
  *   1. EdgeOne 控制台 → 存储 → KV 存储 → 绑定命名空间（变量名 = GHT）
  *   2. 环境变量：ADMIN_PWD（登录密码）、SECRET（HMAC 密钥）
  *
- * 路由：cloud-functions/api/[[default]].js → 匹配所有 /api/* 请求
+ * 路由：node-functions/api/[[default]].js → 匹配所有 /api/* 请求
  */
 
 const CORS = {

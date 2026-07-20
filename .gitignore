@@ -1,11 +1,6 @@
 node_modules/
 .DS_Store
 *.log
-.wrangler/
-worker/.wrangler/
-.dev.vars
-worker/.dev.vars
 
-# Region-map SVGs are tracked (needed by sections.html on deploy)
-# assets/region-maps/*.svg
-!assets/region-maps/*.svg
+# EdgeOne Pages 部署（静态站 + node-functions 边缘函数）
+# 区域地图已转为 PNG 并保留在 assets/region-maps/

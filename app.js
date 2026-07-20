@@ -887,12 +887,9 @@ const waypointLayer = L.layerGroup();
 function setCard(id, html) { const el = document.getElementById(id); if (el) el.innerHTML = html; }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  SUPABASE 后端（免卡）：Supabase Auth + Storage + DB
-//  密码只存在于 Supabase，前端仅持有登录后的 session(JWT)
+//  BACKEND API  (EdgeOne Pages Node Functions + KV：国内可达、免卡、不休眠)
+//  密码只存在于边缘函数环境变量（ADMIN_PWD），前端仅持有登录后下发的 token
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  BACKEND API  (Cloudflare Worker + KV：免卡、免服务器、不休眠)
-//  密码只存在于 Worker 环境变量，前端仅持有登录后下发的 token
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const API = (function () {
   const TOKEN_KEY = 'ght_token';
   function metaVal(name) {
