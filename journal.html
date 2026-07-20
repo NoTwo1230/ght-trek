@@ -178,8 +178,6 @@
     <span class="hint" data-i18n="jo.f.newest">最新在前</span>
   </div>
 
-  <div class="composer" id="composer"></div>
-
   <div class="feed" id="feed"></div>
 
   <!-- 删除确认弹窗：需输入主人密码 -->
@@ -381,8 +379,8 @@
     }
     const spark = isGps ? sparkline(meta.points, region.color) : '';
     const dayBadge = dayNum ? `<span class="day-badge">Day ${dayNum}</span>` : '';
-    // 仅主人态显示删除按钮；点击后弹密码确认框
-    const owner = !!getOwnerToken();
+    // 公众日志页为只读视图；删除/管理仅在后台 admin.html 进行
+    const owner = false;
     const delBtn = owner ? `<button class="del-btn" type="button" data-id="${escapeHtml(e.id || '')}" title="${t('jo.del.btn')}" aria-label="${t('jo.del.btn')}">🗑</button>` : '';
 
     return `<div class="entry" data-type="${isGps ? 'gps' : 'text'}">

@@ -41,7 +41,6 @@
       <a class="tn-ext" id="navJournal" href="journal.html" target="_blank" rel="noopener" title="远征日志 · 按路段分组 →">📝 日志 ↗</a>
     </nav>
     <div class="topnav-right">
-      <button class="top-btn" id="btnDataMgmt" onclick="openDataModal()">🔧 数据管理</button>
       <button class="lang-btn">Language ▾</button>
     </div>
   </header>
@@ -112,25 +111,6 @@
 
 <script src="ght-region-map.js?v=2"></script>
 <script src="app.js?v=2"></script>
-
-  <!-- ── DATA MANAGEMENT MODAL ── -->
-  <div class="modal-overlay" id="dataModal" aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-label="数据管理">
-      <div class="modal-head">
-        <span id="dmTitle">数据管理</span>
-        <button class="modal-close" onclick="closeDataModal()" aria-label="关闭">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="pwd-gate" id="pwdGate">
-          <p class="pwd-hint" id="dmPwdHint">请输入主人密码以管理轨迹数据</p>
-          <input type="password" id="pwdInput" class="form-input" placeholder="密码" autocomplete="off" onkeydown="if(event.key==='Enter')unlockData()">
-          <button class="btn primary" id="dmUnlock" onclick="unlockData()">解锁</button>
-          <div class="pwd-err" id="dmPwdErr" hidden>密码错误</div>
-        </div>
-        <div class="upload-area" id="uploadArea" hidden></div>
-      </div>
-    </div>
-  </div>
 
 </body>
 </html>
