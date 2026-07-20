@@ -6,5 +6,6 @@ worker/.wrangler/
 .dev.vars
 worker/.dev.vars
 
-# Region-map SVGs kept local-only (not pushed to GitHub)
-assets/region-maps/*.svg
+# Region-map SVGs are tracked (needed by sections.html on deploy)
+# assets/region-maps/*.svg
+!assets/region-maps/*.svg

@@ -2925,12 +2925,22 @@ function offsetPolyline(coords, dist) {
   return out;
 }
 
+// 根据当前地图缩放级别，返回指定纬度处「1 像素 = ? 米」。
+function metersPerPixelAt(lat) {
+  const zoom = map.getZoom();
+  return 156543.03392 * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoom);
+}
+
 // 画「计划轨迹」：两条平行白色细虚线（效果 ≈ ═══）。
 function drawPlannedDoubleDashed(coords, layerGroup, popupHtml, weight, opacity) {
   if (!coords || coords.length < 2) return;
-  const OFFSET = 1000; // 两线间距（米），继续调大以保证能看到双线间隙
+  const mid = coords[Math.floor(coords.length / 2)];
+  const scale = metersPerPixelAt(mid[0]);
+  // 两线中心间距固定为 4 像素，总宽度比绿色实际线稍宽一点点
+  const GAP_PX = 4;
+  const OFFSET = (GAP_PX * scale) / 2;
   const opts = {
-    color: '#ffffff', weight: weight || 1.6, opacity: (opacity == null ? 0.95 : opacity),
+    color: '#ffffff', weight: weight || 2, opacity: (opacity == null ? 0.95 : opacity),
     dashArray: '4,6', lineCap: 'round', lineJoin: 'round'
   };
   L.polyline(offsetPolyline(coords, OFFSET), opts).addTo(layerGroup);
@@ -4029,6 +4039,11 @@ if (APP.itinerary.length && APP.actualTracks.length) {
 // 先用本地默认配置同步渲染首页
 renderDashboard();
 renderAllTracks();
+
+// 缩放时重绘轨迹，使双线虚线的像素间距保持恒定（始终比绿色实际线稍宽一点）。
+map.on('zoomend', () => {
+  renderAllTracks();
+});
 
 // 后台静默恢复登录态并同步服务端配置；语言/日期若有变化则局部重渲染。
 // 顺序很重要：loadShared 依赖 restoreSession 设好的 isOwner —— 只有主人(kv为空且本机有数据)才会自动种入共享包。
