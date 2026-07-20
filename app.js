@@ -3772,15 +3772,28 @@ function showGPXUploadResult(gpxData, stats) {
     };
   }
 
-  // 实际轨迹按 date 归并：同一天以 updatedAt 最新者为准（无时间戳的旧条目视为最旧）
+  // 实际轨迹归并：以「稳定键」去重，updatedAt 最新者胜出。
+  // ⚠️ 关键修复：不再强依赖 t.date —— 很多实际轨迹 GPX 不含 <time> 时间戳，
+  //    导致 date=null 而被整条静默丢弃，进而主人重推把云端 actual 清成空。
+  //    现改用兜底键（date → fileName → 首点坐标），缺时间戳的轨迹也能保留。
   function mergeActualTracks(local, remote) {
     const m = new Map();
-    (remote || []).forEach(t => { if (t && t.date) m.set(t.date, t); });
+    const keyOf = (t) => {
+      if (t && t.date) return 'd:' + t.date;
+      if (t && t.fileName) return 'f:' + t.fileName;
+      if (t && t.trackPoints && t.trackPoints[0]) {
+        const p = t.trackPoints[0];
+        return 'p:' + (p.lat != null ? Number(p.lat).toFixed(5) : '?') + ',' + (p.lon != null ? Number(p.lon).toFixed(5) : '?');
+      }
+      return 'u:' + (t ? JSON.stringify(t).length : 'x');
+    };
+    (remote || []).forEach(t => { if (t) m.set(keyOf(t), t); });
     (local || []).forEach(t => {
-      if (!t || !t.date) return;
+      if (!t) return;
       if (!t.updatedAt) t.updatedAt = 0;
-      const cur = m.get(t.date);
-      if (!cur || t.updatedAt >= cur.updatedAt) m.set(t.date, t);
+      const k = keyOf(t);
+      const cur = m.get(k);
+      if (!cur || t.updatedAt >= (cur.updatedAt || 0)) m.set(k, t);
     });
     return Array.from(m.values());
   }
