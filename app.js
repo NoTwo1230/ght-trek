@@ -962,6 +962,9 @@ const API = (function () {
   };
 })();
 
+// 暴露到全局，供 admin.html 等独立页面复用
+if (typeof window !== 'undefined') window.API = API;
+
 // 应用服务端配置到 APP（语言 / 出发日期 / 默认底图 / 基础信息）
 async function applyServerConfig() {
   try {
