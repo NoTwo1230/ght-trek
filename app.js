@@ -11,7 +11,7 @@ const nepalProvinces = nepalProvinceData;
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ── 13-region entry anchors (GHT corridor, east → west) ──
 // Each anchor = where the track CROSSES INTO that region from the previous one.
-// Calibrated against region-maps/*_detail.svg territorial boundaries so each
+// Calibrated against region-maps/*_detail.png territorial boundaries so each
 // segment captures a visually distinct portion of the route.
 // Anchors recomputed from the REAL 80-day GPS track (47,479 pts / 1,602 km).
 // Each value is a point DEEP INSIDE that region's territory (the first track point of
