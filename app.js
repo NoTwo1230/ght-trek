@@ -916,7 +916,7 @@ const API = (function () {
     getToken, setToken, clearToken, authHeader,
     login: async (pwd) => {
       if (!hasBackend()) return noBackend();
-      return req('POST', '/api/login', { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pwd }) });
+      return req('POST', '/api/login?_t=' + Date.now(), { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pwd }) });
     },
     getConfig: async () => {
       if (!hasBackend()) return { ok: true, status: 200, data: {} };
