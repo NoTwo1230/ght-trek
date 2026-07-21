@@ -3686,6 +3686,12 @@ function addActualTrack(gpxData, stats) {
     date: dailyStats ? dailyStats.date : null,
     uploadedAt: new Date().toISOString()
   };
+  // 同文件名轨迹：重传时替换旧记录，避免重复。
+  // 典型场景：首次上传缺 <time> 导致 date=null；补打时间标签后重传，
+  // 若直接 push 会与旧 null-date 记录并存，污染行程日历/统计。
+  if (actualObj.fileName) {
+    APP.actualTracks = (APP.actualTracks || []).filter(t => t.fileName !== actualObj.fileName);
+  }
   APP.actualTracks.push(actualObj);
   checkAllSectionsCompletion();
   try {
