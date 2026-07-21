@@ -135,10 +135,9 @@ export default async function onRequest(context) {
     return json({ ok: false, error: 'bad password' }, 401);
   }
 
-  // [DEBUG] 全面诊断：env 全量扫描 + KV 对象探测
+  // [DEBUG] 全面诊断：env 全量扫描 + 全局变量 KV 探测
   if (path === '/api/debug') {
     const keys = Object.keys(env || {});
-    // 扫描所有可能是 KV 对象的值（有 get/put 方法）
     const kvCandidates = {};
     for (const k of keys) {
       const v = env[k];
@@ -146,16 +145,18 @@ export default async function onRequest(context) {
         kvCandidates[k] = { type: 'object', hasGet: true, hasPut: typeof v.put === 'function' };
       }
     }
+    // 检查 GHT 是否作为全局变量直接存在（而非 env.GHT）
+    const ghtGlobal = (typeof GHT !== 'undefined') ? { exists: true, type: typeof GHT, hasGet: !!(GHT && GHT.get), hasPut: !!(GHT && GHT.put) } : { exists: false };
+    const ghtThis = (typeof globalThis !== 'undefined' && globalThis.GHT) ? { exists: true, type: typeof globalThis.GHT } : { exists: false };
     return json({
       envKeys: keys,
       hasGHT: !!env.GHT,
       ghtType: env.GHT ? typeof env.GHT : null,
       ghtTrekInEnv: !!env['ght_trek'],
-      ghtTrekType: env['ght_trek'] ? typeof env['ght_trek'] : null,
-      totalKeys: keys.length,
       kvCandidates: kvCandidates,
-      // 检查全局作用域有没有 KV 相关对象（有些平台直接注入 globalThis）
-      sampleEnvValues: keys.slice(0, 5).map(k => ({ k, type: typeof env[k] }))
+      ghtGlobal: ghtGlobal,
+      ghtGlobalThis: ghtThis,
+      globalKeysSample: Object.getOwnPropertyNames(globalThis).filter(k => /kv|ght/i.test(k)).slice(0, 20)
     });
   }
 
