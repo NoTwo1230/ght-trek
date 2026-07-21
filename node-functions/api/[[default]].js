@@ -13,9 +13,11 @@
  *   COS_SECRET_KEY 腾讯云 API SecretKey
  *
  * 路由：node-functions/api/[[default]].js → 匹配所有 /api/* 请求
+ *
+ * 注意：全部使用 Web Crypto API（crypto.subtle，全局可用），
+ * 不 import node:crypto —— EdgeOne Node Functions 运行时对顶层 node: 模块
+ * 导入可能加载失败并回退旧版本。
  */
-
-import { createHmac, createHash } from 'node:crypto';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -80,20 +82,30 @@ function cosHost(cfg) { return `${cfg.bucket}.cos.${cfg.region}.myqcloud.com`; }
 function cosUrl(cfg, key) { return `https://${cosHost(cfg)}/${key}`; }
 function hasCos(env) { return !!(env.COS_BUCKET && env.COS_SECRET_ID && env.COS_SECRET_KEY); }
 
-function hmacSha1(key, msg) { return createHmac('sha1', key).update(msg, 'utf8').digest('hex'); }
-function sha1Hex(msg) { return createHash('sha1').update(msg, 'utf8').digest('hex'); }
+// HMAC-SHA1 → hex（Web Crypto，key 可为 string）
+async function hmacSha1(key, msg) {
+  const keyBytes = new TextEncoder().encode(key);
+  const cryptoKey = await crypto.subtle.importKey('raw', keyBytes, { name: 'HMAC', hash: 'SHA-1' }, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', cryptoKey, new TextEncoder().encode(msg));
+  return [...new Uint8Array(sig)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+// SHA-1 → hex（Web Crypto）
+async function sha1Hex(msg) {
+  const buf = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(msg));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 // 构造 COS Authorization 头（仅签名 host，最简单可靠）
-function cosAuth(cfg, method, key) {
+async function cosAuth(cfg, method, key) {
   const now = Math.floor(Date.now() / 1000);
   const signTime = `${now};${now + 3600}`;
   const host = cosHost(cfg);
   const qHeaderList = 'host';
   const httpHeaders = `host=${host}\n`;
   const httpString = [method.toLowerCase(), '/' + key, '', httpHeaders, ''].join('\n');
-  const signKey = hmacSha1(cfg.secretKey, signTime);
-  const stringToSign = ['sha1', signTime, sha1Hex(httpString), ''].join('\n');
-  const signature = hmacSha1(signKey, stringToSign);
+  const signKey = await hmacSha1(cfg.secretKey, signTime);
+  const stringToSign = ['sha1', signTime, await sha1Hex(httpString), ''].join('\n');
+  const signature = await hmacSha1(signKey, stringToSign);
   return `q-sign-algorithm=sha1&q-ak=${cfg.secretId}&q-sign-time=${signTime}` +
          `&q-key-time=${signTime}&q-header-list=${qHeaderList}&q-url-param-list=&q-signature=${signature}`;
 }
@@ -115,7 +127,7 @@ async function kvGet(env, kvKey) {
   try {
     const res = await fetch(cosUrl(cfg, key), {
       method: 'GET',
-      headers: { 'Authorization': cosAuth(cfg, 'GET', key) },
+      headers: { 'Authorization': await cosAuth(cfg, 'GET', key) },
     });
     if (res.status === 404) return null;
     if (!res.ok) { console.error('[COS] GET', key, res.status); return null; }
@@ -128,7 +140,7 @@ async function kvPut(env, kvKey, value) {
   const body = typeof value === 'string' ? value : JSON.stringify(value);
   const res = await fetch(cosUrl(cfg, key), {
     method: 'PUT',
-    headers: { 'Authorization': cosAuth(cfg, 'PUT', key) },
+    headers: { 'Authorization': await cosAuth(cfg, 'PUT', key) },
     body,
   });
   if (!res.ok) { console.error('[COS] PUT', key, res.status); throw new Error('COS put failed ' + res.status); }
@@ -175,7 +187,7 @@ export default async function onRequest(context) {
       try {
         const res = await fetch(cosUrl(cfg, objKey('_index')), {
           method: 'GET',
-          headers: { 'Authorization': cosAuth(cfg, 'GET', objKey('_index')) },
+          headers: { 'Authorization': await cosAuth(cfg, 'GET', objKey('_index')) },
         });
         cosStatus = (res.status === 200 || res.status === 404) ? 'reachable' : ('http_' + res.status);
       } catch (e) { cosStatus = 'error:' + e.message; }
