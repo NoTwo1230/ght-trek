@@ -30,15 +30,31 @@
   var segs=localStorage.getItem('ght_preset_segments');
   var preset=localStorage.getItem('ght_preset');
   var actual=localStorage.getItem('ght_actual');
+  var startRaw=localStorage.getItem('ght_itinerary_start');
+  // 出发日期有效性 + 可映射到日历的天数
+  function isValidDateStr(s){ if(!s) return false; var p=String(s).split('-'); if(p.length!==3) return false; var y=+p[0],m=+p[1],d=+p[2]; if(!y||!m||!d) return false; var dt=new Date(y,m-1,d); return dt.getFullYear()===y && dt.getMonth()===m-1 && dt.getDate()===d; }
+  var planned=[]; try{ planned=JSON.parse(raw||'[]'); }catch(e){}
+  var mappable=0, startDateValid=isValidDateStr(startRaw);
+  if(startDateValid){ planned.forEach(function(day){ var dt=new Date(startRaw+'T00:00:00'); dt.setDate(dt.getDate()+((day&&day.day)||1)-1); if(!isNaN(dt.getTime())) mappable++; }); }
+  var startState = startRaw==null ? '<span class="bad">ght_itinerary_start 不存在</span>'
+    : startRaw==='' ? '<span class="bad">ght_itinerary_start 为空字符串</span>'
+    : startDateValid ? '<span style="color:#4ade80">有效：'+startRaw+'</span>'
+    : '<span class="warn">存在但无法解析：'+startRaw+'</span>';
+  var verdict='';
+  if(!startDateValid){ verdict='<div class="box" style="border-color:#f87171"><span class="bad">⚠️ 根因判定：缺少有效出发日期 → 行程页 render() 因日期为 null 抛错崩溃，日历整页空白。修复方向：①在地图追踪页设置出发日期；或 ②让我方加固行程页，缺日期也能显示天列表。</span></div>'; }
+  else { verdict='<div class="box" style="border-color:#fbbf24"><span class="warn">出发日期有效，根因在别处，需进一步排查。</span></div>'; }
   var html='';
   html+='<div class="box">';
   html+='<div>当前 origin = <b>'+location.origin+'</b></div>';
   html+='<div class="k">当前 url = '+location.href+'</div>';
   html+='<div style="margin:10px 0 4px">行程页判定：'+v+'</div>';
+  html+='<div>出发日期 ght_itinerary_start：'+startState+'</div>';
+  html+='<div>可映射到日历的天数：'+(startDateValid?('<b>'+mappable+'</b>/'+planned.length):'—（缺有效日期）')+'</div>';
   html+='<div>ght_preset_segments: '+n(segs)+(segs?' ('+segs.length+' 字节)':'')+'</div>';
   html+='<div>ght_preset: '+n(preset)+(preset?' ('+preset.length+' 字节)':'')+'</div>';
   html+='<div>ght_actual: '+n(actual)+(actual?' ('+actual.length+' 字节)':'')+'</div>';
   html+='</div>';
+  html+=verdict;
   html+='<div class="box"><div class="k">所有 ght_* 键 ('+keys.length+')：</div>'+keys.join('<br>')+'</div>';
   html+='<div class="box"><div class="k">ght_itinerary 原文（前 600 字）：</div><pre>'+(raw?raw.slice(0,600):'(null)')+'</pre></div>';
   document.getElementById('out').innerHTML=html;
