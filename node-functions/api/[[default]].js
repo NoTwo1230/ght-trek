@@ -101,7 +101,9 @@ async function cosAuth(cfg, method, key) {
   const signTime = `${now};${now + 3600}`;
   const host = cosHost(cfg);
   const qHeaderList = 'host';
-  const httpHeaders = `host=${host}\n`;
+  // 注意：httpHeaders 不要自带末尾 \n，join 会补上；否则 httpString 末尾会多一个 \n
+  // 导致 SHA1 值与 COS 期望不符 → SignatureDoesNotMatch
+  const httpHeaders = `host=${host}`;
   const httpString = [method.toLowerCase(), '/' + key, '', httpHeaders, ''].join('\n');
   const signKey = await hmacSha1(cfg.secretKey, signTime);
   const stringToSign = ['sha1', signTime, await sha1Hex(httpString), ''].join('\n');
