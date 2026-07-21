@@ -3755,10 +3755,16 @@ function setAsPreset(gpxData, stats) {
   // Sync rest days from dayRange (batch import) or clear (single file)
   APP.presetRestDays = (gpxData.dayRange && gpxData.dayRange.restDays) ? gpxData.dayRange.restDays : [];
   APP.presetSegments = null; // single-file preset has no day segments; batch flow sets this after
-  APP.actualTracks = [];
   APP.totalDistance = Math.round(stats.distance);
 
   APP.sectionRanges = calculateSectionRanges(APP.presetTrack);
+  // 重新上传预设路线时务必保留已上传的实际徒步轨迹：它们是独立的 GPS 记录，
+  // 不应被清空——旧逻辑置空后立刻 scheduleShare 会把空包推上云、覆盖掉已上传的实际轨迹。
+  // 改为按新预设几何重新匹配路段/行程关联，再统一落云。
+  if (APP.actualTracks && APP.actualTracks.length) {
+    try { matchItineraryToActuals(); } catch (e) {}
+    if (APP.itinerary && APP.itinerary.length) { try { saveItinerary(); } catch (e) {} }
+  }
 
   try {
     const p = decimatePresetTrack(APP.presetTrack, 4000);
@@ -3769,7 +3775,20 @@ function setAsPreset(gpxData, stats) {
       localStorage.setItem('ght_preset', JSON.stringify(p));
     } catch(e2) {}
   }
-  try { localStorage.setItem('ght_actual', JSON.stringify([])); } catch(e) {}
+  // 保留实际轨迹到本地存储（不再清空；仅在确实没有时才置空）
+  if (APP.actualTracks && APP.actualTracks.length) {
+    try {
+      const dec = APP.actualTracks.map(t => ({ ...t, trackPoints: decimateTrack(t.trackPoints, 700) }));
+      localStorage.setItem('ght_actual', JSON.stringify(dec));
+    } catch (e) {
+      try {
+        const dec = APP.actualTracks.map(t => ({ ...t, trackPoints: decimateTrack(t.trackPoints, 250) }));
+        localStorage.setItem('ght_actual', JSON.stringify(dec));
+      } catch (e2) {}
+    }
+  } else {
+    try { localStorage.setItem('ght_actual', JSON.stringify([])); } catch (e) {}
+  }
   try { localStorage.setItem('ght_sections', JSON.stringify(APP.sectionRanges)); } catch(e) {}
   try { localStorage.setItem('ght_total_distance', String(APP.totalDistance)); } catch(e) {}
   try { localStorage.setItem('ght_rest_days', JSON.stringify(APP.presetRestDays || [])); } catch(e) {}
