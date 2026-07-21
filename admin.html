@@ -194,11 +194,7 @@
     <!-- 3. 配置 -->
     <section class="tab-panel" id="tab-config">
       <h2 class="sec-head">⚙️ 站点配置 <span class="en">CONFIG</span></h2>
-      <p class="sec-hint">出发日期、远征名称、默认语言。保存后全设备生效。</p>
-      <div class="cfg-row">
-        <label>远征名称</label>
-        <input type="text" id="cfgName" placeholder="如 GHT 2026">
-      </div>
+      <p class="sec-hint">出发日期、默认语言。保存后全设备生效。</p>
       <div class="cfg-row">
         <label>出发日期</label>
         <input type="date" id="cfgStart">
@@ -509,18 +505,16 @@
         var r = await API.getConfig();
         if (r && r.ok && r.data) {
           var c = r.data;
-          if (c.expeditionName) document.getElementById('cfgName').value = c.expeditionName;
           if (c.itineraryStartDate) { document.getElementById('cfgStart').value = c.itineraryStartDate; }
           if (c.language) document.getElementById('cfgLang').value = c.language;
         }
       } catch (e) {}
     }
     async function saveConfig() {
-      var name = document.getElementById('cfgName').value.trim();
       var start = document.getElementById('cfgStart').value;
       var lang = document.getElementById('cfgLang').value;
       var msg = document.getElementById('cfgMsg');
-      var r = await API.putConfig({ expeditionName: name, itineraryStartDate: start, language: lang });
+      var r = await API.putConfig({ itineraryStartDate: start, language: lang });
       if (r && (r.ok || r.status === 200)) msg.textContent = '✅ 已保存';
       else msg.textContent = '❌ 保存失败（需先登录）';
       setTimeout(function () { msg.textContent = ''; }, 2500);

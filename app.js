@@ -989,7 +989,6 @@ async function applyServerConfig() {
         }
       } catch (e) {}
     }
-    if (c.expeditionName) APP.expeditionName = c.expeditionName;
     if (c.startPlaceName) APP.startPlaceName = c.startPlaceName;
     if (c.totalDistance) APP.totalDistance = c.totalDistance;
   } catch (e) { /* 离线 / 网络错误，忽略，沿用本地配置 */ }
