@@ -2970,7 +2970,7 @@ const sectionColors = (window.GHT_SECTIONS || []).map(r => r.color);
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  轨迹着色规范（UI 设计决策, 2026-07-21 修订）
 //   · 实际徒步轨迹 = 一整条青色实线（醒目、连续）
-//   · 预设轨迹（目标计划线）= 金色稀疏虚线（#d4af37，dashArray '4,12'，低密度）
+//   · 预设轨迹（目标计划线）= 深蓝单条稀疏虚线（#1e4f8f，dashArray '4,14'，低密度）
 //   · 预设已被实际轨迹覆盖的部分不再单独绘制，由青色实际轨迹表达
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -3007,20 +3007,14 @@ function metersPerPixelAt(lat) {
   return 156543.03392 * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoom);
 }
 
-// 画「计划轨迹」：两条平行金色细虚线（效果 ≈ ═══），密度较低（大间隙）。
+// 画「计划轨迹」：单条深蓝细虚线（低密度、大间隙），与图例一致。
 function drawPlannedDoubleDashed(coords, layerGroup, popupHtml, weight, opacity) {
   if (!coords || coords.length < 2) return;
-  const mid = coords[Math.floor(coords.length / 2)];
-  const scale = metersPerPixelAt(mid[0]);
-  // 两线中心间距固定为 4 像素，总宽度比绿色实际线稍宽一点点
-  const GAP_PX = 4;
-  const OFFSET = (GAP_PX * scale) / 2;
   const opts = {
-    color: '#d4af37', weight: weight || 2, opacity: (opacity == null ? 0.95 : opacity),
-    dashArray: '4,12', lineCap: 'round', lineJoin: 'round'
+    color: '#1e4f8f', weight: weight || 2, opacity: (opacity == null ? 0.9 : opacity),
+    dashArray: '4,14', lineCap: 'round', lineJoin: 'round'
   };
-  L.polyline(offsetPolyline(coords, OFFSET), opts).addTo(layerGroup);
-  const r = L.polyline(offsetPolyline(coords, -OFFSET), opts).addTo(layerGroup);
+  const r = L.polyline(coords, opts).addTo(layerGroup);
   if (popupHtml) r.bindPopup(popupHtml);
 }
 
