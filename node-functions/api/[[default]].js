@@ -183,16 +183,23 @@ export default async function onRequest(context) {
   if (path === '/api/debug') {
     const cfg = cosCfg(env);
     let cosStatus = 'not_configured';
+    let cosBody = null;
     if (hasCos(env)) {
       try {
+        const authHeader = await cosAuth(cfg, 'GET', objKey('_index'));
         const res = await fetch(cosUrl(cfg, objKey('_index')), {
           method: 'GET',
-          headers: { 'Authorization': await cosAuth(cfg, 'GET', objKey('_index')) },
+          headers: { 'Authorization': authHeader },
         });
         cosStatus = (res.status === 200 || res.status === 404) ? 'reachable' : ('http_' + res.status);
+        if (res.status !== 200 && res.status !== 404) {
+          const txt = await res.text();
+          const m = txt.match(/<Code>([^<]+)<\/Code>/);
+          cosBody = m ? m[1] : txt.slice(0, 200);
+        }
       } catch (e) { cosStatus = 'error:' + e.message; }
     }
-    return json({ hasCos: hasCos(env), bucket: env.COS_BUCKET || null, region: env.COS_REGION || null, cosStatus });
+    return json({ hasCos: hasCos(env), bucket: env.COS_BUCKET || null, region: env.COS_REGION || null, cosStatus, cosError: cosBody });
   }
 
   // 登录（带限流 + 发行过期 token；无 COS 时跳过限流）
