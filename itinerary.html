@@ -285,6 +285,14 @@
 
   .foot-note { text-align: center; font-size: 11px; color: var(--text-dimmer); padding: 24px 20px 8px; line-height: 1.7; }
 
+  /* ── 出发日期缺失提示横幅 ── */
+  .date-warn {
+    margin: 0 20px; padding: 10px 14px; border-radius: 10px;
+    background: rgba(248,81,73,.12); border: 1px solid rgba(248,81,73,.35);
+    color: #ff8a82; font-size: 12px; line-height: 1.6;
+  }
+  .date-warn a { color: #ff8a82; text-decoration: underline; }
+
   /* ═══ 响应式断点系统 ═══ */
 
   /* ── 大屏优化 (≥1200px)：宽松间距 ── */
@@ -421,6 +429,7 @@
 </header>
 
 <div id="summary" class="summary"></div>
+<div id="dateWarn" class="date-warn" style="display:none"></div>
 
   <div class="toolbar">
     <div class="group">
@@ -544,7 +553,10 @@ function fmtCoord(pt){ return pt? pt.lat.toFixed(3)+','+pt.lon.toFixed(3) : '—
 function buildDays(){
   const planned = load(LS.itinerary) || [];
   const actuals = load(LS.actual) || [];
-  const startDate = loadRaw(LS.start);
+  const startDateReal = loadRaw(LS.start);
+  const startOk = !!parseYmd(startDateReal);
+  // 缺出发日期 / 格式无效时，用「今天」作为临时基准，保证 88 天仍能上日历，不再整页崩溃
+  const startDate = startOk ? startDateReal : ymd(new Date());
   const preset = load(LS.preset) || {};
   const wpts = (preset && preset.waypoints) || [];
 
@@ -601,7 +613,7 @@ function buildDays(){
     avgElev = n ? Math.round(sum / n) : 0;
   }
 
-  return { planned, startDate, overallSlip, unmatched, avgElev };
+  return { planned, startDate, startDateReal, startOk, overallSlip, unmatched, avgElev };
 }
 
 function getPlannedDate(startDate, dayNum){ return startDate ? addDays(startDate, dayNum-1) : null; }
@@ -891,6 +903,17 @@ function render(){
   const summaryEl = document.getElementById('summary');
   const gridEl = document.getElementById('grid');
 
+  // 出发日期缺失/无效提示横幅
+  const warn = document.getElementById('dateWarn');
+  if(warn){
+    if(!DATA.startOk){
+      warn.style.display = 'block';
+      warn.innerHTML = '⚠️ 未设置出发日期（或格式无效）。日历按「今天」起算的<b>临时排期</b>显示 '+DATA.planned.length+' 天；请到 <a href="index.html">地图追踪页</a> 设置真实出发日，以获得准确日历与「超前/落后」判定。';
+    } else {
+      warn.style.display = 'none';
+    }
+  }
+
   if(!DATA.planned.length){
     summaryEl.innerHTML = '';
     gridEl.innerHTML = `
@@ -907,17 +930,16 @@ function render(){
 
   summaryEl.innerHTML = renderSummary(DATA);
 
-  // 默认显示出发日所在月份
+  // 默认显示出发日所在月份（DATA.startDate 已是安全值：真实日期或今天兜底）
   if(viewY === undefined){
-    const sd = DATA.startDate ? parseYmd(DATA.startDate) : new Date();
+    const sd = parseYmd(DATA.startDate) || new Date();
     viewY = sd.getFullYear(); viewM = sd.getMonth();
   }
   renderCalendar();
 
-  const startPlace = loadRaw(LS.startPlace);
-  const datePart = DATA.startDate
-    ? t('it.foot.date').replace('{d}', esc(DATA.startDate))
-    : t('it.foot.nodate');
+  const datePart = DATA.startOk
+    ? t('it.foot.date').replace('{d}', esc(DATA.startDateReal))
+    : '（未设置出发日期 · 临时排期）';
   document.getElementById('footNote').innerHTML = t('it.foot').replace('{date}', datePart);
 }
 
@@ -927,10 +949,9 @@ window.onLangChange = function () {
     if (!DATA.planned || !DATA.planned.length) { render(); return; }
     document.getElementById('summary').innerHTML = renderSummary(DATA);
     renderCalendar();
-    const startPlace = loadRaw(LS.startPlace);
-    const datePart = DATA.startDate
-      ? t('it.foot.date').replace('{d}', esc(DATA.startDate))
-      : t('it.foot.nodate');
+    const datePart = DATA.startOk
+      ? t('it.foot.date').replace('{d}', esc(DATA.startDateReal))
+      : '（未设置出发日期 · 临时排期）';
     document.getElementById('footNote').innerHTML = t('it.foot').replace('{date}', datePart);
   }
 };
