@@ -3991,22 +3991,12 @@ function showGPXUploadResult(gpxData, stats) {
       const b = (r.data && r.data.data) ? r.data.data : null;
       // 服务端收到「已清空」包：其他设备以空为准抹掉本地共享字段；发起方（ght_cleared_self）保留本机
       if (b && b.clearedAt) {
-        // 竞态防护：本机是主人且 localStorage 仍有可共享数据（典型场景：重置后重新上传轨迹，
-        // 但云端 clearedAt 尚未被本次上传覆盖时刷新了页面）。此时应以本机数据为准，直接重推上云覆盖陈旧
-        // clearedAt，而不是把本机刚上传的数据当成「待清空」抹掉——否则会出现「日志有上传记录、轨迹几何却为空」的坏状态。
-        if (APP.isOwner && API.getToken() && hasLocalShareableData()) {
-          try {
-            const sp = localStorage.getItem('ght_preset'); if (sp) APP.presetTrack = JSON.parse(sp);
-            const sa = localStorage.getItem('ght_actual'); if (sa) { const a = JSON.parse(sa); if (Array.isArray(a)) APP.actualTracks = a; }
-            const si = localStorage.getItem('ght_itinerary'); if (si) { try { APP.itinerary = JSON.parse(si); } catch (e) {} }
-            const sis = localStorage.getItem('ght_itinerary_start'); if (sis) APP.itineraryStartDate = sis;
-          } catch (e) {}
-          sharedCache = b;
-          scheduleShare(0);   // 立即把本机最新数据推上云（pushShare 会删除 clearedAt）
-          renderDashboard(); renderAllTracks(); updateProgressDOM(); drawElevationProfile();
-          return;
-        }
-        if (!localStorage.getItem('ght_cleared_self')) {
+        // 云端处于「已清空」状态。按用户意图（清空云端 = 云端保持空白，直到显式点「重新发布共享」），
+        // 本机保留数据、绝不自动回推——这里移除原先的 scheduleShare(0) 自动重推，避免清空后立刻被填回。
+        // 仅当本机不是主人 / 未登录 / 无任何可共享数据时，才接受清空、抹掉本机共享字段（访客态或空本机）。
+        // 注意：不要在「观察到已清空」时自行设置 ght_cleared_self 标记——该标记只由本机主动清空/重置时设置，
+        // 否则访客设备会卡在暂停态、永远拉不到主人后续重新发布的内容。
+        if (!APP.isOwner || !API.getToken() || !hasLocalShareableData()) {
           APP.presetTrack = null; APP.totalDistance = 0; APP.sectionRanges = null;
           APP.presetSegments = null; APP.presetRestDays = null; APP.actualTracks = [];
           APP.currentPosition = null; APP.itinerary = []; APP.itineraryStartDate = null;
@@ -4019,7 +4009,7 @@ function showGPXUploadResult(gpxData, stats) {
         }
         sharedCache = b;
         renderDashboard(); renderAllTracks(); updateProgressDOM(); drawElevationProfile();
-        return;                                         // 关键：不再走后面的 owner 回推分支
+        return;                                         // 关键：不再走后面的 owner 回推分支（也不会自动重推上云）
       }
       if (b) {                                          // 服务端有共享内容（正常 bundle）
         sharedCache = b;
@@ -4282,9 +4272,13 @@ map.on('zoomend', () => {
 // 后台静默恢复登录态并同步服务端配置；语言/日期若有变化则局部重渲染。
 // 顺序很重要：loadShared 依赖 restoreSession 设好的 isOwner —— 只有主人(kv为空且本机有数据)才会自动种入共享包。
 function bootAutoShare() {
-  // 启动安全网：主人本机有共享数据但云端可能缺失（如首次导入后未手动发布），
-  // 则自动补推一次，无需手动点「重新发布共享」。云端为空时 loadShared 不会覆盖本机，故安全。
-  if (APP.isOwner && API.getToken() && hasLocalShareableData()) {
+  // 启动安全网：主人本机有共享数据且云端为空（如首次导入后未手动发布）时，自动补推一次。
+  // 但以下两种「已清空」情形绝不自动补推，否则会立刻把云端填回，与
+  // 「清空云端后保持空白、直到显式点重新发布共享」的语义冲突：
+  //   1) 本机处于同步暂停态（ght_cleared_self 标记，由本机清空云端/重置设置）；
+  //   2) 云端共享包本身带 clearedAt（其他设备清空、或本机在旧缓存代码下清空漏设标记）。
+  if (APP.isOwner && API.getToken() && hasLocalShareableData() && !localStorage.getItem('ght_cleared_self')) {
+    if (sharedCache && sharedCache.clearedAt) return;   // 云端已清空 → 保持空白，等显式重新发布
     scheduleShare(1500);
   }
 }
