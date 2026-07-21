@@ -3913,6 +3913,7 @@ function showGPXUploadResult(gpxData, stats) {
     bundle.restDays = APP.presetRestDays || [];
     bundle.sections = APP.sectionRanges || null;
     bundle.totalDistance = APP.totalDistance || 0;
+    bundle.journal = APP.logEntries || [];   // 同步上传记录等到共享包，供 journal.html 跨设备展示
     delete bundle.clearedAt;   // 真实写入即摘掉「已清空」标记，恢复为正常 bundle
     sharedCache = bundle;
     try { localStorage.removeItem('ght_cleared_self'); } catch (e) {}  // 任何一次推送代表已恢复共享
@@ -3968,7 +3969,25 @@ function showGPXUploadResult(gpxData, stats) {
         if (b.restDays) APP.presetRestDays = b.restDays;
         if (b.actual && b.actual.length) APP.actualTracks = mergeActualTracks(APP.actualTracks, b.actual);
         if (b.pos) APP.currentPosition = b.pos;
-        if (b.itinerary && b.itinerary.length) { APP.itinerary = b.itinerary; APP.itineraryStartDate = b.itineraryStart || null; }
+        if (b.itinerary && b.itinerary.length) {
+          APP.itinerary = b.itinerary;
+          // 出发日期优先用云端包里的（若有），否则保留本机已由配置回填的值
+          if (b.itineraryStart) {
+            APP.itineraryStartDate = b.itineraryStart;
+            try { localStorage.setItem('ght_itinerary_start', b.itineraryStart); } catch (e) {}
+          }
+          // 关键修复：把云端行程持久化到 localStorage['ght_itinerary']，
+          // 否则独立行程对比页(itinerary.html，只读本地)在其他设备永远为空。
+          saveItinerary();
+        }
+        // 合并共享日志（上传记录等）回本机，使 journal.html 跨设备可见；按 id 去重，避免重复
+        if (b.journal && b.journal.length) {
+          APP.logEntries = APP.logEntries || [];
+          const seen = new Set(APP.logEntries.map(e => e.id));
+          b.journal.forEach(e => { if (e && e.id && !seen.has(e.id)) { APP.logEntries.push(e); seen.add(e.id); } });
+          APP.logEntries.sort((a, x) => (x.date || '').localeCompare(a.date || ''));
+          saveLogEntries();
+        }
         // 主人（已登录且本机有可共享数据）：合并云端后再把本地编辑回推上云（sharedCache 已是云端 bundle，journal/deletedIds 被继承）
         if (APP.isOwner && API.getToken() && hasLocalShareableData()) {
           pushShare();
