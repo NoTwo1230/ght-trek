@@ -12,7 +12,7 @@
 <script src="sections-data.js"></script>
 <link rel="stylesheet" href="styles.css" />
 <style>
-  body.admin-page { background: var(--bg, #0a0d12); }
+  body.admin-page { background: var(--bg, #0a0d12); height: auto; min-height: 100vh; overflow: visible; }
   .admin-top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px;
     padding:12px 22px;background:rgba(10,13,18,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border,rgba(255,255,255,.09))}
   .admin-top .brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:15px}
@@ -71,12 +71,15 @@
   .cfg-save:hover{filter:brightness(1.12)}
   .cfg-msg{font-size:12.5px;margin-left:12px}
 
-  /* track card */
-  .track-card{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--panel,rgba(255,255,255,.035));
+  /* track cards (two entry points) */
+  .track-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .track-card{display:flex;flex-direction:column;align-items:flex-start;gap:12px;background:var(--panel,rgba(255,255,255,.035));
     border:1px solid var(--border,rgba(255,255,255,.09));border-radius:14px;padding:20px}
-  .track-card .btn-go{padding:11px 20px;background:var(--accent,#4f9dff);color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer}
+  .track-card .track-card-title{font-size:15px;font-weight:700;color:var(--text,#e6edf3)}
+  .track-card .btn-go{padding:11px 20px;background:var(--accent,#4f9dff);color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;align-self:stretch}
   .track-card .btn-go:hover{filter:brightness(1.12)}
   .track-note{font-size:12px;color:var(--text-dim,#8b98a8);line-height:1.6}
+  @media (max-width:640px){ .track-grid{grid-template-columns:1fr} }
 
   /* single login gate (replaces every per-section password) */
   .login-gate{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
@@ -138,10 +141,18 @@
     <!-- 2. 轨迹 -->
     <section class="tab-panel" id="tab-tracks">
       <h2 class="sec-head">📍 轨迹管理 <span class="en">TRACKS</span></h2>
-      <p class="sec-hint">上传 GPX 预设轨迹 / 实际徒步轨迹。处理管线与前台完全一致（抽稀、垭口识别、路段计算），上传即发布到云端。</p>
-      <div class="track-card">
-        <button class="btn-go" id="openTrackModal" type="button">打开轨迹管理</button>
-        <span class="track-note">已解锁，无需再次输入密码。上传后公众地图与海拔剖面自动更新。</span>
+      <p class="sec-hint">上传 GPX 轨迹到云端。处理管线与前台完全一致（抽稀、垭口识别、路段计算），上传即发布。已解锁，无需再次输入密码。</p>
+      <div class="track-grid">
+        <div class="track-card">
+          <div class="track-card-title">🗺️ 预设轨迹（计划路线）</div>
+          <div class="track-note">完整的 GHT 参考路线。上传后会重算路段、日程与总距离，并同步到公众地图与海拔剖面。</div>
+          <button class="btn-go" id="openPresetModal" type="button">导入预设轨迹</button>
+        </div>
+        <div class="track-card">
+          <div class="track-card-title">🥾 实际徒步轨迹</div>
+          <div class="track-note">每天实际走过的轨迹。按尼泊尔 GPS 日期自动与计划对比，计算进度与滑移，同步到公众地图。</div>
+          <button class="btn-go" id="openActualModal" type="button">导入实际轨迹</button>
+        </div>
       </div>
     </section>
 
@@ -239,7 +250,7 @@
         // 同步全部登录态：localStorage token（本页日志）、app.js API token、APP.isOwner（轨迹弹窗免二次密码）
         setOwnerToken(r.token);
         if (typeof API.setToken === 'function') API.setToken(r.token);
-        if (window.APP) APP.isOwner = true;
+        APP.isOwner = true;
         enterAdmin();
       } else if (err) { err.textContent = r.msg; }
     };
@@ -254,7 +265,7 @@
     function exitAdmin() {
       setOwnerToken('');
       if (typeof API.clearToken === 'function') API.clearToken();
-      if (window.APP) APP.isOwner = false;
+      APP.isOwner = false;
       location.reload();
     }
 
@@ -410,12 +421,13 @@
     document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
 
     // ── 绑定 ──
-    document.getElementById('openTrackModal').addEventListener('click', () => { if (typeof openDataModal === 'function') openDataModal(); });
+    document.getElementById('openPresetModal').addEventListener('click', () => { if (typeof openDataModal === 'function') openDataModal('preset'); });
+    document.getElementById('openActualModal').addEventListener('click', () => { if (typeof openDataModal === 'function') openDataModal('actual'); });
     document.getElementById('cfgSave').addEventListener('click', saveConfig);
     document.getElementById('adminLogout').addEventListener('click', exitAdmin);
     // 若已登录（token 仍在），轨迹弹窗直接免密
     if (getOwnerToken() && typeof API.setToken === 'function') API.setToken(getOwnerToken());
-    if (getOwnerToken() && window.APP) APP.isOwner = true;
+    if (getOwnerToken()) APP.isOwner = true;
 
     // ── 启动 ──
     if (getOwnerToken()) {

@@ -998,7 +998,10 @@ async function restoreSession() {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  DATA MANAGEMENT MODAL (password-gated upload)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function openDataModal() {
+function openDataModal(mode) {
+  APP._uploadMode = mode || null;
+  const dmTitle = document.getElementById('dmTitle');
+  if (dmTitle) dmTitle.textContent = '数据管理' + (mode === 'preset' ? ' · 预设轨迹' : mode === 'actual' ? ' · 实际轨迹' : '');
   const m = document.getElementById('dataModal');
   if (!m) return;
   m.classList.add('open');
@@ -1022,6 +1025,7 @@ function closeDataModal() {
   if (!m) return;
   m.classList.remove('open');
   m.setAttribute('aria-hidden', 'true');
+  APP._uploadMode = null;
 }
 async function unlockData() {
   const pi = document.getElementById('pwdInput');
@@ -3504,6 +3508,30 @@ function handleGPXUpload(event) {
       `\n合并后: ${merged.trackPoints.length} 个轨迹点, ${stats.distance.toFixed(1)}km\n\n` +
       `设为「预设轨迹」吗？\n（预设轨迹作为完整路线参考，后续上传的实际轨迹将与之对比）`;
 
+    // ── 后台「预设/实际」模式：跳过确认，直接按模式写入 ──
+    if (APP._uploadMode === 'preset') {
+      setAsPreset(merged, stats);
+      APP.presetSegments = valid; persistPresetSegments(valid);
+      pushShare();
+      applySegmentItinerary(valid, restDays);
+      matchItineraryToActuals();
+      if (typeof saveItinerary === 'function') saveItinerary();
+      renderAllTracks(); updateProgressDOM(); openPanel(APP.activeTab || 'progress');
+      event.target.value = '';
+      alert('✅ 已将 ' + valid.length + ' 段分日预设轨迹写入行程安排（含 ' + restDays.length + ' 个休息日）。\n行程为「计划」状态，上传实际轨迹后自动同步进度。');
+      return;
+    }
+    if (APP._uploadMode === 'actual') {
+      valid.forEach(function (seg) {
+        var segStats = seg.stats || calculateGPXStats(seg);
+        addActualTrack(seg, segStats);
+      });
+      matchItineraryToActuals();
+      renderAllTracks(); updateProgressDOM(); openPanel(APP.activeTab || 'progress');
+      event.target.value = '';
+      alert('✅ 已添加 ' + valid.length + ' 段实际徒步轨迹。\n预设路线与计划日程保持不变，已按轨迹尼泊尔 GPS 日期自动对比进度。');
+      return;
+    }
     if (!APP.presetTrack) {
       // No preset yet
       if (confirm(msg)) {
@@ -3588,6 +3616,9 @@ function handleGPXUpload(event) {
 
 // Handle single file upload (extracted from original flow)
 function handleSingleUpload(gpxData, stats) {
+  const mode = APP._uploadMode;
+  if (mode === 'preset') { setAsPreset(gpxData, stats); return; }
+  if (mode === 'actual') { addActualTrack(gpxData, stats); return; }
   if (!APP.presetTrack) {
     if (confirm('这是您第一次上传轨迹！\n\n设为「预设轨迹」吗？\n\n预设轨迹将作为完整的 GHT 路线参考，后续上传的实际轨迹将与之对比以计算进度。')) {
       setAsPreset(gpxData, stats);
