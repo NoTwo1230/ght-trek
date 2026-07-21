@@ -178,8 +178,7 @@
         <div class="iu-title">🥾 实际徒步轨迹<span class="iu-mode-tag iu-mode-actual">ACTUAL</span></div>
         <input type="file" id="gpxActualUpload" accept=".gpx,.kml,.geojson" multiple hidden onchange="handleActualUpload(event)">
         <button class="btn-go" onclick="document.getElementById('gpxActualUpload').click()" style="width:100%">选择实际轨迹文件 (.gpx/.kml)</button>
-        <p class="track-note" style="margin-top:8px">每天实际走过的轨迹。按尼泊尔 GPS 日期自动与计划对比，计算进度与滑移，同步到公众地图。</p>
-        <div style="margin-top:10px"><label>出发日期：</label><input type="date" id="trackStartDate"></div>
+        <p class="track-note" style="margin-top:8px">每天实际走过的轨迹。按尼泊尔 GPS 日期自动与计划对比，计算进度与滑移，同步到公众地图。出发日期请在「⚙️配置」页设置。</p>
       </div>
     </section>
 
@@ -315,8 +314,8 @@
       // 设为实际模式
       if (APP) APP._uploadMode = 'actual';
       if (typeof handleGPXUpload === 'function') handleGPXUpload(evt);
-      // 同步出发日期
-      const sdEl = document.getElementById('trackStartDate');
+      // 同步出发日期（取配置 Tab 的唯一出发日期字段）
+      const sdEl = document.getElementById('cfgStart');
       if (sdEl && sdEl.value && typeof setItineraryStartDate === 'function') setItineraryStartDate(sdEl.value);
       setTimeout(function () { evt.target.value = ''; }, 200);
     };
@@ -448,7 +447,7 @@
         if (r && r.ok && r.data) {
           var c = r.data;
           if (c.expeditionName) document.getElementById('cfgName').value = c.expeditionName;
-          if (c.itineraryStartDate) { document.getElementById('cfgStart').value = c.itineraryStartDate; document.getElementById('trackStartDate').value = c.itineraryStartDate; }
+          if (c.itineraryStartDate) { document.getElementById('cfgStart').value = c.itineraryStartDate; }
           if (c.language) document.getElementById('cfgLang').value = c.language;
         }
       } catch (e) {}
