@@ -202,8 +202,21 @@ export default async function onRequest(context) {
     };
     if (hasCos(env)) {
       try {
-        const authHeader = await cosAuth(cfg, 'GET', objKey('_index'));
-        const res = await fetch(cosUrl(cfg, objKey('_index')), {
+        // ── 详细签名调试：暴露每一步中间值，用于对比标准实现 ──
+        const debugKey = objKey('_index');
+        const now = Math.floor(Date.now() / 1000);
+        const signTime = `${now};${now + 3600}`;
+        const host = cosHost(cfg);
+        const httpHeaders = `host=${host}\n`;
+        const httpString = ['get', '/' + debugKey, '', httpHeaders, ''].join('\n');
+        // 逐步计算签名中间值
+        const _sha1Http = await sha1Hex(httpString);
+        const _signKey = await hmacSha1(cfg.secretKey, signTime);
+        const _stringToSign = `sha1\n${signTime}\n${_sha1Http}\n`;
+        const _signature = await hmacSha1(_signKey, _stringToSign);
+
+        const authHeader = await cosAuth(cfg, 'GET', debugKey);
+        const res = await fetch(cosUrl(cfg, debugKey), {
           method: 'GET',
           headers: { 'Authorization': authHeader },
         });
@@ -213,6 +226,16 @@ export default async function onRequest(context) {
           const m = txt.match(/<Code>([^<]+)<\/Code>/);
           cosBody = m ? m[1] : txt.slice(0, 200);
         }
+        envInfo._signDebug = {
+          now, signTime, host,
+          httpString: httpString.replace(/\n/g, '\\n'),
+          sha1HttpHex: _sha1Http,
+          signKeyHex: _signKey,
+          stringToSign: _stringToSign.replace(/\n/g, '\\n'),
+          signatureHex: _signature,
+          fullAuthHeader: authHeader,
+          cosStatus, cosError: cosBody,
+        };
       } catch (e) { cosStatus = 'error:' + e.message; }
     }
     return json({ hasCos: hasCos(env), bucket: env.COS_BUCKET || null, region: env.COS_REGION || null, cosStatus, cosError: cosBody, _envInfo: envInfo });
