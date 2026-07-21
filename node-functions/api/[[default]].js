@@ -179,5 +179,11 @@ export default async function onRequest(context) {
     return json({ ok: true, count: files.length, tracks: index });
   }
 
+  // [DEBUG] 临时诊断：列出 env 键，确认 KV 绑定是否注入
+  if (path === '/api/debug') {
+    const keys = Object.keys(env || {});
+    return json({ envKeys: keys, hasGHT: !!env.GHT, ghtType: env.GHT ? typeof env.GHT : null });
+  }
+
   return json({ error: 'not found', path }, 404);
 }
