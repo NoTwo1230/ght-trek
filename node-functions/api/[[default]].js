@@ -194,9 +194,11 @@ export default async function onRequest(context) {
       skeyLen: skey.length,
       skeyHead: skey.slice(0, 6),
       skeyTail: skey.slice(-6),
-      // 检查首尾是否有隐藏的空白字符
-      sidHasLeadingSpace: /^\s/.test(sid),
-      sidHasTrailingSpace: /\s$/.test(skey),
+      // 严格检查：任何空白字符（空格/制表/换行/全角空格）或非 ASCII 字符
+      sidHasWs: /\s/.test(sid) || /[^\x00-\x7F]/.test(sid),
+      skeyHasWs: /\s/.test(skey) || /[^\x00-\x7F]/.test(skey),
+      // 逐字符列出 secretKey 是否有异常字符（正常应全是字母数字）
+      skeyNonAlnum: [...skey].filter(c => !/[A-Za-z0-9]/.test(c)),
     };
     if (hasCos(env)) {
       try {
