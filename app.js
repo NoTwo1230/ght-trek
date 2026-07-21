@@ -4033,8 +4033,10 @@ function showGPXUploadResult(gpxData, stats) {
         if (b.pos) APP.currentPosition = b.pos;
         if (b.itinerary && b.itinerary.length) {
           APP.itinerary = b.itinerary;
-          // 出发日期优先用云端包里的（若有），否则保留本机已由配置回填的值
-          if (b.itineraryStart) {
+          // 出发日期以服务端 config 为权威（管理员设置，已与真实出发日/GPX Day1 对齐）；
+          // 仅当本机/配置均未提供时才用共享包里的 itineraryStart 兜底，
+          // 避免过期的 share.itineraryStart 覆盖 config 中正确的日期（如 2026-08-01 被 2026-11-01 顶掉）。
+          if (b.itineraryStart && !APP.itineraryStartDate) {
             APP.itineraryStartDate = b.itineraryStart;
             try { localStorage.setItem('ght_itinerary_start', b.itineraryStart); } catch (e) {}
           }
