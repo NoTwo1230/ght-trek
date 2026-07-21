@@ -955,6 +955,12 @@ const API = (function () {
       try {
         return req('PUT', '/api/share', { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(bundle) });
       } catch (e) { return noBackend(); }
+    },
+    deleteTracks: async () => {
+      if (!hasBackend()) return noBackend();
+      try {
+        return req('DELETE', '/api/tracks');
+      } catch (e) { return noBackend(); }
     }
   };
 })();
@@ -3953,7 +3959,12 @@ function showGPXUploadResult(gpxData, stats) {
           APP.presetTrack = null; APP.totalDistance = 0; APP.sectionRanges = null;
           APP.presetSegments = null; APP.presetRestDays = null; APP.actualTracks = [];
           APP.currentPosition = null; APP.itinerary = []; APP.itineraryStartDate = null;
-          try { localStorage.removeItem('ght_log'); } catch (e) {}
+          try {
+            localStorage.removeItem('ght_log');
+            localStorage.removeItem('ght_itinerary');
+            localStorage.removeItem('ght_itinerary_start');
+            localStorage.removeItem('ght_start_place');
+          } catch (e) {}
         }
         sharedCache = b;
         renderDashboard(); renderAllTracks(); updateProgressDOM(); drawElevationProfile();
@@ -4019,8 +4030,21 @@ function updateOwnerUI() {
   // 主人模式由密码解锁控制（APP.isOwner），不再默认开启；重置/编辑按钮的可见性由各自渲染逻辑按 isOwner 决定
 }
 
+// 彻底清空云端：把共享包置空（带 clearedAt）+ 删除所有原始 GPX 备份。
+// 任一环节失败都抛出明确错误，交由调用方提示用户（不再静默吞）。
+async function purgeCloudShare() {
+  if (!APP.isOwner || !API.getToken()) throw new Error('未以主人身份登录（缺少有效 token）');
+  // 1) 共享包置空：其他设备加载时看到 clearedAt 会同步抹掉本地共享数据
+  const r1 = await API.putShare(emptyShareBundle());
+  if (!r1 || !r1.ok) throw new Error('共享包清空失败（' + ((r1 && r1.data && r1.data.error) || ('HTTP ' + (r1 && r1.status))) + '）');
+  // 2) 删除所有原始 GPX 备份（避免重置后云端仍残留轨迹原始文件）
+  const r2 = await API.deleteTracks();
+  if (!r2 || !r2.ok) throw new Error('GPX 备份删除失败（' + ((r2 && r2.data && r2.data.error) || ('HTTP ' + (r2 && r2.status))) + '）');
+  return true;
+}
+
 async function clearAllData() {
-  if (!confirm('⚠️ 此操作将清除所有数据，不可恢复！\n\n包括:\n- 预设轨迹\n- 实际轨迹\n- 日志\n- 路段进度\n- 行程安排\n\n确定继续？')) return;
+  if (!confirm('⚠️ 此操作将清除所有数据，不可恢复！\n\n包括:\n- 预设轨迹\n- 实际轨迹\n- 日志\n- 路段进度\n- 行程安排\n- 云端原始 GPX 备份\n\n确定继续？')) return;
   // 统一清除所有以 ght 开头的本地存储键（避免遗漏新增键，例如 ght_start_place）；但保留 ght_token —— 重置=清数据，不是登出
   const keys = [];
   for (let i = 0; i < localStorage.length; i++) {
@@ -4033,24 +4057,32 @@ async function clearAllData() {
   APP.completedDistance = 0;
   APP.progressPercentage = 0;
   APP.progressPct = 0;
-  // 重置 = 清数据，同时以「已清空」包清空云端共享（主人唯一编辑者模型）；其他设备会同步抹掉本地共享。非主人/无 token/无后端则跳过，不影响本地重置
-  if (APP.isOwner && API.getToken()) {
-    try { await API.putShare(emptyShareBundle()); } catch (e) { console.warn('[ght] 云端共享清空失败（不影响本地重置）', e); }
+  // 清云端：必须登录；失败要明确报错（不再静默吞）。本机已清，云端失败也能事后补清。
+  if (!APP.isOwner || !API.getToken()) {
+    alert('⚠️ 本机数据已清空，但云端未清理：你尚未以主人身份登录。\n请登录 admin 后点「清空云端」完成云端清理（含原始 GPX 备份）。');
+    location.reload();
+    return;
+  }
+  try {
+    await purgeCloudShare();
+    alert('✅ 本机与云端已全部清空（含原始 GPX 备份）。其他设备下次打开将自动同步为空白。');
+  } catch (e) {
+    alert('⚠️ 本机已清空，但云端清理失败：\n' + (e && e.message ? e.message : e) + '\n\n请检查网络后，登录 admin 点「清空云端」重试。');
   }
   location.reload();
 }
 
-// 主人专用：仅清空云端共享（KV），不影响本机数据。用于临时下架共享 / 清掉云端误写数据。
+// 主人专用：仅清空云端共享（含 GPX 备份），不影响本机数据。用于临时下架共享 / 清掉云端误写数据。
   async function clearCloudShare() {
     if (!APP.isOwner || !API.getToken()) { alert('仅主人且已登录时可清空云端共享'); return; }
-    if (!confirm('⚠️ 此操作将清空云端共享数据，所有访客将暂时看不到轨迹。\n恢复需重新导入真实轨迹并刷新页面。\n\n确定继续？')) return;
+    if (!confirm('⚠️ 此操作将清空云端共享数据（含原始 GPX 备份），所有访客将暂时看不到轨迹。\n本机数据保留，可点「重新发布共享」恢复上云。\n\n确定继续？')) return;
     try {
       try { localStorage.setItem('ght_cleared_self', '1'); } catch (e) {}  // 标记「我是发起方」，保留本机数据
-      await API.putShare(emptyShareBundle());
-      alert('云端共享已清空。所有设备将显示为空；本机数据已保留，可点「重新发布共享」恢复上云。');
+      await purgeCloudShare();
+      alert('✅ 云端共享已清空（含原始 GPX 备份）。所有设备将显示为空白；本机数据已保留，可点「重新发布共享」恢复上云。');
       location.reload();
     } catch (e) {
-      alert('云端清空失败：' + (e && e.message ? e.message : e));
+      alert('⚠️ 云端清空失败：\n' + (e && e.message ? e.message : e) + '\n\n请检查网络后重试。');
     }
   }
 

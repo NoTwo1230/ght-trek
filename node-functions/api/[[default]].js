@@ -21,7 +21,7 @@
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET,POST,PUT,OPTIONS',
+  'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type,Authorization',
   'Access-Control-Max-Age': '86400',
 };
@@ -151,6 +151,30 @@ async function kvPut(env, kvKey, value) {
 async function kvGetJSON(env, kvKey) {
   const v = await kvGet(env, kvKey);
   return v ? JSON.parse(v) : null;
+}
+
+// 列出某前缀下的对象键（用于删除目录）。签名只含 host（与单对象 GET 一致，已验证可用）
+async function cosList(cfg, prefix, maxKeys = 1000) {
+  const q = '?prefix=' + encodeURIComponent(prefix) + '&max-keys=' + maxKeys;
+  const res = await fetch(cosUrl(cfg, '') + q, {
+    method: 'GET',
+    headers: { 'Authorization': await cosAuth(cfg, 'GET', '') },
+  });
+  if (!res.ok) { console.error('[COS] LIST', prefix, res.status); return []; }
+  const xml = await res.text();
+  const keys = [];
+  const re = /<Key>(.*?)<\/Key>/g; let m;
+  while ((m = re.exec(xml)) !== null) keys.push(m[1]);
+  return keys;
+}
+
+// 删除单个对象键（404 视为已删，返回成功）
+async function cosDelete(cfg, key) {
+  const res = await fetch(cosUrl(cfg, key), {
+    method: 'DELETE',
+    headers: { 'Authorization': await cosAuth(cfg, 'DELETE', key) },
+  });
+  return res.status === 204 || res.status === 200 || res.status === 404;
 }
 
 /**
@@ -296,6 +320,16 @@ export default async function onRequest(context) {
     }
     await kvPut(env, '_index', index);
     return json({ ok: true, count: files.length, tracks: index });
+  }
+
+  // 彻底清空原始 GPX 备份（重置数据 / 清空云端时调用）
+  if (path === '/api/tracks' && request.method === 'DELETE') {
+    const cfg = cosCfg(env);
+    const keys = await cosList(cfg, 'ght-data/gpx/');
+    let deleted = 0;
+    for (const k of keys) { if (await cosDelete(cfg, k)) deleted++; }
+    await kvPut(env, '_index', []);   // 清空备份索引
+    return json({ ok: true, deleted });
   }
 
   return json({ error: 'not found', path }, 404);

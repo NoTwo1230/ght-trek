@@ -287,11 +287,9 @@
 
     // ── 数据操作按钮（调用 app.js 全局函数）──
     document.getElementById('btnResetData').addEventListener('click', function () {
-      if (!getOwnerToken()) { alert('请先登录'); return; }
-      if (confirm('⚠️ 重置将清空本机所有数据（日志、轨迹、配置），并发布「已清空」到云端。\n\n确定要重置吗？')) {
-        if (typeof clearAllData === 'function') clearAllData();
-        else alert('clearAllData 函数不可用');
-      }
+      if (!getOwnerToken()) { alert('请先登录后再重置'); return; }
+      if (typeof clearAllData === 'function') clearAllData();
+      else alert('clearAllData 函数不可用');
     });
 
     document.getElementById('btnClearCloud').addEventListener('click', function () {
