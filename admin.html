@@ -25,6 +25,20 @@
 
   .admin-main{max-width:920px;margin:0 auto;padding:26px 22px 60px}
 
+  /* 数据操作条（主页显眼位置） */
+  .data-ops-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    background:var(--panel-2,rgba(255,255,255,.04));border:1px solid var(--border,rgba(255,255,255,.1));
+    border-radius:12px;padding:14px 18px;margin-bottom:22px}
+  .data-ops-bar .ops-label{font-size:12.5px;font-weight:700;color:var(--text-dim,#8b98a8);margin-right:4px}
+  .data-ops-bar .btn-op{padding:8px 16px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;
+    border:1px solid var(--border,rgba(255,255,255,.12));transition:.18s;white-space:nowrap}
+  .btn-op-danger{background:rgba(255,107,107,.08);color:#ff6b6b;border-color:rgba(255,107,107,.25)}
+  .btn-op-danger:hover{background:rgba(255,107,107,.15);color:#ff8787}
+  .btn-op-warn{background:rgba(255,169,77,.08);color:#ffa94d;border-color:rgba(255,169,77,.25)}
+  .btn-op-warn:hover{background:rgba(255,169,77,.15);color:#ffb86c}
+  .btn-op-primary{background:rgba(79,157,255,.08);color:#4f9dff;border-color:rgba(79,157,255,.25)}
+  .btn-op-primary:hover{background:rgba(79,157,255,.15);color:#70b4ff}
+
   /* tabs */
   .tabs{display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap}
   .tab-btn{padding:9px 18px;background:var(--panel-2,rgba(255,255,255,.055));border:1px solid var(--border,rgba(255,255,255,.09));
@@ -71,15 +85,15 @@
   .cfg-save:hover{filter:brightness(1.12)}
   .cfg-msg{font-size:12.5px;margin-left:12px}
 
-  /* track cards (two entry points) */
-  .track-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-  .track-card{display:flex;flex-direction:column;align-items:flex-start;gap:12px;background:var(--panel,rgba(255,255,255,.035));
-    border:1px solid var(--border,rgba(255,255,255,.09));border-radius:14px;padding:20px}
-  .track-card .track-card-title{font-size:15px;font-weight:700;color:var(--text,#e6edf3)}
-  .track-card .btn-go{padding:11px 20px;background:var(--accent,#4f9dff);color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;align-self:stretch}
-  .track-card .btn-go:hover{filter:brightness(1.12)}
-  .track-note{font-size:12px;color:var(--text-dim,#8b98a8);line-height:1.6}
-  @media (max-width:640px){ .track-grid{grid-template-columns:1fr} }
+  /* inline upload area in tracks tab */
+  .inline-upload{background:var(--panel-2,rgba(255,255,255,.055));border:1px solid var(--border,rgba(255,255,255,.09));
+    border-radius:12px;padding:18px 20px;margin-top:14px}
+  .inline-upload .iu-title{font-size:14px;font-weight:700;color:var(--text,#e6edf3);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+  .inline-upload .iu-mode-tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px}
+  .iu-mode-preset{color:#4f9dff;background:rgba(79,157,255,.12);border:1px solid rgba(79,157,255,.3)}
+  .iu-mode-actual{color:#34d058;background:rgba(52,208,88,.12);border:1px solid rgba(52,208,88,.3)}
+
+  @media (max-width:640px){ .data-ops-bar{flex-direction:column;align-items:stretch } }
 
   /* single login gate (replaces every per-section password) */
   .login-gate{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
@@ -102,7 +116,7 @@
   <!-- 复用 app.js 的轨迹处理管线需要一个地图容器；置为屏幕外 1px，不影响后台使用 -->
   <div id="map" style="position:absolute;width:1px;height:1px;left:-9999px;top:-9999px;overflow:hidden;opacity:0;pointer-events:none;"></div>
 
-  <!-- 单一登录（只需一次，解锁全部：日志 / 轨迹 / 配置） -->
+  <!-- 单一登录（只需一次，解锁全部：日志 / 轨迹 / 配置 / 数据操作） -->
   <div class="login-gate" id="loginGate">
     <div class="login-box">
       <div class="lb-title">🔐 GHT 后台登录</div>
@@ -123,6 +137,14 @@
 
   <main class="admin-main locked" id="adminMain">
 
+    <!-- ═══ 数据操作（主页显眼位置，不再藏在弹窗里） ═══ -->
+    <div class="data-ops-bar" id="dataOpsBar">
+      <span class="ops-label">🔧 数据操作</span>
+      <button class="btn-op btn-op-danger" id="btnResetData" type="button">🗑️ 重置全部数据</button>
+      <button class="btn-op btn-op-warn" id="btnClearCloud" type="button">☁️ 清空云端</button>
+      <button class="btn-op btn-op-primary" id="btnRepublish" type="button">🔄 重新发布共享</button>
+    </div>
+
     <!-- Tabs -->
     <nav class="tabs">
       <button class="tab-btn active" data-tab="journal" type="button">📝 日志</button>
@@ -138,21 +160,26 @@
       <div class="timeline" id="feed"></div>
     </section>
 
-    <!-- 2. 轨迹 -->
+    <!-- 2. 轨迹（内嵌上传区，不再弹窗） -->
     <section class="tab-panel" id="tab-tracks">
       <h2 class="sec-head">📍 轨迹管理 <span class="en">TRACKS</span></h2>
-      <p class="sec-hint">上传 GPX 轨迹到云端。处理管线与前台完全一致（抽稀、垭口识别、路段计算），上传即发布。已解锁，无需再次输入密码。</p>
-      <div class="track-grid">
-        <div class="track-card">
-          <div class="track-card-title">🗺️ 预设轨迹（计划路线）</div>
-          <div class="track-note">完整的 GHT 参考路线。上传后会重算路段、日程与总距离，并同步到公众地图与海拔剖面。</div>
-          <button class="btn-go" id="openPresetModal" type="button">导入预设轨迹</button>
-        </div>
-        <div class="track-card">
-          <div class="track-card-title">🥾 实际徒步轨迹</div>
-          <div class="track-note">每天实际走过的轨迹。按尼泊尔 GPS 日期自动与计划对比，计算进度与滑移，同步到公众地图。</div>
-          <button class="btn-go" id="openActualModal" type="button">导入实际轨迹</button>
-        </div>
+      <p class="sec-hint">上传 GPX 轨迹到云端。处理管线与前台完全一致（抽稀、垭口识别、路段计算），上传即发布。</p>
+
+      <!-- 预设轨迹上传 -->
+      <div class="inline-upload">
+        <div class="iu-title">🗺️ 预设轨迹（计划路线）<span class="iu-mode-tag iu-mode-preset">PRESET</span></div>
+        <input type="file" id="gpxPresetUpload" accept=".gpx,.kml,.geojson" multiple hidden onchange="handlePresetUpload(event)">
+        <button class="btn-go" onclick="document.getElementById('gpxPresetUpload').click()" style="width:100%">选择预设轨迹文件 (.gpx/.kml)</button>
+        <p class="track-note" style="margin-top:8px">完整的 GHT 参考路线。上传后会重算路段、日程与总距离，并同步到公众地图与海拔剖面。</p>
+      </div>
+
+      <!-- 实际轨迹上传 -->
+      <div class="inline-upload" style="margin-top:14px">
+        <div class="iu-title">🥾 实际徒步轨迹<span class="iu-mode-tag iu-mode-actual">ACTUAL</span></div>
+        <input type="file" id="gpxActualUpload" accept=".gpx,.kml,.geojson" multiple hidden onchange="handleActualUpload(event)">
+        <button class="btn-go" onclick="document.getElementById('gpxActualUpload').click()" style="width:100%">选择实际轨迹文件 (.gpx/.kml)</button>
+        <p class="track-note" style="margin-top:8px">每天实际走过的轨迹。按尼泊尔 GPS 日期自动与计划对比，计算进度与滑移，同步到公众地图。</p>
+        <div style="margin-top:10px"><label>出发日期：</label><input type="date" id="trackStartDate"></div>
       </div>
     </section>
 
@@ -183,31 +210,13 @@
 
   </main>
 
-  <!-- ── DATA MANAGEMENT MODAL（从 index.html 迁入，轨迹上传使用 app.js 管线）── -->
-  <div class="modal-overlay" id="dataModal" aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-label="数据管理">
-      <div class="modal-head">
-        <span id="dmTitle">数据管理</span>
-        <button class="modal-close" onclick="closeDataModal()" aria-label="关闭">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="pwd-gate" id="pwdGate">
-          <p class="pwd-hint" id="dmPwdHint">请输入主人密码以管理轨迹数据</p>
-          <input type="password" id="pwdInput" class="form-input" placeholder="密码" autocomplete="off" onkeydown="if(event.key==='Enter')unlockData()">
-          <button class="btn primary" id="dmUnlock" onclick="unlockData()">解锁</button>
-          <div class="pwd-err" id="dmPwdErr" hidden>密码错误</div>
-        </div>
-        <div class="upload-area" id="uploadArea" hidden></div>
-      </div>
-    </div>
-  </div>
-
   <script src="ght-region-map.js?v=3"></script>
   <script src="app.js?v=3"></script>
   <script>
   /* ============================================================
-     后台管理逻辑（单一登录 + 日志/轨迹/配置 三 Tab）。
-     登录态与 app.js 共用 localStorage['ght_token']，故只需登录一次。
+     后台管理逻辑 v3：单一登录 + 日志/轨迹/配置 三 Tab + 数据操作栏。
+     登录态与 app.js 共用 localStorage['ght_token']。
+     轨迹上传内嵌在 Tab 里，不再用弹窗（已移除 dataModal）。
      ============================================================ */
   (function () {
     if (typeof window.API === 'undefined') {
@@ -231,7 +240,7 @@
     }
     function genId() { return 'le_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
-    // ── 单一登录：一次解锁，日志/轨迹/配置全部可用 ──
+    // ── 单一登录 ──
     async function adminLogin(pwd) {
       try {
         const res = await fetch(apiBase() + '/api/login?_t=' + Date.now(), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pwd }) });
@@ -247,7 +256,6 @@
       if (!pi || !pi.value) { if (err) err.textContent = '请输入密码'; return; }
       const r = await adminLogin(pi.value);
       if (r.ok) {
-        // 同步全部登录态：localStorage token（本页日志）、app.js API token、APP.isOwner（轨迹弹窗免二次密码）
         setOwnerToken(r.token);
         if (typeof API.setToken === 'function') API.setToken(r.token);
         APP.isOwner = true;
@@ -268,6 +276,50 @@
       APP.isOwner = false;
       location.reload();
     }
+
+    // ── 数据操作按钮（调用 app.js 全局函数）──
+    document.getElementById('btnResetData').addEventListener('click', function () {
+      if (!getOwnerToken()) { alert('请先登录'); return; }
+      if (confirm('⚠️ 重置将清空本机所有数据（日志、轨迹、配置），并发布「已清空」到云端。\n\n确定要重置吗？')) {
+        if (typeof clearAllData === 'function') clearAllData();
+        else alert('clearAllData 函数不可用');
+      }
+    });
+
+    document.getElementById('btnClearCloud').addEventListener('click', function () {
+      if (!getOwnerToken()) { alert('请先登录'); return; }
+      if (confirm('⚠️ 此操作仅清空云端共享数据，本机数据不受影响。\n\n恢复需重新导入真实轨迹并点「重新发布共享」。确定继续？')) {
+        if (typeof clearCloudShare === 'function') clearCloudShare();
+        else alert('clearCloudShare 函数不可用');
+      }
+    });
+
+    document.getElementById('btnRepublish').addEventListener('click', function () {
+      if (!getOwnerToken()) { alert('请先登录'); return; }
+      if (typeof republishShare === 'function') republishShare();
+      else alert('republishShare 函数不可用');
+    });
+
+    // ── 内嵌轨迹上传 ──
+    window.handlePresetUpload = function (evt) {
+      if (!getOwnerToken()) { alert('请先登录'); evt.target.value = ''; return; }
+      // 设为预设模式，让 app.js 管线直接落到 presetTrack
+      if (APP) APP._uploadMode = 'preset';
+      if (typeof handleGPXUpload === 'function') handleGPXUpload(evt);
+      // 清理文件 input 以便重复选同一文件
+      setTimeout(function () { evt.target.value = ''; }, 200);
+    };
+
+    window.handleActualUpload = function (evt) {
+      if (!getOwnerToken()) { alert('请先登录'); evt.target.value = ''; return; }
+      // 设为实际模式
+      if (APP) APP._uploadMode = 'actual';
+      if (typeof handleGPXUpload === 'function') handleGPXUpload(evt);
+      // 同步出发日期
+      const sdEl = document.getElementById('trackStartDate');
+      if (sdEl && sdEl.value && typeof setItineraryStartDate === 'function') setItineraryStartDate(sdEl.value);
+      setTimeout(function () { evt.target.value = ''; }, 200);
+    };
 
     // ── 共享包读写（与 journal.html 同构）──
     let sharedCache = null;
@@ -345,37 +397,37 @@
         feed.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:30px;font-size:13px;">暂无日志</div>';
         return;
       }
-      feed.innerHTML = logEntries.map(e => {
-        const isGps = !!e.dailyStats;
-        const delBtn = '<button class="tl-del" type="button" data-id="' + escapeHtml(e.id || '') + '" title="删除">🗑</button>';
-        const dayBadge = e.dayNum ? '<span class="tl-day">Day ' + e.dayNum + '</span>' : '';
-        const gpsTag = isGps ? '<span class="tl-gps-tag">📡 自动记录</span>' : '';
+      feed.innerHTML = logEntries.map(function (e) {
+        var isGps = !!e.dailyStats;
+        var delBtn = '<button class="tl-del" type="button" data-id="' + escapeHtml(e.id || '') + '" title="删除">🗑</button>';
+        var dayBadge = e.dayNum ? '<span class="tl-day">Day ' + e.dayNum + '</span>' : '';
+        var gpsTag = isGps ? '<span class="tl-gps-tag">📡 自动记录</span>' : '';
         return '<div class="tl-item' + (isGps ? ' gps' : '') + '">'
           + '<span class="tl-node"></span>'
           + '<div class="tl-date">' + escapeHtml(e.date || '—') + dayBadge + gpsTag + delBtn + '</div>'
           + '<div class="tl-card"><div class="tl-text">' + escapeHtml(e.text || '') + '</div></div>'
           + '</div>';
       }).join('');
-      feed.querySelectorAll('.tl-del').forEach(b => b.addEventListener('click', () => confirmDelete(b.dataset.id)));
+      feed.querySelectorAll('.tl-del').forEach(function (b) { b.addEventListener('click', function () { confirmDelete(b.dataset.id); }); });
     }
     window.addLogEntry = function () {
       if (!getOwnerToken()) { showLogin(); return; }
-      const ta = document.getElementById('jText'); const text = (ta ? ta.value : '').trim();
+      var ta = document.getElementById('jText'); var text = (ta ? ta.value : '').trim();
       if (!text) return;
-      const entry = { id: genId(), date: fmtNepalDate(new Date()), text, updatedAt: Date.now() };
+      var entry = { id: genId(), date: fmtNepalDate(new Date()), text: text, updatedAt: Date.now() };
       logEntries.push(entry);
-      logEntries.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+      logEntries.sort(function (a, b) { return (b.date || '').localeCompare(a.date || ''); });
       saveLogLocal(); pushJournalShare();
       if (ta) ta.value = '';
       renderFeed();
     };
-    window.adminRepublish = async function () {
+    window.adminRepublish = function () {
       if (!getOwnerToken()) { showLogin(); return; }
-      const fresh = await getShare(); if (fresh) sharedCache = fresh;
+      getShare().then(function (fresh) { if (fresh) sharedCache = fresh; });
       pushJournalShare();
       alert('✅ 已重新发布到云端');
     };
-    let _delId = null;
+    var _delId = null;
     window.confirmDelete = function (id) {
       if (!getOwnerToken()) { showLogin(); return; }
       _delId = id;
@@ -384,7 +436,7 @@
     async function doDelete() {
       if (!_delId) return;
       localDeletedIds.add(_delId);
-      logEntries = logEntries.filter(e => e.id !== _delId);
+      logEntries = logEntries.filter(function (e) { return e.id !== _delId; });
       saveLogLocal(); pushJournalShare();
       _delId = null;
       renderFeed();
@@ -393,39 +445,37 @@
     // ── 配置 ──
     async function loadConfig() {
       try {
-        const r = await API.getConfig();
+        var r = await API.getConfig();
         if (r && r.ok && r.data) {
-          const c = r.data;
+          var c = r.data;
           if (c.expeditionName) document.getElementById('cfgName').value = c.expeditionName;
-          if (c.itineraryStartDate) document.getElementById('cfgStart').value = c.itineraryStartDate;
+          if (c.itineraryStartDate) { document.getElementById('cfgStart').value = c.itineraryStartDate; document.getElementById('trackStartDate').value = c.itineraryStartDate; }
           if (c.language) document.getElementById('cfgLang').value = c.language;
         }
       } catch (e) {}
     }
     async function saveConfig() {
-      const name = document.getElementById('cfgName').value.trim();
-      const start = document.getElementById('cfgStart').value;
-      const lang = document.getElementById('cfgLang').value;
-      const msg = document.getElementById('cfgMsg');
-      const r = await API.putConfig({ expeditionName: name, itineraryStartDate: start, language: lang });
+      var name = document.getElementById('cfgName').value.trim();
+      var start = document.getElementById('cfgStart').value;
+      var lang = document.getElementById('cfgLang').value;
+      var msg = document.getElementById('cfgMsg');
+      var r = await API.putConfig({ expeditionName: name, itineraryStartDate: start, language: lang });
       if (r && (r.ok || r.status === 200)) msg.textContent = '✅ 已保存';
       else msg.textContent = '❌ 保存失败（需先登录）';
-      setTimeout(() => { msg.textContent = ''; }, 2500);
+      setTimeout(function () { msg.textContent = ''; }, 2500);
     }
 
     // ── Tabs ──
     function switchTab(name) {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
-      document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
+      document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === name); });
+      document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.toggle('active', p.id === 'tab-' + name); });
     }
-    document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+    document.querySelectorAll('.tab-btn').forEach(function (b) { b.addEventListener('click', function () { switchTab(b.dataset.tab); }); });
 
     // ── 绑定 ──
-    document.getElementById('openPresetModal').addEventListener('click', () => { if (typeof openDataModal === 'function') openDataModal('preset'); });
-    document.getElementById('openActualModal').addEventListener('click', () => { if (typeof openDataModal === 'function') openDataModal('actual'); });
     document.getElementById('cfgSave').addEventListener('click', saveConfig);
     document.getElementById('adminLogout').addEventListener('click', exitAdmin);
-    // 若已登录（token 仍在），轨迹弹窗直接免密
+    // 若已登录（token 仍在），轨迹免密
     if (getOwnerToken() && typeof API.setToken === 'function') API.setToken(getOwnerToken());
     if (getOwnerToken()) APP.isOwner = true;
 
@@ -433,7 +483,7 @@
     if (getOwnerToken()) {
       enterAdmin();
     } else {
-      const lp = document.getElementById('loginPwd'); if (lp) lp.focus();
+      var lp = document.getElementById('loginPwd'); if (lp) lp.focus();
     }
     loadLogLocal();
     loadSharedJournal();
