@@ -3881,6 +3881,45 @@ function showGPXUploadResult(gpxData, stats) {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   //  全量共享（服务端 share:all：主人写入 / 所有人读取）
+
+  // ── 管理操作审计日志（清空云端 / 重置本机 / 重新发布）──
+  // 生成与管理操作对应的 journal 条目，复用上传日志的结构，便于统一展示与按 id 去重。
+  function makeAdminLogEntry(text) {
+    return {
+      id: 'le_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      date: fmtNepalDate(new Date()),
+      text: text,
+      kind: 'admin-action',
+      meta: { uploadedAt: new Date().toISOString() },
+      updatedAt: Date.now()
+    };
+  }
+
+  // 写入【本机】日志（ght_log）并触发云端同步（防抖）。
+  function recordAdminLogLocal(entry) {
+    if (!APP.logEntries) APP.logEntries = [];
+    APP.logEntries.push(entry);
+    APP.logEntries.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    saveLogEntries();
+    scheduleShare();
+  }
+
+  // 直接写入【云端】journal（用于「本机即将被清空 / 云端需保留审计记录」的管理操作）。
+  // 以云端当前包为基底合并 journal、不改动其它字段——即保留云端现有数据，仅追加审计条目。
+  async function recordAdminLogCloud(entry) {
+    try {
+      const r = await API.getShare();
+      const data = (r && r.ok && r.data && r.data.data) ? r.data.data : emptyShareBundle();
+      const journal = Array.isArray(data.journal) ? data.journal.slice() : [];
+      const ids = new Set(journal.map(j => j.id));
+      if (!ids.has(entry.id)) journal.push(entry);
+      const bundle = Object.assign({}, data, { journal: journal });
+      if (data.clearedAt) bundle.clearedAt = data.clearedAt;
+      await API.putShare(bundle);
+      sharedCache = bundle;
+    } catch (e) { /* 审计日志写入失败不影响主操作 */ }
+  }
+
   //  分片 ownership：本页负责 preset/actual/pos/itinerary/segments/restDays/sections，
   //  journal 由 journal.html 负责；两者都从 sharedCache 继承对方字段，合并写入，互不覆盖。
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -4088,6 +4127,12 @@ async function purgeCloudShare() {
 
 async function resetLocalData() {
   if (!confirm('⚠️ 此操作将清除【本机】所有数据，不可恢复！\n\n包括：预设轨迹 / 实际轨迹 / 日志 / 行程 / 进度。\n云端数据不受影响。\n\n清空后若想让云端也同步为空白，请再点「☁️ 清空云端」。\n\n确定继续？')) return;
+  // 审计：记录「重置本机数据」。先设同步暂停标记（避免随后的本地清空触发自动回推），
+  // 再把审计条目写入本机日志并同步到云端 journal（本机日志随后会被清空，故云端留存一份便于排查）。
+  const _entry = makeAdminLogEntry('🧹 重置本机数据（本地清空，云端未动）');
+  try { localStorage.setItem('ght_cleared_self', '1'); } catch (e) {}
+  recordAdminLogLocal(_entry);
+  try { await recordAdminLogCloud(_entry); } catch (e) {}
   // 统一清除所有以 ght 开头的本地存储键（避免遗漏新增键，例如 ght_start_place）；但保留 ght_token —— 重置=清数据，不是登出
   const keys = [];
   for (let i = 0; i < localStorage.length; i++) {
@@ -4116,7 +4161,15 @@ async function resetLocalData() {
     if (!confirm('⚠️ 此操作将清空【云端】共享数据（含原始 GPX 备份），所有访客将暂时看不到轨迹。\n\n本机数据保留。\n清空后自动同步会暂停，直到你点「🔄 重新发布共享」才会重新上云。\n\n确定继续？')) return;
     try {
       try { localStorage.setItem('ght_cleared_self', '1'); } catch (e) {}  // 暂停自动回推，云端保持空白
-      await purgeCloudShare();
+      const _entry = makeAdminLogEntry('☁️ 清空云端共享（含 GPX 备份）');
+      recordAdminLogLocal(_entry);  // 本机先可见
+      // 置空共享包，但保留这条审计日志，使清空后仍能在 journal 看到「何时被清空」
+      const bundle = emptyShareBundle();
+      bundle.journal = [ _entry ];
+      const r1 = await API.putShare(bundle);
+      if (!r1 || !r1.ok) throw new Error('共享包清空失败（' + ((r1 && r1.data && r1.data.error) || ('HTTP ' + (r1 && r1.status))) + '）');
+      const r2 = await API.deleteTracks();
+      if (!r2 || !r2.ok) throw new Error('GPX 备份删除失败（' + ((r2 && r2.data && r2.data.error) || ('HTTP ' + (r2 && r2.status))) + '）');
       alert('✅ 云端共享已清空（含原始 GPX 备份）。所有访客将看到空白；本机数据已保留。\n自动同步已暂停——点「🔄 重新发布共享」可随时重新上云。');
       location.reload();
     } catch (e) {
@@ -4129,6 +4182,8 @@ async function resetLocalData() {
     if (!APP.isOwner || !API.getToken()) { alert('仅主人且已登录时可重新发布'); return; }
     if (!confirm('🔄 将把【本机】数据完整推送到云端，覆盖云端当前内容。\n\n（此前若清空过云端 / 本机，会自动恢复自动同步。）\n\n确定继续？')) return;
     try { localStorage.removeItem('ght_cleared_self'); } catch (e) {}   // 解除同步暂停，恢复自动推送
+    const _entry = makeAdminLogEntry('🔄 重新发布共享（本机→云端，恢复自动同步）');
+    recordAdminLogLocal(_entry);   // 进入本机日志 + 随 pushShare 推上云
     try { const r = await API.getShare(); if (r && r.ok && r.data && r.data.data) sharedCache = r.data.data; } catch (e) {}  // 以云端最新包为基底，保留 journal 分片
     pushShare();   // 内部会 delete clearedAt；此后 bootAutoShare / 本地编辑都会正常自动上云
     alert('✅ 已将本机数据共享到云端（云端已与本机同步），自动同步已恢复。');
