@@ -3981,13 +3981,22 @@ function showGPXUploadResult(gpxData, stats) {
           saveItinerary();
         }
         // 合并共享日志（上传记录等）回本机，使 journal.html 跨设备可见；按 id 去重，避免重复
+        APP.logEntries = APP.logEntries || [];
+        // 关键：先把本机 localStorage 中 journal.html 新增的本地条目纳入（loadShared 在启动早期
+        // 只加载了当时的快照，之后在 journal.html 手动加的条目不会出现在内存里，不补全会被云端覆盖丢失）
+        try {
+          const localLog = JSON.parse(localStorage.getItem('ght_log') || '[]');
+          if (Array.isArray(localLog) && localLog.length) {
+            const seenLocal = new Set(APP.logEntries.map(e => e.id));
+            localLog.forEach(e => { if (e && e.id && !seenLocal.has(e.id)) { APP.logEntries.push(e); seenLocal.add(e.id); } });
+          }
+        } catch (e) {}
         if (b.journal && b.journal.length) {
-          APP.logEntries = APP.logEntries || [];
           const seen = new Set(APP.logEntries.map(e => e.id));
           b.journal.forEach(e => { if (e && e.id && !seen.has(e.id)) { APP.logEntries.push(e); seen.add(e.id); } });
-          APP.logEntries.sort((a, x) => (x.date || '').localeCompare(a.date || ''));
-          saveLogEntries();
         }
+        APP.logEntries.sort((a, x) => (x.date || '').localeCompare(a.date || ''));
+        saveLogEntries();
         // 主人（已登录且本机有可共享数据）：合并云端后再把本地编辑回推上云（sharedCache 已是云端 bundle，journal/deletedIds 被继承）
         if (APP.isOwner && API.getToken() && hasLocalShareableData()) {
           pushShare();
