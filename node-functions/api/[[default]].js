@@ -184,6 +184,20 @@ export default async function onRequest(context) {
     const cfg = cosCfg(env);
     let cosStatus = 'not_configured';
     let cosBody = null;
+    // 暴露环境变量的精确信息（长度、首尾字符，用于排查截断/空格问题）
+    const sid = env.COS_SECRET_ID || '';
+    const skey = env.COS_SECRET_KEY || '';
+    const envInfo = {
+      sidLen: sid.length,
+      sidHead: sid.slice(0, 8),
+      sidTail: sid.slice(-6),
+      skeyLen: skey.length,
+      skeyHead: skey.slice(0, 6),
+      skeyTail: skey.slice(-6),
+      // 检查首尾是否有隐藏的空白字符
+      sidHasLeadingSpace: /^\s/.test(sid),
+      sidHasTrailingSpace: /\s$/.test(skey),
+    };
     if (hasCos(env)) {
       try {
         const authHeader = await cosAuth(cfg, 'GET', objKey('_index'));
@@ -199,7 +213,7 @@ export default async function onRequest(context) {
         }
       } catch (e) { cosStatus = 'error:' + e.message; }
     }
-    return json({ hasCos: hasCos(env), bucket: env.COS_BUCKET || null, region: env.COS_REGION || null, cosStatus, cosError: cosBody });
+    return json({ hasCos: hasCos(env), bucket: env.COS_BUCKET || null, region: env.COS_REGION || null, cosStatus, cosError: cosBody, _envInfo: envInfo });
   }
 
   // 登录（带限流 + 发行过期 token；无 COS 时跳过限流）
