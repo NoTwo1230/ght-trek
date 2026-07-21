@@ -373,10 +373,11 @@
   }
   .map-legend .lg-row { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
   .map-legend .lg-sw { width: 16px; height: 4px; border-radius: 2px; flex-shrink: 0; }
-  .map-legend .lg-plan { background:
-      repeating-linear-gradient(90deg,#fff 0 5px,transparent 5px 10px) 0 0/100% 2px no-repeat,
-      repeating-linear-gradient(90deg,#fff 0 5px,transparent 5px 10px) 0 100%/100% 2px no-repeat;
-    height: 8px; border:1px solid rgba(255,255,255,.35); }
+  /* 预设轨迹图例：金色稀疏虚线（低密度，dashArray '4,12' 风格与地图计划线一致） */
+  .map-legend .lg-plan {
+    width: 24px; height: 3px; border: none;
+    background: repeating-linear-gradient(90deg, #d4af37 0 4px, transparent 4px 16px);
+  }
   .map-legend .lg-cyan { background: #3fb950; }
   @media (max-width: 640px) {
     .map-legend { width: 160px; top: 8px; left: 8px; }

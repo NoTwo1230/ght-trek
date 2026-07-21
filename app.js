@@ -1343,19 +1343,19 @@ function getProvZH(pid) {
 }
 
 // ── 唯一真相源：当前所在路段 ──
-// 未出发（无实时 GPS）：固定返回起点段（sectionRanges[0] = 干城章嘉），避免「0% 却显示下一段」的歧义。
-// 实时追踪中：按当前 GPS 位置最近的轨迹点定位到所属路段。
+// 有位置（实时 GPS 或最新上传轨迹终点）：按最近轨迹点定位到所属路段；
+// 没有任何位置/轨迹时：返回起点段（sectionRanges[0] = 干城章嘉），避免「0% 却显示下一段」的歧义。
 // 面板「当前状态」与地图徽标「当前位置」统一调用此函数 → 二者永不矛盾。
 function getCurrentSectionRange() {
   if (APP.sectionRanges && APP.sectionRanges.length) {
-    const hasLive = APP.currentPosition && APP.actualTracks && APP.actualTracks.length;
-    if (!hasLive) return APP.sectionRanges[0];           // 未出发 → 起点段
-    // 有实时位置：找包含当前 GPS 最近轨迹点的路段
+    const pos = getEffectivePosition();
+    if (!pos) return APP.sectionRanges[0];                // 无位置/无轨迹 → 起点段
+    // 有位置：找包含「有效当前位置」最近轨迹点的路段
     if (APP.presetTrack && APP.presetTrack.trackPoints.length) {
       const pts = APP.presetTrack.trackPoints;
       let best = -1, bd = Infinity;
       for (let i = 0; i < pts.length; i++) {
-        const d = haversine(APP.currentPosition.lat, APP.currentPosition.lon, pts[i].lat, pts[i].lon);
+        const d = haversine(pos.lat, pos.lon, pts[i].lat, pts[i].lon);
         if (d < bd) { bd = d; best = i; }
       }
       if (best >= 0) {
@@ -1387,8 +1387,9 @@ function currentSectionIdx() {
 function getNextPass() {
   if (!APP.presetTrack || !APP.presetTrack.waypoints || !APP.presetTrack.waypoints.length) return null;
   const pts = APP.presetTrack.trackPoints; if (!pts || !pts.length) return null;
+  const pos = getEffectivePosition();
   let curIdx = -1;
-  if (APP.currentPosition) { let best = Infinity; for (let i = 0; i < pts.length; i++) { const d = haversine(APP.currentPosition.lat, APP.currentPosition.lon, pts[i].lat, pts[i].lon); if (d < best) { best = d; curIdx = i; } } }
+  if (pos) { let best = Infinity; for (let i = 0; i < pts.length; i++) { const d = haversine(pos.lat, pos.lon, pts[i].lat, pts[i].lon); if (d < best) { best = d; curIdx = i; } } }
   const passes = APP.presetTrack.waypoints.filter(w => w._type === 'pass' || w._type === 'peak');
   let bestPass = null, bestIdx = Infinity;
   passes.forEach(w => {
@@ -1401,11 +1402,49 @@ function getNextPass() {
 
 function fmtNum(n, d) { return (n == null || isNaN(n)) ? '—' : Number(n).toLocaleString(undefined, { maximumFractionDigits: d == null ? 0 : d }); }
 
-// 当前海拔显示值：仅实时追踪时取 GPS 当前点海拔；未出发/无轨迹时改用预设起点海拔
-// （更接近「当前营地海拔」），避免陈旧 localStorage ght_current_pos(上次 GPS 终点) 被误当成「当前海拔」。
+// 有效当前位置：有实时 GPS 时用实时位置；否则回退到「最近上传的实际轨迹终点」
+// （按日期/天序最靠后），使未开实时追踪时，当前营地/所在区域/下一垭口/预计抵达
+// 仍随实际上传进度自动更新，而不是一直停在起点。
+function getEffectivePosition() {
+  if (APP.currentPosition && APP.actualTracks && APP.actualTracks.length) return APP.currentPosition;
+  if (APP.actualTracks && APP.actualTracks.length) {
+    const last = [...APP.actualTracks]
+      .filter(t => t.trackPoints && t.trackPoints.length && (t.date || t.dayNum != null))
+      .sort((a, b) => {
+        if (a.date && b.date) return a.date < b.date ? 1 : (a.date > b.date ? -1 : 0);
+        return (b.dayNum || 0) - (a.dayNum || 0);
+      })[0];
+    if (last) {
+      const pts = last.trackPoints;
+      const end = pts[pts.length - 1];
+      const start = pts[0];
+      return {
+        lat: end.lat, lon: end.lon,
+        elev: (end.elev != null ? end.elev : (start.elev != null ? start.elev : null)),
+        _virtual: true, _dayNum: last.dayNum
+      };
+    }
+  }
+  return null;
+}
+
+// 下一阶段/下一徒步日：最后实际轨迹日的下一天（跳过空缺，反映最新进度）。
+function getNextHikeDay() {
+  const days = APP.itinerary || [];
+  if (!days.length) return null;
+  const actualDays = days.filter(d => d.actual);
+  if (!actualDays.length) return days[0];
+  const lastActual = actualDays.reduce((m, d) => d.day > m.day ? d : m, actualDays[0]);
+  return days.find(d => d.day > lastActual.day) || null;
+}
+
+// 当前海拔显示值：实时追踪时取 GPS 当前点海拔；回退到最新实际轨迹终点海拔；
+// 最后兜底预设起点海拔。避免陈旧 localStorage ght_current_pos 被误当成「当前海拔」。
 function getDisplayElev() {
-  const hasLive = APP.currentPosition && APP.actualTracks && APP.actualTracks.length;
-  if (hasLive && APP.currentPosition.elev != null) return Math.round(APP.currentPosition.elev);
+  const live = APP.currentPosition && APP.actualTracks && APP.actualTracks.length;
+  if (live && APP.currentPosition.elev != null) return Math.round(APP.currentPosition.elev);
+  const vpos = getEffectivePosition();
+  if (vpos && vpos.elev != null) return Math.round(vpos.elev);
   const tp = APP.presetTrack && APP.presetTrack.trackPoints;
   if (tp && tp.length && tp[0].elev != null) return Math.round(tp[0].elev);
   return null;
@@ -1448,22 +1487,29 @@ function currentStatusHTML() {
   const prov = getProv(ghtSections[idx] ? ghtSections[idx].province : '');
   const elev = getDisplayElev();
   const np = getNextPass();
-  const nextDay = (APP.itinerary || []).find(d => !d.actual);
+  // 预计抵达：基于「最后实际徒步日 + 1」的计划日（叠加整体滑移），反映最新进度，
+  // 而非首个空缺日（避免“最后已走到 8/9，ETA 却显示 8/6”的过期问题）。
+  const nextHike = getNextHikeDay();
   let eta = '—';
-  if (nextDay) {
-    if (nextDay.date) eta = nextDay.date;
-    else if (APP.itineraryStartDate) {
-      const base = new Date(APP.itineraryStartDate + 'T00:00:00');
-      base.setDate(base.getDate() + (nextDay.day - 1));
-      eta = base.toISOString().slice(0, 10);
+  if (nextHike) {
+    const planned = getPlannedDate(nextHike.day);
+    if (planned) {
+      const slip = APP._overallSlip || 0;
+      const dt = new Date(planned + 'T00:00:00');
+      dt.setDate(dt.getDate() + slip);
+      eta = dt.toISOString().slice(0, 10);
     }
+  } else if (APP.itineraryStartDate) {
+    eta = APP.itineraryStartDate;
   }
 
-  // 当前营地：实时追踪→最近标注点；未出发→起点营地（明确标注「未出发」，避免误显下一段）
-  const hasLive = APP.currentPosition && APP.actualTracks && APP.actualTracks.length;
+  // 当前营地：有位置（实时 GPS 或最新上传轨迹终点）→最近标注点；
+  // 否则→起点营地（明确标注「未出发」）。
+  const pos = getEffectivePosition();
+  const hasPos = !!(pos && APP.allWpts && APP.allWpts.length);
   let campVal, campSub;
-  if (hasLive && APP.allWpts && APP.allWpts.length) {
-    const lbl = nearestWaypointLabel(APP.allWpts, APP.currentPosition, 6000);
+  if (hasPos) {
+    const lbl = nearestWaypointLabel(APP.allWpts, pos, 6000);
     campVal = lbl || (sec.nameEn || sec.name || '—');
     campSub = sec.name || '';
   } else {
@@ -1621,9 +1667,9 @@ function renderInfoBar() {
     todayHTML = `<div class="info-sub empty"><div class="t">📍 最近记录</div><div class="v">等待 GPS 数据</div></div>`;
   }
 
-  // 下一阶段（第一条没有 actual 的计划日）
+  // 下一阶段（最后实际徒步日的下一天，反映最新进度而非首个空缺日）
   let nextHTML;
-  const nextDay = days.find(d => !d.actual);
+  const nextDay = getNextHikeDay();
   if (nextDay) {
     const restCls = nextDay.isRestDay ? ' rest' : '';
     const passTxt = (nextDay.passes && nextDay.passes.length) ? ' · ⛰️ ' + nextDay.passes.map(esc).join('/') : '';
@@ -2922,9 +2968,9 @@ const nationalParks = [
 const sectionColors = (window.GHT_SECTIONS || []).map(r => r.color);
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  轨迹着色规范（UI 设计决策, 2026-07-15 修订）
+//  轨迹着色规范（UI 设计决策, 2026-07-21 修订）
 //   · 实际徒步轨迹 = 一整条青色实线（醒目、连续）
-//   · 预设轨迹（未走部分）= 原区域色实线描边（保持原色，无金色填充、无虚线）
+//   · 预设轨迹（目标计划线）= 金色稀疏虚线（#d4af37，dashArray '4,12'，低密度）
 //   · 预设已被实际轨迹覆盖的部分不再单独绘制，由青色实际轨迹表达
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -2961,7 +3007,7 @@ function metersPerPixelAt(lat) {
   return 156543.03392 * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoom);
 }
 
-// 画「计划轨迹」：两条平行白色细虚线（效果 ≈ ═══）。
+// 画「计划轨迹」：两条平行金色细虚线（效果 ≈ ═══），密度较低（大间隙）。
 function drawPlannedDoubleDashed(coords, layerGroup, popupHtml, weight, opacity) {
   if (!coords || coords.length < 2) return;
   const mid = coords[Math.floor(coords.length / 2)];
@@ -2970,8 +3016,8 @@ function drawPlannedDoubleDashed(coords, layerGroup, popupHtml, weight, opacity)
   const GAP_PX = 4;
   const OFFSET = (GAP_PX * scale) / 2;
   const opts = {
-    color: '#ffffff', weight: weight || 2, opacity: (opacity == null ? 0.95 : opacity),
-    dashArray: '4,6', lineCap: 'round', lineJoin: 'round'
+    color: '#d4af37', weight: weight || 2, opacity: (opacity == null ? 0.95 : opacity),
+    dashArray: '4,12', lineCap: 'round', lineJoin: 'round'
   };
   L.polyline(offsetPolyline(coords, OFFSET), opts).addTo(layerGroup);
   const r = L.polyline(offsetPolyline(coords, -OFFSET), opts).addTo(layerGroup);
