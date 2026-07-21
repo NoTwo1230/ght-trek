@@ -147,7 +147,7 @@
     <!-- ═══ 数据操作（主页显眼位置，不再藏在弹窗里） ═══ -->
     <div class="data-ops-bar" id="dataOpsBar">
       <span class="ops-label">🔧 数据操作</span>
-      <button class="btn-op btn-op-danger" id="btnResetData" type="button">🗑️ 重置全部数据</button>
+      <button class="btn-op btn-op-danger" id="btnResetData" type="button">🗑️ 重置本机数据</button>
       <button class="btn-op btn-op-warn" id="btnClearCloud" type="button">☁️ 清空云端</button>
       <button class="btn-op btn-op-primary" id="btnRepublish" type="button">🔄 重新发布共享</button>
     </div>
@@ -281,23 +281,21 @@
       location.reload();
     }
 
-    // ── 数据操作按钮（调用 app.js 全局函数）──
+    // ── 数据操作按钮（调用 app.js 全局函数；每个函数内部自带二次确认）──
     document.getElementById('btnResetData').addEventListener('click', function () {
-      if (!getOwnerToken()) { alert('请先登录后再重置'); return; }
-      if (typeof clearAllData === 'function') clearAllData();
-      else alert('clearAllData 函数不可用');
+      if (!getOwnerToken()) { alert('请先登录后再重置本机数据'); return; }
+      if (typeof resetLocalData === 'function') resetLocalData();
+      else alert('resetLocalData 函数不可用');
     });
 
     document.getElementById('btnClearCloud').addEventListener('click', function () {
-      if (!getOwnerToken()) { alert('请先登录'); return; }
-      if (confirm('⚠️ 此操作仅清空云端共享数据，本机数据不受影响。\n\n恢复需重新导入真实轨迹并点「重新发布共享」。确定继续？')) {
-        if (typeof clearCloudShare === 'function') clearCloudShare();
-        else alert('clearCloudShare 函数不可用');
-      }
+      if (!getOwnerToken()) { alert('请先登录后再清空云端'); return; }
+      if (typeof clearCloudShare === 'function') clearCloudShare();
+      else alert('clearCloudShare 函数不可用');
     });
 
     document.getElementById('btnRepublish').addEventListener('click', function () {
-      if (!getOwnerToken()) { alert('请先登录'); return; }
+      if (!getOwnerToken()) { alert('请先登录后再重新发布共享'); return; }
       if (typeof republishShare === 'function') republishShare();
       else alert('republishShare 函数不可用');
     });
