@@ -3531,8 +3531,8 @@ function handleGPXUpload(event) {
 
     // ── 后台「预设/实际」模式：跳过确认，直接按模式写入 ──
     if (APP._uploadMode === 'preset') {
+      APP.presetSegments = valid; persistPresetSegments(valid);   // 先置段，setAsPreset 才能捕获真实段数
       setAsPreset(merged, stats);
-      APP.presetSegments = valid; persistPresetSegments(valid);
       scheduleShare();
       applySegmentItinerary(valid, restDays);
       matchItineraryToActuals();
@@ -3556,9 +3556,9 @@ function handleGPXUpload(event) {
     if (!APP.presetTrack) {
       // No preset yet
       if (confirm(msg)) {
-        setAsPreset(merged, stats);
         APP.presetSegments = valid;
         persistPresetSegments(valid);
+        setAsPreset(merged, stats);
         scheduleShare();   // 计划路线 + 分段同步到共享包（防抖）
         applySegmentItinerary(valid, restDays);
         // 预设轨迹只作为「计划路线」写入行程安排（actual 仍为 null）。
@@ -3612,9 +3612,9 @@ function handleGPXUpload(event) {
         alert('✅ 已添加 ' + valid.length + ' 段实际徒步轨迹。\n预设路线与计划日程保持不变，已按轨迹尼泊尔 GPS 日期自动对比进度。');
       } else {
         // 替换为新的预设轨迹（重算路线、分段、日程）
-        setAsPreset(merged, stats);
         APP.presetSegments = valid;
         persistPresetSegments(valid);
+        setAsPreset(merged, stats);
         scheduleShare();   // 计划路线 + 分段同步到共享包（防抖）
         const ok = applySegmentItinerary(valid, restDays);
         matchItineraryToActuals();
@@ -3695,27 +3695,35 @@ function addActualTrack(gpxData, stats) {
   }
   scheduleShare();   // 单段实际轨迹变更同步到共享包（防抖）
 
-  if (dailyStats && dailyStats.date) {
-    // 自动归类到对应路段：与地图一致，按预设轨迹几何顺序判定
-    // （不再用单锚点最近距离，否则东端起点会被错判成马卡鲁等相邻路段）。
-    let logSectionId = null;
-    try {
-      const sp = gpxData.trackPoints && gpxData.trackPoints[0];
-      if (sp) {
-        const r = sectionForPoint(sp);
-        if (r && r.sectionId) logSectionId = r.sectionId;
-      }
-    } catch (e) {}
-    APP.logEntries = APP.logEntries.filter(e => e.date !== dailyStats.date);
-    const entry = {
-      date: dailyStats.date,
-      text: '📡 GPS自动记录: ' + dailyStats.distance.toFixed(1) + 'km, ' + dailyStats.elevGain.toLocaleString() + 'm爬升',
-      dailyStats
-    };
-    if (logSectionId) entry.sectionId = logSectionId;
-    APP.logEntries.push(entry);
-    saveLogEntries();
+  // ── 每次实际轨迹上传 → 发布一条「上传记录」到日志（取代原先仅带时间戳才记的 📡自动记录）──
+  // 归类到对应路段：与地图一致，按预设轨迹几何顺序判定，避免东端起点被错判成相邻路段。
+  let logSectionId = null;
+  try {
+    const sp = gpxData.trackPoints && gpxData.trackPoints[0];
+    if (sp) {
+      const r = sectionForPoint(sp);
+      if (r && r.sectionId) logSectionId = r.sectionId;
+    }
+  } catch (e) {}
+  const dn = (gpxData.dayNum != null) ? gpxData.dayNum
+    : (dailyStats && dailyStats.dayNum != null ? dailyStats.dayNum : null);
+  let timeRange = '';
+  if (dailyStats && dailyStats.startTime) {
+    const s = new Date(dailyStats.startTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+    const e = dailyStats.endTime ? new Date(dailyStats.endTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '—';
+    timeRange = ' · ' + s + ' → ' + e;
   }
+  const dayTag = (dn != null) ? '（Day ' + String(dn).padStart(2, '0') + '）' : '';
+  recordUploadLog('actual-upload', {
+    text: '🥾 上传实际轨迹' + dayTag + '：' + stats.distance.toFixed(1) + ' km，'
+      + Math.round(stats.elevGain).toLocaleString() + ' m 爬升' + timeRange,
+    distance: stats.distance,
+    elevGain: stats.elevGain,
+    dayNum: dn,
+    fileName: gpxData.fileName || null,
+    sectionId: logSectionId,
+    dailyStats: dailyStats || null
+  });
 
   // 无论轨迹是否带时间戳，都同步「行程安排」与「总轨迹进度」
   if (APP.itinerary.length) {
@@ -3730,6 +3738,11 @@ function addActualTrack(gpxData, stats) {
 }
 
 function setAsPreset(gpxData, stats) {
+  // 记录上传时间（供 admin 状态徽标「已上传 · 时间」展示）
+  if (!gpxData.uploadedAt) gpxData.uploadedAt = new Date().toISOString();
+  // 在 APP.presetSegments 被置空前捕获段数：批量上传的调用方会在 setAsPreset 之后回填，
+  // 因此这里取「当前」值；若调用方已在其前置为 valid 段数组则能拿到真实段数。
+  const _presetSegCount = (APP.presetSegments && APP.presetSegments.length) ? APP.presetSegments.length : null;
   gpxData.distances = calculateTrackDistances(gpxData.trackPoints);
   gpxData.waypoints = dedupeWaypoints(gpxData.waypoints); // 去除 GPX 重复标注点（同名同海拔）
   gpxData.stats = stats;                                  // 把统计(距离/爬升/最高点)挂到预设轨迹，供征途总进度卡读取
@@ -3755,6 +3768,15 @@ function setAsPreset(gpxData, stats) {
   try { localStorage.setItem('ght_sections', JSON.stringify(APP.sectionRanges)); } catch(e) {}
   try { localStorage.setItem('ght_total_distance', String(APP.totalDistance)); } catch(e) {}
   try { localStorage.setItem('ght_rest_days', JSON.stringify(APP.presetRestDays || [])); } catch(e) {}
+
+  // 发布「预设轨迹已上传」记录到日志（每次重传都会追加一条）
+  const segCount = _presetSegCount || 1;
+  recordUploadLog('preset-upload', {
+    text: '🗺️ 上传预设轨迹（计划路线）' + (segCount > 1 ? '：' + segCount + ' 段' : '') + '，总计 ' + APP.totalDistance + ' km',
+    distance: APP.totalDistance,
+    dayNum: null,
+    fileName: gpxData.fileName || null
+  });
 
   showGPXUploadResult(gpxData, stats);
   renderAllTracks();
@@ -3805,6 +3827,32 @@ function showGPXUploadResult(gpxData, stats) {
 
   function saveLogEntries() {
     try { localStorage.setItem('ght_log', JSON.stringify(APP.logEntries)); } catch(e) {}
+  }
+
+  // 上传记录发布到日志：每次上传（预设/实际）生成一条 journal 条目，随共享包同步到日志页与他人设备。
+  // kind: 'preset-upload' | 'actual-upload'；meta 携带距离/爬升/文件名/段号，便于前台展示与去重。
+  function recordUploadLog(kind, info) {
+    if (!APP.logEntries) APP.logEntries = [];
+    const entry = {
+      id: 'le_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      date: fmtNepalDate(new Date()),
+      text: info.text || (kind === 'preset-upload' ? '🗺️ 上传预设轨迹' : '🥾 上传实际轨迹'),
+      kind: kind,
+      meta: {
+        distance: (info.distance != null) ? info.distance : null,
+        elevGain: (info.elevGain != null) ? info.elevGain : null,
+        fileName: info.fileName || null,
+        dayNum: (info.dayNum != null) ? info.dayNum : null,
+        uploadedAt: info.uploadedAt || new Date().toISOString()
+      },
+      sectionId: info.sectionId || null,
+      updatedAt: Date.now()
+    };
+    if (info.dailyStats) entry.dailyStats = info.dailyStats;
+    APP.logEntries.push(entry);
+    APP.logEntries.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    saveLogEntries();
+    scheduleShare();   // 上传记录即发云端日志（防抖）
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

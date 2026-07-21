@@ -363,7 +363,11 @@
     if (isGps) {
       const st = ds.startTime ? new Date(ds.startTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '';
       const et = ds.endTime ? new Date(ds.endTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '';
-      gpsBadge = `<span class="gps-badge">📡 自动记录${st && et ? ' · ' + st + ' → ' + et : ''}</span>`;
+      const range = (st && et) ? ' · ' + st + ' → ' + et : '';
+      let label = '📡 自动记录';
+      if (e.kind === 'actual-upload') label = '🥾 轨迹上传';
+      else if (e.kind === 'preset-upload') label = '🗺️ 预设上传';
+      gpsBadge = `<span class="gps-badge">${label}${range}</span>`;
     }
 
     let chips = '';

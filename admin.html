@@ -90,6 +90,13 @@
     border-radius:12px;padding:18px 20px;margin-top:14px}
   .inline-upload .iu-title{font-size:14px;font-weight:700;color:var(--text,#e6edf3);margin-bottom:10px;display:flex;align-items:center;gap:8px}
   .inline-upload .iu-mode-tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px}
+  .iu-status{margin-top:10px;font-size:12px;color:var(--text-dim,#8b98a8);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .iu-status .st-dot{width:8px;height:8px;border-radius:50%;flex:none}
+  .iu-status.ok{color:var(--green,#34d058)}
+  .iu-status.ok .st-dot{background:var(--green,#34d058);box-shadow:0 0 0 3px rgba(52,208,88,.18)}
+  .iu-status.no{color:var(--text-faint,#5b6675)}
+  .iu-status.no .st-dot{background:var(--text-faint,#5b6675)}
+  .iu-status .st-meta{background:rgba(255,255,255,.05);border:1px solid var(--border,rgba(255,255,255,.09));border-radius:6px;padding:2px 8px;font-weight:600}
   .iu-mode-preset{color:#4f9dff;background:rgba(79,157,255,.12);border:1px solid rgba(79,157,255,.3)}
   .iu-mode-actual{color:#34d058;background:rgba(52,208,88,.12);border:1px solid rgba(52,208,88,.3)}
 
@@ -171,6 +178,7 @@
         <input type="file" id="gpxPresetUpload" accept=".gpx,.kml,.geojson" multiple hidden onchange="handlePresetUpload(event)">
         <button class="btn-go" onclick="document.getElementById('gpxPresetUpload').click()" style="width:100%">选择预设轨迹文件 (.gpx/.kml)</button>
         <p class="track-note" style="margin-top:8px">完整的 GHT 参考路线。上传后会重算路段、日程与总距离，并同步到公众地图与海拔剖面。</p>
+        <div class="iu-status" id="presetStatus"><span class="st-dot"></span><span class="st-txt">未上传</span></div>
       </div>
 
       <!-- 实际轨迹上传 -->
@@ -179,6 +187,7 @@
         <input type="file" id="gpxActualUpload" accept=".gpx,.kml,.geojson" multiple hidden onchange="handleActualUpload(event)">
         <button class="btn-go" onclick="document.getElementById('gpxActualUpload').click()" style="width:100%">选择实际轨迹文件 (.gpx/.kml)</button>
         <p class="track-note" style="margin-top:8px">每天实际走过的轨迹。按尼泊尔 GPS 日期自动与计划对比，计算进度与滑移，同步到公众地图。出发日期请在「⚙️配置」页设置。</p>
+        <div class="iu-status" id="actualStatus"><span class="st-dot"></span><span class="st-txt">未上传</span></div>
       </div>
     </section>
 
@@ -305,6 +314,8 @@
       // 设为预设模式，让 app.js 管线直接落到 presetTrack
       if (APP) APP._uploadMode = 'preset';
       if (typeof handleGPXUpload === 'function') handleGPXUpload(evt);
+      // app.js 上传管线（含写日志/状态）是异步的；稍后刷新状态徽标与日志时间轴
+      setTimeout(refreshAfterUpload, 1600);
       // 清理文件 input 以便重复选同一文件
       setTimeout(function () { evt.target.value = ''; }, 200);
     };
@@ -317,8 +328,58 @@
       // 同步出发日期（取配置 Tab 的唯一出发日期字段）
       const sdEl = document.getElementById('cfgStart');
       if (sdEl && sdEl.value && typeof setItineraryStartDate === 'function') setItineraryStartDate(sdEl.value);
+      setTimeout(refreshAfterUpload, 1600);
       setTimeout(function () { evt.target.value = ''; }, 200);
     };
+
+    // 上传后：重新拉取本机与云端日志、刷新状态徽标（让「已上传」与上传记录在后台即时可见）
+    function refreshAfterUpload() {
+      loadLogLocal();          // app.js 已把上传记录写入 ght_log
+      loadSharedJournal();     // 合并云端 journal（含刚发布的记录）并重渲染
+      renderTrackStatus();
+    }
+
+    // ── 轨迹上传状态徽标（读取 app.js 的 APP 状态）──
+    function fmtUploadTime(iso) {
+      if (!iso) return '';
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return '';
+      const nep = new Date(d.getTime() + (5 * 60 + 45) * 60 * 1000);
+      const p = n => String(n).padStart(2, '0');
+      return p(nep.getUTCDate()) + '/' + p(nep.getUTCMonth() + 1) + ' ' + p(nep.getUTCHours()) + ':' + p(nep.getUTCMinutes());
+    }
+    function renderTrackStatus() {
+      const presetEl = document.getElementById('presetStatus');
+      const actualEl = document.getElementById('actualStatus');
+      if (presetEl) {
+        const pt = (typeof APP !== 'undefined' && APP.presetTrack) ? APP.presetTrack : null;
+        if (pt) {
+          const segs = (APP.presetSegments && APP.presetSegments.length) ? APP.presetSegments.length : 1;
+          const t = fmtUploadTime(pt.uploadedAt);
+          presetEl.className = 'iu-status ok';
+          presetEl.innerHTML = '<span class="st-dot"></span><span class="st-txt">✅ 已上传</span>'
+            + '<span class="st-meta">' + segs + ' 段</span>'
+            + '<span class="st-meta">' + (APP.totalDistance || (pt.stats && pt.stats.distance ? Math.round(pt.stats.distance) : '?')) + ' km</span>'
+            + (t ? '<span class="st-meta">🕐 ' + t + '</span>' : '');
+        } else {
+          presetEl.className = 'iu-status no';
+          presetEl.innerHTML = '<span class="st-dot"></span><span class="st-txt">未上传</span>';
+        }
+      }
+      if (actualEl) {
+        const tracks = (typeof APP !== 'undefined' && APP.actualTracks) ? APP.actualTracks : [];
+        if (tracks.length) {
+          const last = tracks.map(t => t.uploadedAt).filter(Boolean).sort().pop();
+          const t = fmtUploadTime(last);
+          actualEl.className = 'iu-status ok';
+          actualEl.innerHTML = '<span class="st-dot"></span><span class="st-txt">✅ 已上传 ' + tracks.length + ' 段</span>'
+            + (t ? '<span class="st-meta">🕐 最近 ' + t + '</span>' : '');
+        } else {
+          actualEl.className = 'iu-status no';
+          actualEl.innerHTML = '<span class="st-dot"></span><span class="st-txt">未上传</span>';
+        }
+      }
+    }
 
     // ── 共享包读写（与 journal.html 同构）──
     let sharedCache = null;
@@ -396,13 +457,17 @@
         return;
       }
       feed.innerHTML = logEntries.map(function (e) {
-        var isGps = !!e.dailyStats;
+        var isGps = !!e.dailyStats && !e.kind;
+        var kindTag = '';
+        var itemCls = '';
+        if (e.kind === 'preset-upload') { kindTag = '<span class="tl-gps-tag" style="color:#4f9dff;background:rgba(79,157,255,.1);border-color:rgba(79,157,255,.3)">🗺️ 预设上传</span>'; itemCls = ''; }
+        else if (e.kind === 'actual-upload') { kindTag = '<span class="tl-gps-tag">🥾 轨迹上传</span>'; itemCls = ' gps'; }
+        else if (isGps) { kindTag = '<span class="tl-gps-tag">📡 自动记录</span>'; itemCls = ' gps'; }
         var delBtn = '<button class="tl-del" type="button" data-id="' + escapeHtml(e.id || '') + '" title="删除">🗑</button>';
         var dayBadge = e.dayNum ? '<span class="tl-day">Day ' + e.dayNum + '</span>' : '';
-        var gpsTag = isGps ? '<span class="tl-gps-tag">📡 自动记录</span>' : '';
-        return '<div class="tl-item' + (isGps ? ' gps' : '') + '">'
+        return '<div class="tl-item' + itemCls + '">'
           + '<span class="tl-node"></span>'
-          + '<div class="tl-date">' + escapeHtml(e.date || '—') + dayBadge + gpsTag + delBtn + '</div>'
+          + '<div class="tl-date">' + escapeHtml(e.date || '—') + dayBadge + kindTag + delBtn + '</div>'
           + '<div class="tl-card"><div class="tl-text">' + escapeHtml(e.text || '') + '</div></div>'
           + '</div>';
       }).join('');
@@ -488,6 +553,9 @@
     loadConfig();
     renderComposer();
     renderFeed();
+    // APP 状态由 app.js 异步加载（restoreSession→loadShared），稍后刷新一次徽标
+    setTimeout(renderTrackStatus, 600);
+    setTimeout(renderTrackStatus, 2000);
   })();
   </script>
 </body>
