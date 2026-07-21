@@ -1120,7 +1120,7 @@ function drawElevationProfile() {
 
   const w = container.clientWidth || 800;
   const h = container.clientHeight || 80;
-  const pad = { top: 8, right: 10, bottom: 18, left: 40 };
+  const pad = { top: 14, right: 10, bottom: 18, left: 40 };
   const pw = w - pad.left - pad.right;
   const ph = h - pad.top - pad.bottom;
 
@@ -1199,16 +1199,27 @@ function drawElevationProfile() {
 
   // Elevation grid lines
   let gridLines = '';
-  const gridStep = Math.ceil(range / 500) * 500 || 500;
-  for (let e = Math.ceil(minE / 500) * 500; e <= maxE; e += gridStep) {
+  const niceStep = raw => { const p = Math.pow(10, Math.floor(Math.log10(raw || 1))); const n = (raw || 1) / p; const m = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10; return m * p; };
+  const gridStep = niceStep(range / 5) || 500;
+  let e0 = Math.ceil(minE / gridStep) * gridStep;
+  if (e0 < minE) e0 = minE;
+  for (let e = e0; e <= maxE + 1; e += gridStep) {
     const gy = pad.top + ph - ((e - minE) / range) * ph;
+    // 标签 y 夹紧在绘图区内，避免顶部/底部刻度数字被 SVG 顶边裁切（如 6000m 显示不全）
+    const ly = Math.max(pad.top + 6, Math.min(gy + 3, h - pad.bottom - 1));
     gridLines += `<line x1="${pad.left}" y1="${gy.toFixed(1)}" x2="${pad.left+pw}" y2="${gy.toFixed(1)}" stroke="var(--border)" stroke-width="0.5" opacity="0.4"/>`;
-    gridLines += `<text x="${pad.left - 4}" y="${gy.toFixed(1) + 3}" text-anchor="end" font-size="8" fill="var(--text-dim)">${e}</text>`;
+    gridLines += `<text x="${pad.left - 4}" y="${ly.toFixed(1)}" text-anchor="end" font-size="8" fill="var(--text-dim)">${e}</text>`;
   }
 
+  // 头部统计取预设轨迹的 authoritative stats（上传时全量点统计，
+  // 不受刷新后抽稀到 4000 点影响），保证与首页「征途总进度」卡的累计爬升/最高点一致。
+  const st = (APP.presetTrack && APP.presetTrack.stats) || {};
+  const dispMax = st.maxElev != null ? st.maxElev : trueMax;
+  const dispMin = st.minElev != null ? st.minElev : trueMin;
+  const dispClimb = st.elevGain != null ? st.elevGain : climb;
   const fmtM = v => Math.round(v).toLocaleString() + 'm';
   document.getElementById('elevLabel').textContent =
-    '最高 ' + fmtM(trueMax) + ' · 最低 ' + fmtM(trueMin) + ' · 累计爬升 ' + fmtM(climb);
+    '最高 ' + fmtM(dispMax) + ' · 最低 ' + fmtM(dispMin) + ' · 累计爬升 ' + fmtM(dispClimb);
 
   container.innerHTML = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="100%" preserveAspectRatio="none">
     <rect width="${w}" height="${h}" fill="transparent"/>
