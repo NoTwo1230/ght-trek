@@ -972,7 +972,17 @@ async function applyServerConfig() {
       currentLang = c.language;
       applyLang();
     }
-    if (c.itineraryStartDate != null) APP.itineraryStartDate = c.itineraryStartDate;
+    if (c.itineraryStartDate != null) {
+      APP.itineraryStartDate = c.itineraryStartDate;
+      // 行程对比页(itinerary.html)只读 localStorage 的出发日期；admin 设置的日期落在服务端，
+      // 不会自动写入本地，导致该页一直显示「未设置出发日」横幅。故在本地为空时，
+      // 用服务端已配置的日期回填本地存储（不覆盖用户本地的不同值）。
+      try {
+        if (!localStorage.getItem('ght_itinerary_start')) {
+          localStorage.setItem('ght_itinerary_start', c.itineraryStartDate);
+        }
+      } catch (e) {}
+    }
     if (c.expeditionName) APP.expeditionName = c.expeditionName;
     if (c.startPlaceName) APP.startPlaceName = c.startPlaceName;
     if (c.totalDistance) APP.totalDistance = c.totalDistance;
