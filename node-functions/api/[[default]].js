@@ -135,6 +135,12 @@ export default async function onRequest(context) {
     return json({ ok: false, error: 'bad password' }, 401);
   }
 
+  // [DEBUG] 临时诊断：列出 env 键，确认 KV 绑定是否注入（放在校验前，确保可执行）
+  if (path === '/api/debug') {
+    const keys = Object.keys(env || {});
+    return json({ envKeys: keys, hasGHT: !!env.GHT, ghtType: env.GHT ? typeof env.GHT : null });
+  }
+
   // 以下接口需登录（token 过期即 401，前端自动清 token 重新登录）
   if (!await isOwner(request, env)) return json({ error: 'unauthorized', hint: 'token 过期或无效，请重新登录 admin.html' }, 401);
 
@@ -177,12 +183,6 @@ export default async function onRequest(context) {
     }
     await kvPut(ns, '_index', index);
     return json({ ok: true, count: files.length, tracks: index });
-  }
-
-  // [DEBUG] 临时诊断：列出 env 键，确认 KV 绑定是否注入
-  if (path === '/api/debug') {
-    const keys = Object.keys(env || {});
-    return json({ envKeys: keys, hasGHT: !!env.GHT, ghtType: env.GHT ? typeof env.GHT : null });
   }
 
   return json({ error: 'not found', path }, 404);
