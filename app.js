@@ -3859,6 +3859,26 @@ function showGPXUploadResult(gpxData, stats) {
     try { localStorage.setItem('ght_log', JSON.stringify(APP.logEntries)); } catch(e) {}
   }
 
+  // 上传类日志按 (kind + 文件名) 去重：同一文件重复上传只保留最新一条，避免日志出现重复记录。
+  // 管理操作日志（无 fileName）不受影响，多条同类操作都保留。
+  function dedupeLogEntries() {
+    if (!Array.isArray(APP.logEntries)) return;
+    const best = new Map();
+    const keep = [];
+    for (const e of APP.logEntries) {
+      const fn = e && e.meta && e.meta.fileName;
+      if (!fn) { keep.push(e); continue; }              // 无文件名（管理操作）→ 原样保留
+      const key = (e.kind || '') + '|' + fn;
+      const prev = best.get(key);
+      if (!prev || (e.updatedAt || 0) >= (prev.updatedAt || 0)) {
+        if (prev) { const i = keep.indexOf(prev); if (i >= 0) keep.splice(i, 1); }
+        best.set(key, e);
+        keep.push(e);
+      }
+    }
+    APP.logEntries = keep;
+  }
+
   // 上传记录发布到日志：每次上传（预设/实际）生成一条 journal 条目，随共享包同步到日志页与他人设备。
   // kind: 'preset-upload' | 'actual-upload'；meta 携带距离/爬升/文件名/段号，便于前台展示与去重。
   function recordUploadLog(kind, info) {
@@ -3881,6 +3901,7 @@ function showGPXUploadResult(gpxData, stats) {
     if (info.dailyStats) entry.dailyStats = info.dailyStats;
     APP.logEntries.push(entry);
     APP.logEntries.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    dedupeLogEntries();   // 同名文件重复上传只保留最新一条，避免日志重复
     saveLogEntries();
     scheduleShare();   // 上传记录即发云端日志（防抖）
   }
@@ -3994,6 +4015,7 @@ function showGPXUploadResult(gpxData, stats) {
     // 日志：合并「云端已有」与「本机」按 id 去重，避免本机 ght_log 在重置竞态被清空后，重推把云端日志冲掉。
     const cloudJournal = (sharedCache && Array.isArray(sharedCache.journal)) ? sharedCache.journal : [];
     const localJournal = APP.logEntries || [];
+    dedupeLogEntries();   // 确保推上云前本机日志已按 (kind+文件名) 去重
     const jm = new Map();
     cloudJournal.forEach(e => { if (e && e.id) jm.set(e.id, e); });
     localJournal.forEach(e => { if (e && e.id) jm.set(e.id, e); });
@@ -4095,6 +4117,7 @@ function showGPXUploadResult(gpxData, stats) {
           b.journal.forEach(e => { if (e && e.id && !seen.has(e.id)) { APP.logEntries.push(e); seen.add(e.id); } });
         }
         APP.logEntries.sort((a, x) => (x.date || '').localeCompare(a.date || ''));
+        dedupeLogEntries();   // 按 (kind+文件名) 合并云端与本机时顺带去重，清掉历史残留的重复上传记录
         saveLogEntries();
         // 主人（已登录且本机有可共享数据）：合并云端后再把本地编辑回推上云（sharedCache 已是云端 bundle，journal/deletedIds 被继承）
         if (APP.isOwner && API.getToken() && hasLocalShareableData()) {
