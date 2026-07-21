@@ -2167,7 +2167,7 @@ function toggleDelay(dayNum, reason) {
       localStorage.setItem('ght_itinerary', JSON.stringify(APP.itinerary));
       localStorage.setItem('ght_itinerary_start', APP.itineraryStartDate || '');
     } catch(e) {}
-    pushShare();   // 日程变更同步到共享包
+    scheduleShare();   // 日程变更同步到共享包（防抖）
   }
 
 // 设置出发日期：自动推算每日计划日程，并用于「快/慢/按计划」判定
@@ -3533,7 +3533,7 @@ function handleGPXUpload(event) {
     if (APP._uploadMode === 'preset') {
       setAsPreset(merged, stats);
       APP.presetSegments = valid; persistPresetSegments(valid);
-      pushShare();
+      scheduleShare();
       applySegmentItinerary(valid, restDays);
       matchItineraryToActuals();
       if (typeof saveItinerary === 'function') saveItinerary();
@@ -3559,7 +3559,7 @@ function handleGPXUpload(event) {
         setAsPreset(merged, stats);
         APP.presetSegments = valid;
         persistPresetSegments(valid);
-        pushShare();   // 计划路线 + 分段同步到共享包
+        scheduleShare();   // 计划路线 + 分段同步到共享包（防抖）
         applySegmentItinerary(valid, restDays);
         // 预设轨迹只作为「计划路线」写入行程安排（actual 仍为 null）。
         // 真正的「已记录 / 已完成」要等用户上传实际徒步轨迹后才会同步填充。
@@ -3605,7 +3605,7 @@ function handleGPXUpload(event) {
           } catch(e2) {}
         }
         matchItineraryToActuals();
-        pushShare();   // 已记录轨迹变更同步到共享包
+        scheduleShare();   // 已记录轨迹变更同步到共享包（防抖）
         renderAllTracks();
         updateProgressDOM();
         openPanel(APP.activeTab || 'progress');
@@ -3615,7 +3615,7 @@ function handleGPXUpload(event) {
         setAsPreset(merged, stats);
         APP.presetSegments = valid;
         persistPresetSegments(valid);
-        pushShare();   // 计划路线 + 分段同步到共享包
+        scheduleShare();   // 计划路线 + 分段同步到共享包（防抖）
         const ok = applySegmentItinerary(valid, restDays);
         matchItineraryToActuals();
         if (ok) saveItinerary();
@@ -3693,7 +3693,7 @@ function addActualTrack(gpxData, stats) {
       localStorage.setItem('ght_actual', JSON.stringify(dec));
     } catch(e2) {}
   }
-  pushShare();   // 单段实际轨迹变更同步到共享包
+  scheduleShare();   // 单段实际轨迹变更同步到共享包（防抖）
 
   if (dailyStats && dailyStats.date) {
     // 自动归类到对应路段：与地图一致，按预设轨迹几何顺序判定
@@ -3760,7 +3760,7 @@ function setAsPreset(gpxData, stats) {
   renderAllTracks();
 
   drawElevationProfile();
-  pushShare();   // 计划路线（含休息日/分段/总距离）同步到共享包
+  scheduleShare();   // 计划路线（含休息日/分段/总距离）同步到共享包（防抖）
 }
 
 function showGPXUploadResult(gpxData, stats) {
@@ -3800,7 +3800,7 @@ function showGPXUploadResult(gpxData, stats) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   function saveCurrentPosition() {
     try { localStorage.setItem('ght_current_pos', JSON.stringify(APP.currentPosition)); } catch(e) {}
-    pushShare();   // 实时位置变更同步到共享包
+    scheduleShare();   // 实时位置变更同步到共享包（防抖）
   }
 
   function saveLogEntries() {
@@ -3869,6 +3869,17 @@ function showGPXUploadResult(gpxData, stats) {
     sharedCache = bundle;
     try { localStorage.removeItem('ght_cleared_self'); } catch (e) {}  // 任何一次推送代表已恢复共享
     API.putShare(bundle).catch(e => console.warn('[ght] 共享推送失败（不影响本地使用）', e));
+  }
+
+  // 防抖版：合并短窗口内多次数据变更，只发一次 PUT，避免批量导入/批量轨迹时突发大量写请求。
+  // 任何本地数据变更后调用它即可，无需手动点「重新发布共享」。
+  let _shareTimer = null;
+  function scheduleShare(delay) {
+    if (_shareTimer) clearTimeout(_shareTimer);
+    _shareTimer = setTimeout(function () {
+      _shareTimer = null;
+      pushShare();
+    }, (delay != null) ? delay : 1000);
   }
 
   function hasLocalShareableData() {
@@ -4112,9 +4123,16 @@ map.on('zoomend', () => {
 
 // 后台静默恢复登录态并同步服务端配置；语言/日期若有变化则局部重渲染。
 // 顺序很重要：loadShared 依赖 restoreSession 设好的 isOwner —— 只有主人(kv为空且本机有数据)才会自动种入共享包。
+function bootAutoShare() {
+  // 启动安全网：主人本机有共享数据但云端可能缺失（如首次导入后未手动发布），
+  // 则自动补推一次，无需手动点「重新发布共享」。云端为空时 loadShared 不会覆盖本机，故安全。
+  if (APP.isOwner && API.getToken() && hasLocalShareableData()) {
+    scheduleShare(1500);
+  }
+}
 restoreSession().then(() => {
   renderDashboard();
-  loadShared().catch(() => {});
+  loadShared().then(bootAutoShare).catch(bootAutoShare);
 }).catch(() => {
-  loadShared().catch(() => {});
+  loadShared().then(bootAutoShare).catch(bootAutoShare);
 });
