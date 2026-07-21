@@ -3924,6 +3924,12 @@ function showGPXUploadResult(gpxData, stats) {
 
   function pushShare() {
     if (!APP.isOwner || !API.getToken()) return;          // 仅主人可写
+    // 防御：内存态可能被 loadShared 的 clearedAt 分支清空（重置竞态：上传后 1s 防抖未触发即刷新页面）。
+    // 若 localStorage 仍有几何数据，则补回内存，避免把空包推上云覆盖掉真实轨迹。
+    try {
+      if (!APP.presetTrack) { const sp = localStorage.getItem('ght_preset'); if (sp) APP.presetTrack = JSON.parse(sp); }
+      if (!APP.actualTracks || !APP.actualTracks.length) { const sa = localStorage.getItem('ght_actual'); if (sa) { const a = JSON.parse(sa); if (Array.isArray(a) && a.length) APP.actualTracks = a; } }
+    } catch (e) {}
     const bundle = (sharedCache && typeof sharedCache === 'object') ? JSON.parse(JSON.stringify(sharedCache)) : {};
     // deletedIds（日志墓碑）随主包一起上云，绝不被清掉
     bundle.deletedIds = (sharedCache && Array.isArray(sharedCache.deletedIds)) ? sharedCache.deletedIds : [];
@@ -3937,7 +3943,13 @@ function showGPXUploadResult(gpxData, stats) {
     bundle.restDays = APP.presetRestDays || [];
     bundle.sections = APP.sectionRanges || null;
     bundle.totalDistance = APP.totalDistance || 0;
-    bundle.journal = APP.logEntries || [];   // 同步上传记录等到共享包，供 journal.html 跨设备展示
+    // 日志：合并「云端已有」与「本机」按 id 去重，避免本机 ght_log 在重置竞态被清空后，重推把云端日志冲掉。
+    const cloudJournal = (sharedCache && Array.isArray(sharedCache.journal)) ? sharedCache.journal : [];
+    const localJournal = APP.logEntries || [];
+    const jm = new Map();
+    cloudJournal.forEach(e => { if (e && e.id) jm.set(e.id, e); });
+    localJournal.forEach(e => { if (e && e.id) jm.set(e.id, e); });
+    bundle.journal = Array.from(jm.values());
     delete bundle.clearedAt;   // 真实写入即摘掉「已清空」标记，恢复为正常 bundle
     sharedCache = bundle;
     try { localStorage.removeItem('ght_cleared_self'); } catch (e) {}  // 任何一次推送代表已恢复共享
@@ -3973,6 +3985,21 @@ function showGPXUploadResult(gpxData, stats) {
       const b = (r.data && r.data.data) ? r.data.data : null;
       // 服务端收到「已清空」包：其他设备以空为准抹掉本地共享字段；发起方（ght_cleared_self）保留本机
       if (b && b.clearedAt) {
+        // 竞态防护：本机是主人且 localStorage 仍有可共享数据（典型场景：重置后重新上传轨迹，
+        // 但云端 clearedAt 尚未被本次上传覆盖时刷新了页面）。此时应以本机数据为准，直接重推上云覆盖陈旧
+        // clearedAt，而不是把本机刚上传的数据当成「待清空」抹掉——否则会出现「日志有上传记录、轨迹几何却为空」的坏状态。
+        if (APP.isOwner && API.getToken() && hasLocalShareableData()) {
+          try {
+            const sp = localStorage.getItem('ght_preset'); if (sp) APP.presetTrack = JSON.parse(sp);
+            const sa = localStorage.getItem('ght_actual'); if (sa) { const a = JSON.parse(sa); if (Array.isArray(a)) APP.actualTracks = a; }
+            const si = localStorage.getItem('ght_itinerary'); if (si) { try { APP.itinerary = JSON.parse(si); } catch (e) {} }
+            const sis = localStorage.getItem('ght_itinerary_start'); if (sis) APP.itineraryStartDate = sis;
+          } catch (e) {}
+          sharedCache = b;
+          scheduleShare(0);   // 立即把本机最新数据推上云（pushShare 会删除 clearedAt）
+          renderDashboard(); renderAllTracks(); updateProgressDOM(); drawElevationProfile();
+          return;
+        }
         if (!localStorage.getItem('ght_cleared_self')) {
           APP.presetTrack = null; APP.totalDistance = 0; APP.sectionRanges = null;
           APP.presetSegments = null; APP.presetRestDays = null; APP.actualTracks = [];
