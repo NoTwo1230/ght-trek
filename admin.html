@@ -386,7 +386,6 @@
       box.innerHTML = '<div class="composer-box">'
         + '<textarea id="jText" rows="3" placeholder="写下今天的故事…"></textarea>'
         + '<button class="btn-pub" id="jPub">发布日志</button>'
-        + '<button class="btn-pub ghost" id="jRepublish" onclick="adminRepublish()">🔄 重新发布共享</button>'
         + '</div>';
       const btn = document.getElementById('jPub'); if (btn) btn.addEventListener('click', addLogEntry);
     }
