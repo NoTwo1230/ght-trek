@@ -424,7 +424,7 @@
     <span class="glyph">📅</span>
     <span><span data-i18n="it.title">行程日历</span><small data-i18n="it.sub"> · 计划 vs 实际徒步对比</small></span>
   </div>
-  <a class="back-link" href="index.html" title="返回首页" data-i18n="back.home" data-i18n-title="back.home">← 返回首页</a>
+  <a class="back-link" href="index.html?v=2" title="返回首页" data-i18n="back.home" data-i18n-title="back.home">← 返回首页</a>
   <button class="lang-btn" type="button">Language ▾</button>
 </header>
 
@@ -908,7 +908,7 @@ function render(){
   if(warn){
     if(!DATA.startOk){
       warn.style.display = 'block';
-      warn.innerHTML = '⚠️ 未设置出发日期（或格式无效）。日历按「今天」起算的<b>临时排期</b>显示 '+DATA.planned.length+' 天；请到 <a href="index.html">地图追踪页</a> 设置真实出发日，以获得准确日历与「超前/落后」判定。';
+      warn.innerHTML = '⚠️ 未设置出发日期（或格式无效）。日历按「今天」起算的<b>临时排期</b>显示 '+DATA.planned.length+' 天；请到 <a href="index.html?v=2">地图追踪页</a> 设置真实出发日，以获得准确日历与「超前/落后」判定。';
     } else {
       warn.style.display = 'none';
     }
@@ -920,7 +920,7 @@ function render(){
       <div class="empty" style="grid-column:1/-1;">
         <div class="ico">🗺️</div>
         <h2>${t('it.empty.h')}</h2>
-        <p>${t('it.empty.p').replace('地图追踪页', '<a href="index.html">地图追踪页</a>')}</p>
+        <p>${t('it.empty.p').replace('地图追踪页', '<a href="index.html?v=2">地图追踪页</a>')}</p>
       </div>`;
     document.getElementById('countNote').textContent = '';
     document.getElementById('spanNote').textContent = '';
@@ -992,8 +992,10 @@ async function healFromCloud(){
 
     if(!startOk){
       let sd = null;
-      try { const c = await fetch('/api/config').then(r=>r.ok?r.json():null); if(c && (c.itineraryStartDate||c.itineraryStart)) sd = c.itineraryStartDate||c.itineraryStart; } catch(e){}
-      if(!sd){ try { const s = await fetch('/api/share').then(r=>r.ok?r.json():null); const dd = s&&s.data; if(dd && (dd.itineraryStartDate||dd.itineraryStart)) sd = dd.itineraryStartDate||dd.itineraryStart; } catch(e){} }
+      // 优先用共享包里的 itineraryStart（地图页实时维护、与首页一致）；
+      // 仅当共享包缺失时才回退到 /api/config（仅管理员保存时更新，可能滞后）
+      try { const s = await fetch('/api/share').then(r=>r.ok?r.json():null); const dd = s&&s.data; if(dd && (dd.itineraryStart||dd.itineraryStartDate)) sd = dd.itineraryStart||dd.itineraryStartDate; } catch(e){}
+      if(!sd){ try { const c = await fetch('/api/config').then(r=>r.ok?r.json():null); if(c && (c.itineraryStartDate||c.itineraryStart)) sd = c.itineraryStartDate||c.itineraryStart; } catch(e){} }
       if(sd && parseYmd(sd)){ try{ localStorage.setItem(LS.start, sd); }catch(e){} changed = true; }
     }
 
