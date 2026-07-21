@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GHT 存储诊断（临时）</title>
+<style>
+  body{font:14px/1.7 ui-monospace,Menlo,Consolas,monospace;background:#0b1220;color:#e2e8f0;padding:20px;max-width:900px}
+  h3{margin:0 0 12px;color:#93c5fd}
+  .box{background:#111827;border:1px solid #334155;border-radius:10px;padding:12px 14px;margin:10px 0}
+  b{color:#4ade80}.bad{color:#f87171}.warn{color:#fbbf24}
+  pre{white-space:pre-wrap;word-break:break-all;background:#0b1220;border:1px solid #1f2937;border-radius:8px;padding:10px;margin-top:8px;font-size:12px}
+  .k{color:#94a3b8}
+</style>
+</head>
+<body>
+<h3>🔍 GHT 浏览器存储诊断（临时页，确认后删除）</h3>
+<div id="out"></div>
+<script>
+(function(){
+  var keys=[];
+  try{ for(var i=0;i<localStorage.length;i++){ var k=localStorage.key(i); if(k&&k.indexOf('ght_')===0) keys.push(k);} }catch(e){}
+  keys.sort();
+  function n(b){return b?'有':'<span class="bad">无</span>';}
+  var raw=localStorage.getItem('ght_itinerary');
+  var v;
+  if(raw===null) v='<span class="bad">ght_itinerary 不存在 → 行程页必空白</span>';
+  else if(raw==='[]'||raw==='') v='<span class="bad">ght_itinerary 是空数组 []</span>';
+  else { try{ var a=JSON.parse(raw); v='<span style="color:#4ade80">ght_itinerary 有 '+(Array.isArray(a)?a.length:'?')+' 天数据</span>'; }catch(e){ v='<span class="warn">ght_itinerary 存在但 JSON 解析失败</span>'; } }
+  var segs=localStorage.getItem('ght_preset_segments');
+  var preset=localStorage.getItem('ght_preset');
+  var actual=localStorage.getItem('ght_actual');
+  var html='';
+  html+='<div class="box">';
+  html+='<div>当前 origin = <b>'+location.origin+'</b></div>';
+  html+='<div class="k">当前 url = '+location.href+'</div>';
+  html+='<div style="margin:10px 0 4px">行程页判定：'+v+'</div>';
+  html+='<div>ght_preset_segments: '+n(segs)+(segs?' ('+segs.length+' 字节)':'')+'</div>';
+  html+='<div>ght_preset: '+n(preset)+(preset?' ('+preset.length+' 字节)':'')+'</div>';
+  html+='<div>ght_actual: '+n(actual)+(actual?' ('+actual.length+' 字节)':'')+'</div>';
+  html+='</div>';
+  html+='<div class="box"><div class="k">所有 ght_* 键 ('+keys.length+')：</div>'+keys.join('<br>')+'</div>';
+  html+='<div class="box"><div class="k">ght_itinerary 原文（前 600 字）：</div><pre>'+(raw?raw.slice(0,600):'(null)')+'</pre></div>';
+  document.getElementById('out').innerHTML=html;
+})();
+</script>
+</body>
+</html>
