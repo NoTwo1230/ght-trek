@@ -980,7 +980,40 @@ window.addEventListener('storage', e=>{
   if([LS.itinerary,LS.actual,LS.start,LS.preset].includes(e.key)) render();
 });
 
+/* 云端自愈：若本机缺出发日期或行程数据，自动从公开接口补齐，
+   避免「首次打开空白、要切月份才有数据」。本地优先（离线可用），
+   仅当本地确实缺失时才联网；补齐后重新定位到行程所在月份。 */
+async function healFromCloud(){
+  try {
+    const startOk = !!parseYmd(loadRaw(LS.start));
+    const planned = load(LS.itinerary);
+    const hasPlan = planned && planned.length;
+    let changed = false;
+
+    if(!startOk){
+      let sd = null;
+      try { const c = await fetch('/api/config').then(r=>r.ok?r.json():null); if(c && (c.itineraryStartDate||c.itineraryStart)) sd = c.itineraryStartDate||c.itineraryStart; } catch(e){}
+      if(!sd){ try { const s = await fetch('/api/share').then(r=>r.ok?r.json():null); const dd = s&&s.data; if(dd && (dd.itineraryStartDate||dd.itineraryStart)) sd = dd.itineraryStartDate||dd.itineraryStart; } catch(e){} }
+      if(sd && parseYmd(sd)){ try{ localStorage.setItem(LS.start, sd); }catch(e){} changed = true; }
+    }
+
+    if(!hasPlan){
+      try {
+        const s = await fetch('/api/share').then(r=>r.ok?r.json():null);
+        const dd = s&&s.data;
+        if(dd){
+          if(dd.itineraryStart && !parseYmd(loadRaw(LS.start))){ try{ localStorage.setItem(LS.start, dd.itineraryStart); }catch(e){} changed=true; }
+          if(dd.itinerary && dd.itinerary.length){ try{ localStorage.setItem(LS.itinerary, JSON.stringify(dd.itinerary)); }catch(e){} changed=true; }
+        }
+      } catch(e){}
+    }
+
+    if(changed){ viewY = viewM = undefined; render(); }   // 重新定位到有效出发日期所在月
+  } catch(e){ /* 离线/失败则保留本地渲染结果 */ }
+}
+
 render();
+healFromCloud();
 
 </script>
 </body>
