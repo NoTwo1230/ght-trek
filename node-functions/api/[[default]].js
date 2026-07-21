@@ -135,10 +135,28 @@ export default async function onRequest(context) {
     return json({ ok: false, error: 'bad password' }, 401);
   }
 
-  // [DEBUG] 临时诊断：列出 env 键，确认 KV 绑定是否注入（放在校验前，确保可执行）
+  // [DEBUG] 全面诊断：env 全量扫描 + KV 对象探测
   if (path === '/api/debug') {
     const keys = Object.keys(env || {});
-    return json({ envKeys: keys, hasGHT: !!env.GHT, ghtType: env.GHT ? typeof env.GHT : null });
+    // 扫描所有可能是 KV 对象的值（有 get/put 方法）
+    const kvCandidates = {};
+    for (const k of keys) {
+      const v = env[k];
+      if (v && typeof v === 'object' && typeof v.get === 'function') {
+        kvCandidates[k] = { type: 'object', hasGet: true, hasPut: typeof v.put === 'function' };
+      }
+    }
+    return json({
+      envKeys: keys,
+      hasGHT: !!env.GHT,
+      ghtType: env.GHT ? typeof env.GHT : null,
+      ghtTrekInEnv: !!env['ght_trek'],
+      ghtTrekType: env['ght_trek'] ? typeof env['ght_trek'] : null,
+      totalKeys: keys.length,
+      kvCandidates: kvCandidates,
+      // 检查全局作用域有没有 KV 相关对象（有些平台直接注入 globalThis）
+      sampleEnvValues: keys.slice(0, 5).map(k => ({ k, type: typeof env[k] }))
+    });
   }
 
   // 以下接口需登录（token 过期即 401，前端自动清 token 重新登录）
