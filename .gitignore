@@ -4,3 +4,10 @@ node_modules/
 
 # EdgeOne Pages 部署（静态站 + node-functions 边缘函数）
 # 区域地图已转为 PNG 并保留在 assets/region-maps/
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
