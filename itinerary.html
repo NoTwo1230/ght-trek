@@ -748,30 +748,6 @@ function renderCalendar(){
   const wd = ['一','二','三','四','五','六','日'];
   let html = wd.map(w=>`<div class="wd">${w}</div>`).join('');
 
-  // ── 诊断采样（渲染前抓取 MAP 状态）──
-  var _diag = [];
-  _diag.push('startDate=' + DATA.startDate + ' startOk=' + DATA.startOk);
-  _diag.push('viewY=' + y + ' viewM=' + mo);
-  _diag.push('MAP total keys=' + Object.keys(MAP).length);
-  var _augKeys = Object.keys(MAP).filter(function(k){ return k.indexOf(y+'-'+String(mo+1).padStart(2,'0'))===0; });
-  _diag.push('本月MAP keys=' + _augKeys.length);
-  if (_augKeys.length > 0) { _diag.push('samples: ' + _augKeys.slice(0,5).join(' | ')); }
-  else {
-    // 如果本月无 key，显示前后相邻的 key 帮助排查
-    var _allKeys = Object.keys(MAP).slice(0, 10);
-    _diag.push('all keys[0-10]: ' + (_allKeys.length ? _allKeys.join(' | ') : '(empty MAP!)'));
-    // 也检查 dayKey 取样
-    var _samples = [1, 2, 15, 31];
-    for (var _si = 0; _si < _samples.length; _si++) {
-      var _dn = _samples[_si];
-      var _dayObj = DATA.planned.find(function(d){ return d.day === _dn; });
-      if (_dayObj) {
-        var _dk = dayKey(_dayObj);
-        _diag.push('dayKey(day' + _dn + ')="' + _dk + '" from=' + _dayObj.from + ' hasActual=' + !!_dayObj.actual);
-      }
-    }
-  }
-
   // 前置补白（上月）
   const prevDays = new Date(y, mo, 0).getDate();
   for(let i=startOffset-1; i>=0; i--){
@@ -833,32 +809,6 @@ function renderCalendar(){
   document.querySelectorAll('.chip[data-key]').forEach(el=>{
     el.addEventListener('click', ()=> openDrawer(el.dataset.key, MAP[el.dataset.key]));
   });
-
-  // ── 诊断：实际 DOM 渲染结果 ──
-  var _chipCount = document.querySelectorAll('.cell .chip').length;
-  var _gridLen = (document.getElementById('grid').innerHTML || '').length;
-  var _cellCount = document.querySelectorAll('.cell').length;
-  var _emptyCells = document.querySelectorAll('.cell:not(.out)').length - _chipCount;
-  _diag.push('── 实际 DOM ──');
-  _diag.push('渲染 chip 数 = ' + _chipCount);
-  _diag.push('grid HTML 长度 = ' + _gridLen + ' 字符');
-  _diag.push('当月 .cell 数 = ' + _cellCount + ' (其中含chip的=' + _chipCount + ')');
-  _diag.push('countNote = "' + (document.getElementById('countNote').textContent||'') + '"');
-  if (_chipCount === 0 && _augKeys.length > 0) {
-    _diag.push('⚠️ MAP有' + _augKeys.length + '天但DOM 0 chip → 渲染loop或CSS问题');
-  }
-
-  // ── 诊断面板（渲染后显示内部状态，定位"0天"根因）──
-  (function(){
-    var el = document.getElementById('calDiag');
-    if (!el) {
-      el = document.createElement('div');
-      el.id = 'calDiag';
-      el.style.cssText = 'margin:8px 20px;padding:10px 14px;border-radius:10px;background:rgba(88,166,255,0.08);border:1px solid rgba(88,166,255,0.25);font-size:11.5px;color:var(--accent);line-height:1.8;white-space:pre-wrap;word-break:break-all;font-family:monospace;';
-      document.getElementById('grid').insertAdjacentElement('afterend', el);
-    }
-    el.textContent = '🔍 [CALENDAR DIAG] ' + _diag.join('\n');
-  })();
 }
 
 /* ════════════════════════════════════════════════════════════
