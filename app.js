@@ -3977,7 +3977,7 @@ function showGPXUploadResult(gpxData, stats) {
     };
     if (info.dailyStats) entry.dailyStats = info.dailyStats;
     APP.logEntries.push(entry);
-    APP.logEntries.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    APP.logEntries.sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0));
     dedupeLogEntries();   // 同名文件重复上传只保留最新一条，避免日志重复
     saveLogEntries();
     scheduleShare();   // 上传记录即发云端日志（防抖）
@@ -4003,7 +4003,7 @@ function showGPXUploadResult(gpxData, stats) {
   function recordAdminLogLocal(entry) {
     if (!APP.logEntries) APP.logEntries = [];
     APP.logEntries.push(entry);
-    APP.logEntries.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    APP.logEntries.sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0));
     saveLogEntries();
     scheduleShare();
   }

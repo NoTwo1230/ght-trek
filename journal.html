@@ -299,7 +299,7 @@
       const cur = m.get(e.id);
       if (!cur || e.updatedAt >= cur.updatedAt) m.set(e.id, e);
     });
-    return Array.from(m.values()).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    return Array.from(m.values()).sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0));
   }
 
   let logEntries = [];
@@ -324,7 +324,7 @@
     });
     if (needSave) saveLogEntries();
     // 新 → 旧
-    logEntries.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    logEntries.sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0));
   }
 
   function escapeHtml(s) {
@@ -408,7 +408,7 @@
       feed.innerHTML = '<div class="empty">' + t('jo.empty') + '</div>';
       return;
     }
-    // 平铺：新 → 旧（load() 已按日期倒序），不再按路段分组
+    // 平铺：新 → 旧（已按记录产生时间 updatedAt 倒序），不再按路段分组
     feed.innerHTML = shown.map(e => entryCard(e, { color: 'var(--accent)' })).join('');
     // 删除按钮用事件委托绑定（避免内联 onclick 的字符串参数转义坑）
     feed.querySelectorAll('.del-btn').forEach(b => {
@@ -495,7 +495,7 @@
     const today = fmtNepalDate(new Date());
     const entry = { id: 'le_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), date: today, text, updatedAt: Date.now() };
     logEntries.push(entry);
-    logEntries.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    logEntries.sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0));
     saveLogEntries();
     pushJournalShare();   // 日志发布同步到共享包
     if (ta) ta.value = '';
