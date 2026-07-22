@@ -4070,6 +4070,11 @@ function showGPXUploadResult(gpxData, stats) {
     // 同步暂停标记（ght_cleared_self）：本机重置 / 云端清空期间禁止自动回推，
     // 直到用户显式点「重新发布共享」清除该标记。避免「清空云端」被启动自动补推立即填回。
     try { if (localStorage.getItem('ght_cleared_self')) return; } catch (e) {}
+    // 推送前先把实际轨迹挂回日程，确保共享包里的 itinerary 包含 day.actual，
+    // 避免其他设备/无痕窗口从云端加载后出现「Day 0/88」「ETA=出发日」的问题。
+    if (APP.itinerary && APP.itinerary.length && APP.actualTracks && APP.actualTracks.length) {
+      try { matchItineraryToActuals(); } catch(e) {}
+    }
     // 防御：内存态可能被 loadShared 的 clearedAt 分支清空（重置竞态：上传后 1s 防抖未触发即刷新页面）。
     // 若 localStorage 仍有几何数据，则补回内存，避免把空包推上云覆盖掉真实轨迹。
     try {
@@ -4179,6 +4184,12 @@ function showGPXUploadResult(gpxData, stats) {
           if (b.itineraryStart && !APP.itineraryStartDate) {
             APP.itineraryStartDate = b.itineraryStart;
             try { localStorage.setItem('ght_itinerary_start', b.itineraryStart); } catch (e) {}
+          }
+          // 云端行程通常不带 day.actual（轻量共享），但 actualTracks 已合并。
+          // 必须用 matchItineraryToActuals() 把实际轨迹重新挂回对应日程日，
+          // 否则首页「Day 0/88」「预计抵达=出发日」等依赖 d.actual 的显示会全错。
+          if (APP.actualTracks && APP.actualTracks.length) {
+            try { matchItineraryToActuals(); } catch(e) {}
           }
           // 关键修复：把云端行程持久化到 localStorage['ght_itinerary']，
           // 否则独立行程对比页(itinerary.html，只读本地)在其他设备永远为空。
