@@ -653,7 +653,7 @@ function saveItinerary() {
   try { localStorage.setItem(LS.itinerary, JSON.stringify(DATA.planned)); } catch(e) {}
 }
 function statusOf(d){
-  if(d.actual) return d.actual.onTrack;          // 'ahead' | 'behind' | 'on-track'
+  if(d.actual) return d.actual.onTrack || 'on-track';   // 实际轨迹存在但缺日期时，默认显示「按计划」避免崩溃
   if(d.isRestDay) return 'rest';
   if(d.delayed) return 'delay';
   return 'wait';
