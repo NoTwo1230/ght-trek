@@ -1,0 +1,9 @@
+{
+  "name": "ght-trek",
+  "private": true,
+  "type": "module",
+  "description": "GHT Trek — EdgeOne Pages (static + Node Functions). Cloud storage via EdgeOne Blob.",
+  "dependencies": {
+    "@edgeone/pages-blob": "^0.0.14"
+  }
+}

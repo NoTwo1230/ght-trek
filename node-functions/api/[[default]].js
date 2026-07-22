@@ -1,23 +1,22 @@
 /**
  * GHT Trek — EdgeOne Pages Node Functions 入口
  *
- * 云端存储：腾讯云 COS（XML API，服务端 HMAC-SHA1 签名，无需 CORS）
- * 所有读写由本函数在服务端完成，浏览器只与本接口通信。
+ * 云端存储：EdgeOne Pages Blob（官方 Node SDK @edgeone/pages-blob）
+ *   · 永久免费额度：1GB 存储、单值 25MB
+ *   · getStore() 开箱即用，首次调用自动创建命名空间，无需控制台配置
+ *   · 默认用强一致读取，保证写入后立即读到最新值（行为对齐原 COS）
  *
- * 部署要求（环境变量，全部设在「生产环境」）：
- *   ADMIN_PWD      登录密码
- *   SECRET         HMAC 发行 token 的密钥
- *   COS_BUCKET     桶名（含 APPID，如 ght-trek-1250000000）
- *   COS_REGION     地域简称（如 ap-guangzhou）
- *   COS_SECRET_ID  腾讯云 API SecretId
- *   COS_SECRET_KEY 腾讯云 API SecretKey
+ * 部署要求（环境变量，设在「生产环境」）：
+ *   ADMIN_PWD   登录密码
+ *   SECRET      HMAC 发行 token 的密钥
+ *   （原 COS_BUCKET / COS_REGION / COS_SECRET_ID / COS_SECRET_KEY 已废弃，可删除）
  *
  * 路由：node-functions/api/[[default]].js → 匹配所有 /api/* 请求
  *
- * 注意：全部使用 Web Crypto API（crypto.subtle，全局可用），
- * 不 import node:crypto —— EdgeOne Node Functions 运行时对顶层 node: 模块
- * 导入可能加载失败并回退旧版本。
+ * 注意：token 相关仍使用 Web Crypto API（crypto.subtle，全局可用），不 import node:crypto。
  */
+
+import { getStore } from '@edgeone/pages-blob';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -30,6 +29,9 @@ const CORS = {
 const TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // token 有效期 7 天
 const RL_MAX_FAILS = 5;                        // 单 IP 最大失败次数
 const RL_WINDOW_MS = 15 * 60 * 1000;           // 限流窗口 15 分钟
+
+// Blob 命名空间名（首次写入时平台自动创建）
+const STORE_NAME = 'ght-trek';
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -69,50 +71,15 @@ async function isOwner(req, env) {
   return verifyToken(getBearer(req), env);
 }
 
-// ── COS 封装（腾讯云对象存储 XML API，HMAC-SHA1 签名）──
-function cosCfg(env) {
-  return {
-    bucket: env.COS_BUCKET,
-    region: env.COS_REGION || 'ap-guangzhou',
-    secretId: env.COS_SECRET_ID,
-    secretKey: env.COS_SECRET_KEY,
-  };
+// ── 存储封装（EdgeOne Blob）──
+// 强一致：跳过边缘缓存直读主存储，保证写后立即读到最新值（与原 COS 行为一致）。
+function store() {
+  return getStore({ name: STORE_NAME, consistency: 'strong' });
 }
-function cosHost(cfg) { return `${cfg.bucket}.cos.${cfg.region}.myqcloud.com`; }
-function cosUrl(cfg, key) { return `https://${cosHost(cfg)}/${key}`; }
-function hasCos(env) { return !!(env.COS_BUCKET && env.COS_SECRET_ID && env.COS_SECRET_KEY); }
+// Blob 始终可用（零配置），无需像 COS 那样检测环境变量。
+function hasStore() { return true; }
 
-// HMAC-SHA1 → hex（Web Crypto，key 可为 string）
-async function hmacSha1(key, msg) {
-  const keyBytes = new TextEncoder().encode(key);
-  const cryptoKey = await crypto.subtle.importKey('raw', keyBytes, { name: 'HMAC', hash: 'SHA-1' }, false, ['sign']);
-  const sig = await crypto.subtle.sign('HMAC', cryptoKey, new TextEncoder().encode(msg));
-  return [...new Uint8Array(sig)].map(b => b.toString(16).padStart(2, '0')).join('');
-}
-// SHA-1 → hex（Web Crypto）
-async function sha1Hex(msg) {
-  const buf = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(msg));
-  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-// 构造 COS Authorization 头（仅签名 host，最简单可靠）
-async function cosAuth(cfg, method, key) {
-  const now = Math.floor(Date.now() / 1000);
-  const signTime = `${now};${now + 3600}`;
-  const host = cosHost(cfg);
-  const qHeaderList = 'host';
-  // 注意：httpHeaders 不要自带末尾 \n，join 会补上；否则 httpString 末尾会多一个 \n
-  // 导致 SHA1 值与 COS 期望不符 → SignatureDoesNotMatch
-  const httpHeaders = `host=${host}`;
-  const httpString = [method.toLowerCase(), '/' + key, '', httpHeaders, ''].join('\n');
-  const signKey = await hmacSha1(cfg.secretKey, signTime);
-  const stringToSign = ['sha1', signTime, await sha1Hex(httpString), ''].join('\n');
-  const signature = await hmacSha1(signKey, stringToSign);
-  return `q-sign-algorithm=sha1&q-ak=${cfg.secretId}&q-sign-time=${signTime}` +
-         `&q-key-time=${signTime}&q-header-list=${qHeaderList}&q-url-param-list=&q-signature=${signature}`;
-}
-
-// KV 键 → COS 对象键（统一放在 ght-data/ 前缀下）
+// 逻辑键 → Blob 对象键（沿用原 ght-data/ 前缀，Blob 原生支持 / 目录层级）
 function objKey(kvKey) {
   if (kvKey === 'config') return 'ght-data/config.json';
   if (kvKey === 'share:all') return 'ght-data/share-all.json';
@@ -123,29 +90,14 @@ function objKey(kvKey) {
 }
 
 async function kvGet(env, kvKey) {
-  if (!hasCos(env)) return null;
-  const cfg = cosCfg(env);
-  const key = objKey(kvKey);
   try {
-    const res = await fetch(cosUrl(cfg, key), {
-      method: 'GET',
-      headers: { 'Authorization': await cosAuth(cfg, 'GET', key) },
-    });
-    if (res.status === 404) return null;
-    if (!res.ok) { console.error('[COS] GET', key, res.status); return null; }
-    return await res.text();
-  } catch (e) { console.error('[COS] GET err', e); return null; }
+    // 返回字符串或 null（Key 不存在时 Blob 返回 null）
+    return await store().get(objKey(kvKey), { type: 'text' });
+  } catch (e) { console.error('[Blob] GET err', kvKey, e && e.message); return null; }
 }
 async function kvPut(env, kvKey, value) {
-  const cfg = cosCfg(env);
-  const key = objKey(kvKey);
   const body = typeof value === 'string' ? value : JSON.stringify(value);
-  const res = await fetch(cosUrl(cfg, key), {
-    method: 'PUT',
-    headers: { 'Authorization': await cosAuth(cfg, 'PUT', key) },
-    body,
-  });
-  if (!res.ok) { console.error('[COS] PUT', key, res.status); throw new Error('COS put failed ' + res.status); }
+  await store().set(objKey(kvKey), body);
   return true;
 }
 async function kvGetJSON(env, kvKey) {
@@ -153,28 +105,17 @@ async function kvGetJSON(env, kvKey) {
   return v ? JSON.parse(v) : null;
 }
 
-// 列出某前缀下的对象键（用于删除目录）。签名只含 host（与单对象 GET 一致，已验证可用）
-async function cosList(cfg, prefix, maxKeys = 1000) {
-  const q = '?prefix=' + encodeURIComponent(prefix) + '&max-keys=' + maxKeys;
-  const res = await fetch(cosUrl(cfg, '') + q, {
-    method: 'GET',
-    headers: { 'Authorization': await cosAuth(cfg, 'GET', '') },
-  });
-  if (!res.ok) { console.error('[COS] LIST', prefix, res.status); return []; }
-  const xml = await res.text();
-  const keys = [];
-  const re = /<Key>(.*?)<\/Key>/g; let m;
-  while ((m = re.exec(xml)) !== null) keys.push(m[1]);
-  return keys;
+// 列出某前缀下的对象键（用于批量删除 gpx 目录）
+async function storeList(prefix) {
+  try {
+    const { blobs } = await store().list({ prefix });
+    return (blobs || []).map(b => b.key);
+  } catch (e) { console.error('[Blob] LIST err', prefix, e && e.message); return []; }
 }
-
-// 删除单个对象键（404 视为已删，返回成功）
-async function cosDelete(cfg, key) {
-  const res = await fetch(cosUrl(cfg, key), {
-    method: 'DELETE',
-    headers: { 'Authorization': await cosAuth(cfg, 'DELETE', key) },
-  });
-  return res.status === 204 || res.status === 200 || res.status === 404;
+// 删除单个对象键（Key 不存在不报错）
+async function storeDelete(key) {
+  try { await store().delete(key); return true; }
+  catch (e) { console.error('[Blob] DEL err', key, e && e.message); return false; }
 }
 
 /**
@@ -205,62 +146,32 @@ export default async function onRequest(context) {
     return json(raw ? { ok: true, data: JSON.parse(raw) } : { ok: true, data: null });
   }
 
-  // 健康检查 / 诊断（无需登录）
+  // 健康检查 / 诊断（无需登录）：对 Blob 做一次读探测
   if (path === '/api/debug') {
-    const cfg = cosCfg(env);
-    let cosStatus = 'not_configured';
-    let cosBody = null;
-    // 暴露环境变量的精确信息（长度、首尾字符，用于排查截断/空格问题）
-    const sid = env.COS_SECRET_ID || '';
-    const skey = env.COS_SECRET_KEY || '';
-    const envInfo = {
-      sidLen: sid.length,
-      sidHead: sid.slice(0, 8),
-      sidTail: sid.slice(-6),
-      skeyLen: skey.length,
-      skeyHead: skey.slice(0, 6),
-      skeyTail: skey.slice(-6),
-      // 严格检查：任何空白字符（空格/制表/换行/全角空格）或非 ASCII 字符
-      sidHasWs: /\s/.test(sid) || /[^\x00-\x7F]/.test(sid),
-      skeyHasWs: /\s/.test(skey) || /[^\x00-\x7F]/.test(skey),
-      // 逐字符列出 secretKey 是否有异常字符（正常应全是字母数字）
-      skeyNonAlnum: [...skey].filter(c => !/[A-Za-z0-9]/.test(c)),
-    };
-    if (hasCos(env)) {
-      try {
-        const authHeader = await cosAuth(cfg, 'GET', objKey('_index'));
-        const res = await fetch(cosUrl(cfg, objKey('_index')), {
-          method: 'GET',
-          headers: { 'Authorization': authHeader },
-        });
-        cosStatus = (res.status === 200 || res.status === 404) ? 'reachable' : ('http_' + res.status);
-        if (res.status !== 200 && res.status !== 404) {
-          const txt = await res.text();
-          const m = txt.match(/<Code>([^<]+)<\/Code>/);
-          cosBody = m ? m[1] : txt.slice(0, 200);
-        }
-      } catch (e) { cosStatus = 'error:' + e.message; }
-    }
-    return json({ hasCos: hasCos(env), bucket: env.COS_BUCKET || null, region: env.COS_REGION || null, cosStatus, cosError: cosBody, _envInfo: envInfo });
+    let storeStatus = 'unknown';
+    let storeError = null;
+    try {
+      await store().get(objKey('_index'), { type: 'text' }); // null 亦视为可达
+      storeStatus = 'reachable';
+    } catch (e) { storeStatus = 'error'; storeError = e && e.message; }
+    return json({
+      storage: 'edgeone-blob',
+      store: STORE_NAME,
+      storeStatus,
+      storeError,
+      hasSecret: !!env.SECRET,
+      hasAdminPwd: !!env.ADMIN_PWD,
+    });
   }
 
-  // 登录（带限流 + 发行过期 token；无 COS 时跳过限流）
+  // 登录（带限流 + 发行过期 token）
   if (path === '/api/login' && request.method === 'POST') {
     let pwd = '';
     try { pwd = (await request.json()).password || ''; } catch (e) {}
 
     if (!env.ADMIN_PWD) return json({ ok: false, error: 'not_configured' }, 500);
 
-    if (!hasCos(env)) {
-      // 无 COS：仍可登录，但数据读写不可用
-      if (pwd === env.ADMIN_PWD) {
-        if (!env.SECRET) return json({ ok: false, error: 'secret_missing' }, 500);
-        return json({ ok: true, token: await issueToken(env), warn: 'COS 未配置，登录可用但数据读写不可用' });
-      }
-      return json({ ok: false, error: 'bad password' }, 401);
-    }
-
-    // 有 COS：完整限流逻辑
+    // Blob 始终可用：走完整限流逻辑
     const rlKey = 'rl:' + clientIp;
     const rl = await kvGetJSON(env, rlKey) || { fails: 0, resetAt: 0 };
     if (rl.fails >= RL_MAX_FAILS && Date.now() < rl.resetAt) {
@@ -280,9 +191,6 @@ export default async function onRequest(context) {
 
   // 以下接口需登录（token 过期即 401，前端自动清 token 重新登录）
   if (!await isOwner(request, env)) return json({ error: 'unauthorized', hint: 'token 过期或无效，请重新登录 admin.html' }, 401);
-
-  // 所有写接口需要 COS
-  if (!hasCos(env)) return json({ error: 'COS 未配置。请在 EdgeOne 环境变量设置 COS_BUCKET / COS_REGION / COS_SECRET_ID / COS_SECRET_KEY' }, 503);
 
   // 写入配置
   if (path === '/api/config' && request.method === 'PUT') {
@@ -324,10 +232,9 @@ export default async function onRequest(context) {
 
   // 彻底清空原始 GPX 备份（重置数据 / 清空云端时调用）
   if (path === '/api/tracks' && request.method === 'DELETE') {
-    const cfg = cosCfg(env);
-    const keys = await cosList(cfg, 'ght-data/gpx/');
+    const keys = await storeList('ght-data/gpx/');
     let deleted = 0;
-    for (const k of keys) { if (await cosDelete(cfg, k)) deleted++; }
+    for (const k of keys) { if (await storeDelete(k)) deleted++; }
     await kvPut(env, '_index', []);   // 清空备份索引
     return json({ ok: true, deleted });
   }
