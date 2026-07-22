@@ -92,6 +92,36 @@ function summarize(data){
   return typeof data+'='+sizeOf(data)+'字节';
 }
 
+// ── 日志时间线渲染 ──
+function fmtTs(ts){
+  if(!ts) return '未知时间';
+  const d = (ts>1e12) ? new Date(ts) : new Date(ts*1000); // 兼容秒/毫秒
+  if(isNaN(d.getTime())) return String(ts);
+  const p=n=>String(n).padStart(2,'0');
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
+}
+function renderJournalTimeline(journal){
+  if(!Array.isArray(journal)||!journal.length) return '<p class="dim">（空）</p>';
+  const rows = journal.slice().sort((a,b)=>(b.updatedAt||b.createdAt||0)-(a.updatedAt||a.createdAt||0));
+  let html='<table style="margin-top:6px"><tr><th>时间(updatedAt)</th><th>类型</th><th>内容</th></tr>';
+  rows.forEach(e=>{
+    const ts = e.updatedAt||e.createdAt;
+    const kind = e.kind||e.type||'';
+    const title = e.title||e.text||e.msg||e.content||JSON.stringify(e).slice(0,60);
+    const isAdmin = /清空云端|重新发布|重置/.test(title||'') || /admin/.test(kind||'');
+    const cls = isAdmin ? 'diff' : '';
+    html+='<tr class="'+cls+'"><td>'+fmtTs(ts)+'</td><td>'+(kind||'—')+'</td><td>'+esc(String(title))+'</td></tr>';
+  });
+  html+='</table>';
+  return html;
+}
+// 本机 ght_log 时间线
+function renderLocalLogTimeline(){
+  const log = localData['ght_log'];
+  if(!log) return '';
+  return '<details style="margin-top:6px"><summary style="cursor:pointer;color:#58a6ff">💻 本机 ght_log 时间线 ('+log.length+'条)</summary>'+renderJournalTimeline(log)+'</details>';
+}
+
 // ── 渲染本地数据 ──
 const localData=collectLocal();
 let lh='<table><tr><th>键</th><th>摘要</th><th>大小</th></tr>';
@@ -101,6 +131,7 @@ Object.keys(localData).sort().forEach(k=>{
   lh+='<tr><td>'+esc(k)+'</td><td>'+esc(summarize(v))+'</td><td>'+sz+'B</td></tr>';
 });
 lh+='</table>';
+lh+=renderLocalLogTimeline();
 $('local').innerHTML=lh;
 
 // ── 拉取云端数据 ──
@@ -139,8 +170,9 @@ Promise.all([
       ch+='<p style="margin-top:4px">📆 出发日期(云端): <b>'+esc(is)+'</b></p>';
     }
     if(cloudData.journal){
-      ch+='<details><summary style="cursor:pointer;color:#58a6ff;margin-top:4px">📝 journal ('+((cloudData.journal&&cloudData.journal.length)||0)+'条)</summary>';
-      ch+='<pre>'+esc(JSON.stringify(cloudData.journal.slice(0,5),null,2))+(cloudData.journal.length>5?'\n... 共'+cloudData.journal.length+'条':'')+'</pre></details>';
+      ch+='<details open><summary style="cursor:pointer;color:#58a6ff;margin-top:4px">📝 云端 journal 时间线 ('+((cloudData.journal&&cloudData.journal.length)||0)+'条，按时间排序)</summary>';
+      ch+=renderJournalTimeline(cloudData.journal);
+      ch+='</details>';
     }
   }
   $('cloud').innerHTML=ch;
