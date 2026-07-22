@@ -319,12 +319,23 @@
     padding: 6px 14px;
     display: flex;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: space-between;
+    gap: 8px;
     font-size: 11px;
     color: var(--text-dim);
     flex-shrink: 0;
     white-space: nowrap;
     user-select: none;
+  }
+  .elevation-panel .elev-scope { display: inline-flex; gap: 2px; flex-shrink: 0; }
+  .elevation-panel .elev-scope button {
+    font-size: 10px; line-height: 1; padding: 3px 8px; border-radius: 10px;
+    border: 1px solid var(--border); background: transparent; color: var(--text-dim); cursor: pointer;
+    transition: background .15s, color .15s, border-color .15s;
+  }
+  .elevation-panel .elev-scope button:hover { color: var(--text); }
+  .elevation-panel .elev-scope button.on {
+    background: var(--accent); color: #fff; border-color: var(--accent);
   }
   .elevation-panel .elevation-body {
     height: 112px;

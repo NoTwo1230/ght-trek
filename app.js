@@ -1123,15 +1123,44 @@ document.querySelectorAll('.tn-tab').forEach(btn => {
 function openPanel(tab) { if (tab) APP.activeTab = tab; renderDashboard(); }
 function closePanel() { /* 新版无侧栏抽屉，no-op */ }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  ELEVATION PROFILE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  ELEVATION PROFILE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 海拔剖面范围：'full' = 全程预设轨迹；'region' = 仅当前所在段。
+let ELEV_SCOPE = 'full';
+function setElevScope(s) {
+  ELEV_SCOPE = (s === 'region') ? 'region' : 'full';
+  updateElevScopeUI();
+  drawElevationProfile();
+}
+function updateElevScopeUI() {
+  const btns = document.querySelectorAll('#elevScope button');
+  btns.forEach(b => b.classList.toggle('on', b.dataset.scope === ELEV_SCOPE));
+  const nm = document.getElementById('elevScopeName');
+  if (nm) nm.textContent = (ELEV_SCOPE === 'region') ? '当前区域' : '预设轨迹';
+}
 function drawElevationProfile() {
   const container = document.getElementById('elevationBody');
   if (!container || !APP.presetTrack) return;
 
-  const points = APP.presetTrack.trackPoints;
+  let points = APP.presetTrack.trackPoints;
   if (points.length < 2) return;
+
+  // ── 当前区域模式：只取当前所在段的轨迹切片（与地图段一致，startIndex/endIndex 已对齐 trackPoints）──
+  let scopeRegion = null, scopeNote = '';
+  if (ELEV_SCOPE === 'region' && APP.sectionRanges && APP.sectionRanges.length) {
+    scopeRegion = getCurrentSectionRange() || APP.sectionRanges[0];
+    const si = scopeRegion.startIndex || 0;
+    const ei = (scopeRegion.endIndex != null ? scopeRegion.endIndex : points.length - 1);
+    const sliced = points.slice(si, ei + 1);
+    if (sliced.length >= 2) {
+      points = sliced;
+      scopeNote = scopeRegion.regionZh || '';
+      if (!getEffectivePosition()) scopeNote += (scopeNote ? ' · ' : '') + '未出发';
+    } else {
+      scopeRegion = null;   // 切片过小，退回全程
+    }
+  }
 
   const w = container.clientWidth || 800;
   const h = container.clientHeight || 80;
@@ -1173,7 +1202,11 @@ function drawElevationProfile() {
 
   // Build section labels (中文路段名，替换原 1-13 段号)
   let sectionLabels = '';
-  if (APP.sectionRanges && APP.sectionRanges.length > 0) {
+  if (ELEV_SCOPE === 'region' && scopeRegion) {
+    // 区域模式：只标当前段名（居中）
+    const color = scopeRegion.regionColor || '#888';
+    sectionLabels = `<text x="${(pad.left + pw / 2).toFixed(1)}" y="${h - 2}" text-anchor="middle" font-size="9" fill="${color}" opacity="0.95">${scopeRegion.regionZh || '当前区域'}</text>`;
+  } else if (APP.sectionRanges && APP.sectionRanges.length > 0) {
     APP.sectionRanges.forEach((range, idx) => {
       const midIdx = Math.floor((range.startIndex + range.endIndex) / 2);
       const frac = midIdx / (points.length - 1);
@@ -1185,8 +1218,9 @@ function drawElevationProfile() {
 
   // Build section dividers — very faint dashed vertical lines between the 13 sections.
   // Drawn at each section's startIndex (skip the first, which sits at the left edge).
+  // 区域模式下只有一段，不画分隔线。
   let sectionDividers = '';
-  if (APP.sectionRanges && APP.sectionRanges.length > 1) {
+  if (ELEV_SCOPE !== 'region' && APP.sectionRanges && APP.sectionRanges.length > 1) {
     for (let i = 1; i < APP.sectionRanges.length; i++) {
       const bi = APP.sectionRanges[i].startIndex;
       if (bi == null || bi <= 0) continue;
@@ -1226,15 +1260,18 @@ function drawElevationProfile() {
     gridLines += `<text x="${pad.left - 4}" y="${ly.toFixed(1)}" text-anchor="end" font-size="8" fill="var(--text-dim)">${e}</text>`;
   }
 
-  // 头部统计取预设轨迹的 authoritative stats（上传时全量点统计，
-  // 不受刷新后抽稀到 4000 点影响），保证与首页「征途总进度」卡的累计爬升/最高点一致。
+  // 头部统计：全程模式取预设轨迹的 authoritative stats（上传时全量点统计，
+  // 不受刷新后抽稀到 4000 点影响），保证与首页「征途总进度」卡一致；
+  // 区域模式改用当前段切片自身算出的 min/max/climb（更贴合「这段要爬多少」）。
   const st = (APP.presetTrack && APP.presetTrack.stats) || {};
-  const dispMax = st.maxElev != null ? st.maxElev : trueMax;
-  const dispMin = st.minElev != null ? st.minElev : trueMin;
-  const dispClimb = st.elevGain != null ? st.elevGain : climb;
+  const useRegion = (ELEV_SCOPE === 'region' && scopeRegion);
+  const dispMax = useRegion ? trueMax : (st.maxElev != null ? st.maxElev : trueMax);
+  const dispMin = useRegion ? trueMin : (st.minElev != null ? st.minElev : trueMin);
+  const dispClimb = useRegion ? climb : (st.elevGain != null ? st.elevGain : climb);
   const fmtM = v => Math.round(v).toLocaleString() + 'm';
   document.getElementById('elevLabel').textContent =
-    '最高 ' + fmtM(dispMax) + ' · 最低 ' + fmtM(dispMin) + ' · 累计爬升 ' + fmtM(dispClimb);
+    '最高 ' + fmtM(dispMax) + ' · 最低 ' + fmtM(dispMin) + ' · 累计爬升 ' + fmtM(dispClimb)
+    + (scopeNote ? ' · ' + scopeNote : '');
 
   container.innerHTML = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="100%" preserveAspectRatio="none">
     <rect width="${w}" height="${h}" fill="transparent"/>

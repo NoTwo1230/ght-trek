@@ -78,7 +78,11 @@
       </div>
       <div class="elevation-panel" id="elevationPanel">
         <div class="elevation-header">
-          <span>📈 海拔剖面 · 预设轨迹 · <span id="elevLabel">--</span></span>
+          <span>📈 海拔剖面 · <span id="elevScopeName">预设轨迹</span> · <span id="elevLabel">--</span></span>
+          <span class="elev-scope" id="elevScope">
+            <button type="button" data-scope="full" class="on" onclick="setElevScope('full')">全程</button>
+            <button type="button" data-scope="region" onclick="setElevScope('region')">当前区域</button>
+          </span>
         </div>
         <div class="elevation-body" id="elevationBody"></div>
       </div>
@@ -110,7 +114,7 @@
 </div>
 
 <script src="ght-region-map.js?v=3"></script>
-<script src="app.js?v=11"></script>
+<script src="app.js?v=12"></script>
 
 </body>
 </html>
