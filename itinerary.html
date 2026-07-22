@@ -834,6 +834,20 @@ function renderCalendar(){
     el.addEventListener('click', ()=> openDrawer(el.dataset.key, MAP[el.dataset.key]));
   });
 
+  // ── 诊断：实际 DOM 渲染结果 ──
+  var _chipCount = document.querySelectorAll('.cell .chip').length;
+  var _gridLen = (document.getElementById('grid').innerHTML || '').length;
+  var _cellCount = document.querySelectorAll('.cell').length;
+  var _emptyCells = document.querySelectorAll('.cell:not(.out)').length - _chipCount;
+  _diag.push('── 实际 DOM ──');
+  _diag.push('渲染 chip 数 = ' + _chipCount);
+  _diag.push('grid HTML 长度 = ' + _gridLen + ' 字符');
+  _diag.push('当月 .cell 数 = ' + _cellCount + ' (其中含chip的=' + _chipCount + ')');
+  _diag.push('countNote = "' + (document.getElementById('countNote').textContent||'') + '"');
+  if (_chipCount === 0 && _augKeys.length > 0) {
+    _diag.push('⚠️ MAP有' + _augKeys.length + '天但DOM 0 chip → 渲染loop或CSS问题');
+  }
+
   // ── 诊断面板（渲染后显示内部状态，定位"0天"根因）──
   (function(){
     var el = document.getElementById('calDiag');
