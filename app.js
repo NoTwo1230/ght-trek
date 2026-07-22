@@ -4081,7 +4081,13 @@ function showGPXUploadResult(gpxData, stats) {
     bundle.deletedIds = (sharedCache && Array.isArray(sharedCache.deletedIds)) ? sharedCache.deletedIds : [];
     try { bundle.preset = APP.presetTrack ? decimatePresetTrack(APP.presetTrack, 4000) : null; }
     catch (e) { bundle.preset = APP.presetTrack || null; }
-    bundle.actual = (APP.actualTracks || []).map(t => ({ ...t, updatedAt: t.updatedAt || Date.now(), trackPoints: decimateTrack(t.trackPoints || [], 700) }));
+    // 实际轨迹：与 journal 同理，云端∪本机按 id（date→fileName→首点坐标）合并，保留 updatedAt 更新者。
+    // 修复历史事故根因：此前是「本机 actual 整包覆盖云端」，在一台没有实际轨迹的机器点「重新发布共享」
+    // 或触发自动回推，就会把云端已有的 actual 抹成空数组，导致其他设备行程页缺实际记录。
+    // 合并语义下，空机器的 push 不会再冲掉云端 actual（republishShare 已先 getShare 刷新 sharedCache 为云端最新包）。
+    const _localActual = (APP.actualTracks || []).map(t => ({ ...t, updatedAt: t.updatedAt || Date.now(), trackPoints: decimateTrack(t.trackPoints || [], 700) }));
+    const _cloudActual = (sharedCache && Array.isArray(sharedCache.actual)) ? sharedCache.actual : [];
+    bundle.actual = mergeActualTracks(_localActual, _cloudActual);
     bundle.pos = APP.currentPosition || null;
     bundle.itinerary = APP.itinerary || [];
     bundle.itineraryStart = APP.itineraryStartDate || null;
