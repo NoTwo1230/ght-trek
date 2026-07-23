@@ -1,22 +1,20 @@
 /**
- * GHT Trek — EdgeOne Pages Node Functions 入口
+ * GHT Trek — Cloudflare Pages Functions 入口
  *
- * 云端存储：EdgeOne Pages Blob（官方 Node SDK @edgeone/pages-blob）
- *   · 永久免费额度：1GB 存储、单值 25MB
- *   · getStore() 开箱即用，首次调用自动创建命名空间，无需控制台配置
- *   · 默认用强一致读取，保证写入后立即读到最新值（行为对齐原 COS）
+ * 云端存储：Cloudflare KV（绑定名 GHT_KV）
+ *   · 免费额度：每日 10 万次读 / 1000 次写 / 1GB 存储（够本项目用）
+ *   · 需在 Pages 控制台「设置 → 函数 → KV 命名空间绑定」绑定名为 GHT_KV 的命名空间
+ *     （或用 wrangler.toml 的 [[kv_namespaces]]；本地用 `wrangler pages dev`）
  *
- * 部署要求（环境变量，设在「生产环境」）：
+ * 部署要求（环境变量，设在「设置 → 环境变量」生产环境）：
  *   ADMIN_PWD   登录密码
  *   SECRET      HMAC 发行 token 的密钥
- *   （原 COS_BUCKET / COS_REGION / COS_SECRET_ID / COS_SECRET_KEY 已废弃，可删除）
  *
- * 路由：node-functions/api/[[default]].js → 匹配所有 /api/* 请求
+ * 路由：functions/api/[[route]].js → 匹配所有 /api/* 请求
+ *   params.route 为路径段数组，例如 /api/share → ['share']
  *
- * 注意：token 相关仍使用 Web Crypto API（crypto.subtle，全局可用），不 import node:crypto。
+ * 注意：token 使用 Web Crypto API（crypto.subtle，Workers 运行时全局可用），不 import node:crypto。
  */
-
-import { getStore } from '@edgeone/pages-blob';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -30,8 +28,8 @@ const TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // token 有效期 7 天
 const RL_MAX_FAILS = 5;                        // 单 IP 最大失败次数
 const RL_WINDOW_MS = 15 * 60 * 1000;           // 限流窗口 15 分钟
 
-// Blob 命名空间名（首次写入时平台自动创建）
-const STORE_NAME = 'ght-trek';
+// KV 绑定名（必须与控制台绑定的命名空间变量名一致）
+const STORE = 'GHT_KV';
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -71,66 +69,47 @@ async function isOwner(req, env) {
   return verifyToken(getBearer(req), env);
 }
 
-// ── 存储封装（EdgeOne Blob）──
-// 强一致：跳过边缘缓存直读主存储，保证写后立即读到最新值（与原 COS 行为一致）。
-function store() {
-  return getStore({ name: STORE_NAME, consistency: 'strong' });
-}
-// Blob 始终可用（零配置），无需像 COS 那样检测环境变量。
-function hasStore() { return true; }
-
-// 逻辑键 → Blob 对象键（沿用原 ght-data/ 前缀，Blob 原生支持 / 目录层级）
-function objKey(kvKey) {
-  if (kvKey === 'config') return 'ght-data/config.json';
-  if (kvKey === 'share:all') return 'ght-data/share-all.json';
-  if (kvKey === '_index') return 'ght-data/_index.json';
-  if (kvKey.startsWith('rl:')) return 'ght-data/rl/' + kvKey.slice(3) + '.json';
-  if (kvKey.startsWith('gpx:')) return 'ght-data/gpx/' + kvKey.slice(4);
-  return 'ght-data/' + kvKey + '.json';
-}
+// ── 存储封装（Cloudflare KV）──
+// 与前端 localStorage 键保持一致：config / share:all / _index / rl:<ip> / gpx:<name>
+function hasStore(env) { return !!env[STORE]; }
 
 async function kvGet(env, kvKey) {
   try {
-    // 返回字符串或 null（Key 不存在时 Blob 返回 null）
-    return await store().get(objKey(kvKey), { type: 'text' });
-  } catch (e) { console.error('[Blob] GET err', kvKey, e && e.message); return null; }
+    return await env[STORE].get(kvKey, { type: 'text' });
+  } catch (e) { console.error('[KV] GET err', kvKey, e && e.message); return null; }
 }
 async function kvPut(env, kvKey, value) {
   const body = typeof value === 'string' ? value : JSON.stringify(value);
-  await store().set(objKey(kvKey), body);
+  await env[STORE].put(kvKey, body);
   return true;
 }
 async function kvGetJSON(env, kvKey) {
   const v = await kvGet(env, kvKey);
   return v ? JSON.parse(v) : null;
 }
-
-// 列出某前缀下的对象键（用于批量删除 gpx 目录）
-async function storeList(prefix) {
+// 列出某前缀下的键（用于批量删除 gpx）
+async function storeList(env, prefix) {
   try {
-    const { blobs } = await store().list({ prefix });
-    return (blobs || []).map(b => b.key);
-  } catch (e) { console.error('[Blob] LIST err', prefix, e && e.message); return []; }
+    const { keys } = await env[STORE].list({ prefix });
+    return (keys || []).map(k => k.name);
+  } catch (e) { console.error('[KV] LIST err', prefix, e && e.message); return []; }
 }
-// 删除单个对象键（Key 不存在不报错）
-async function storeDelete(key) {
-  try { await store().delete(key); return true; }
-  catch (e) { console.error('[Blob] DEL err', key, e && e.message); return false; }
+async function storeDelete(env, key) {
+  try { await env[STORE].delete(key); return true; }
+  catch (e) { console.error('[KV] DEL err', key, e && e.message); return false; }
 }
 
 /**
- * EdgeOne Handler 入口
+ * Cloudflare Pages Functions 入口
  */
-export default async function onRequest(context) {
-  const request = context.request;
-  const env = context.env;
+export async function onRequest(context) {
+  const { request, env, params } = context;
 
-  const clientIp = context.clientIp
-    || (request.headers.get('x-forwarded-for') || '').split(',')[0].trim()
-    || 'unknown';
+  const clientIp = (request.headers.get('x-forwarded-for') || '').split(',')[0].trim() || 'unknown';
 
   const url = new URL(request.url);
-  const path = url.pathname;
+  const segs = Array.isArray(params.route) ? params.route : (params.route ? [params.route] : []);
+  const path = '/api/' + segs.join('/');
 
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
 
@@ -146,17 +125,17 @@ export default async function onRequest(context) {
     return json(raw ? { ok: true, data: JSON.parse(raw) } : { ok: true, data: null });
   }
 
-  // 健康检查 / 诊断（无需登录）：对 Blob 做一次读探测
+  // 健康检查 / 诊断（无需登录）：对 KV 做一次读探测
   if (path === '/api/debug') {
     let storeStatus = 'unknown';
     let storeError = null;
     try {
-      await store().get(objKey('_index'), { type: 'text' }); // null 亦视为可达
+      await env[STORE].get('_index', { type: 'text' }); // null 亦视为可达
       storeStatus = 'reachable';
     } catch (e) { storeStatus = 'error'; storeError = e && e.message; }
     return json({
-      storage: 'edgeone-blob',
-      store: STORE_NAME,
+      storage: 'cloudflare-kv',
+      store: STORE,
       storeStatus,
       storeError,
       hasSecret: !!env.SECRET,
@@ -171,12 +150,11 @@ export default async function onRequest(context) {
 
     if (!env.ADMIN_PWD) return json({ ok: false, error: 'not_configured' }, 500);
 
-    // Blob 始终可用：走完整限流逻辑
     const rlKey = 'rl:' + clientIp;
     const rl = await kvGetJSON(env, rlKey) || { fails: 0, resetAt: 0 };
     if (rl.fails >= RL_MAX_FAILS && Date.now() < rl.resetAt) {
       const retry = Math.ceil((rl.resetAt - Date.now()) / 1000);
-      return json({ ok: false, error: 'rate_limited', message: '尝试过于频繁，请 ' + retry + ' 秒后重试' }, 429);
+      return json({ ok: false, error: 'rate_limited', message: '尝试过于频繁，请稍后重试（' + retry + ' 秒）' }, 429);
     }
     if (pwd === env.ADMIN_PWD) {
       if (!env.SECRET) return json({ ok: false, error: 'secret_missing', message: '服务端未配置 SECRET 环境变量' }, 500);
@@ -232,9 +210,9 @@ export default async function onRequest(context) {
 
   // 彻底清空原始 GPX 备份（重置数据 / 清空云端时调用）
   if (path === '/api/tracks' && request.method === 'DELETE') {
-    const keys = await storeList('ght-data/gpx/');
+    const keys = await storeList(env, 'gpx:');
     let deleted = 0;
-    for (const k of keys) { if (await storeDelete(k)) deleted++; }
+    for (const k of keys) { if (await storeDelete(env, k)) deleted++; }
     await kvPut(env, '_index', []);   // 清空备份索引
     return json({ ok: true, deleted });
   }

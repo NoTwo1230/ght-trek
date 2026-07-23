@@ -1,0 +1,21 @@
+# GHT Trek — Cloudflare Pages 配置
+#
+# 用途：
+#   1) 本地开发：  wrangler pages dev . --kv GHT_KV=<namespace-id>
+#   2) 部署到生产（dashboard 连接 GitHub 时，绑定请在控制台设置，见下）
+#
+# 生产环境必须做的事（Cloudflare 控制台 → ght-trek Pages 项目）：
+#   · 设置 → 函数 → KV 命名空间绑定：变量名 GHT_KV，选你创建的命名空间
+#   · 设置 → 环境变量（生产）：ADMIN_PWD、SECRET
+#
+# 创建 KV 命名空间：控制台 → 存储和数据库 → KV → 创建命名空间（取名 ght-trek），复制 ID 填到下面。
+
+name = "ght-trek"
+pages_build_output_dir = "."
+compatibility_date = "2024-09-23"
+
+# 仅供本地 `wrangler pages dev` 使用；生产绑定请在 Pages 控制台添加。
+# 把 id 换成你的 KV 命名空间 ID（或在 dev 时改用 --kv 参数）。
+[[kv_namespaces]]
+binding = "GHT_KV"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
