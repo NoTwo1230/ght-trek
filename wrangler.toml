@@ -15,8 +15,8 @@ name = "ght-trek"
 pages_build_output_dir = "."
 compatibility_date = "2024-09-23"
 
-# 仅供本地 `wrangler pages dev` 使用；生产绑定请在 Pages 控制台添加。
-# 把 id 换成你的 KV 命名空间 ID（或在 dev 时改用 --kv 参数）。
+# 生产部署（GitHub 连接或 wrangler 你的 wrangler pages deploy）会读取本绑定。
+# id 必须是 ght-kv 命名空间在 Cloudflare 控制台的真实 ID（已在 2026-07-23 填入）。
 [[kv_namespaces]]
 binding = "GHT_KV"
-id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+id = "b89d4ef4a38f44a2ac089c7425e32b3a"
