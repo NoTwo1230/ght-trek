@@ -8,7 +8,8 @@
 #   · 设置 → 函数 → KV 命名空间绑定：变量名 GHT_KV，选你创建的命名空间
 #   · 设置 → 环境变量（生产）：ADMIN_PWD、SECRET
 #
-# 创建 KV 命名空间：控制台 → 存储和数据库 → KV → 创建命名空间（取名 ght-trek），复制 ID 填到下面。
+# KV 命名空间：可复用已有的 ght-kv，也可新建一个。控制台 → 存储和数据库 → KV，复制命名空间 ID 填到下面。
+# 重要：在 Pages 项目里绑定 KV 时，变量名必须叫 GHT_KV（functions/api/[[route]].js 用 env.GHT_KV 读取）。
 
 name = "ght-trek"
 pages_build_output_dir = "."
