@@ -1515,19 +1515,22 @@ function progressCardHTML() {
   const days = APP.itinerary || [];
   const totalDays = days.length;
   const doneDays = days.filter(d => d.actual).length;
-  // 累积爬升：从预设轨迹读取（预设=目标路线，与 GPX 预设统计保持一致，不再依赖实际轨迹）
   const gain = (APP.presetTrack && APP.presetTrack.stats && APP.presetTrack.stats.elevGain)
     ? APP.presetTrack.stats.elevGain : 0;
-  return '<div class="card-h"><span>征途总进度</span><span class="en">EXPEDITION PROGRESS</span></div>' +
-    '<div class="card-b">' +
-    '<div class="pc-pct">' + pct.toFixed(1) + '<small>%</small></div>' +
-    '<div class="pc-day">Day <b>' + doneDays + '</b> / ' + totalDays + '</div>' +
-    '<div class="pc-bar"><i style="width:' + Math.min(100, pct) + '%"></i></div>' +
-    '<div class="pc-stats">' +
-    '<div class="pc-stat"><div class="v">' + fmtNum(doneKm, 0) + '</div><div class="l">' + t('prog.done') + '</div></div>' +
-    '<div class="pc-stat"><div class="v">' + (gain ? fmtNum(gain) : '—') + '</div><div class="l">累计爬升</div></div>' +
-    '<div class="pc-stat"><div class="v">' + fmtNum(totalKm, 0) + '</div><div class="l">' + t('prog.total') + '</div></div>' +
-    '</div></div>';
+  const elev = getDisplayElev();
+  const np = getNextPass();
+  const kpi = function (label, value, unit, sub) {
+    return '<div class="kpi"><div class="k-label">' + label + '</div>' +
+      '<div class="k-value tnum">' + value + (unit ? '<span class="u">' + unit + '</span>' : '') + '</div>' +
+      (sub ? '<div class="k-sub">' + sub + '</div>' : '') + '</div>';
+  };
+  return '<div class="kpi-strip">' +
+    kpi('总体进度', pct.toFixed(1), '%', 'Day ' + doneDays + ' / ' + totalDays) +
+    kpi('已完成里程', fmtNum(doneKm, 0), 'km', '全程 ' + fmtNum(totalKm, 0) + ' km') +
+    kpi('累计爬升', gain ? fmtNum(gain) : '—', 'm', '已翻越 ' + doneDays + ' 座') +
+    kpi('当前海拔', elev != null ? fmtNum(elev) : '—', 'm', '营地实时') +
+    kpi('下一垭口', (np && np.elev != null) ? fmtNum(np.elev) : '—', 'm', (np ? esc(np.name || np.desc || '未命名') : '—') + ' · 待通过') +
+    '</div>';
 }
 
 // 与子页面(sections.html 等)同款 HTML 转义，防自由文本注入 innerHTML（自 XSS 加固）
@@ -1649,7 +1652,7 @@ function passesHTML() {
     rows = '<div style="font-size:11px;color:#d29922;padding:8px 0;line-height:1.5;">' + msg + '</div>';
   } else {
     rows = passes.map(p => {
-      const cls = 'pass-row' + (p.done ? ' done' : '');
+      const cls = 'pass-row' + (p.done ? ' done' : '') + (p.elev != null && p.elev >= 5500 ? ' danger' : '');
       const mark = p.done ? '<span class="pass-check">✓</span>' : '<span class="pass-dot"></span>';
       const elev = p.elev != null ? fmtNum(p.elev) + 'm' : '';
       return '<div class="' + cls + '">' + mark +
