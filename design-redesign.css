@@ -193,6 +193,17 @@ body, .app, .topnav, .statusbar, .dash-grid, .col-left, .col-right, .col-center,
   transition: background-color .25s ease, border-color .25s ease, color .25s ease;
 }
 
+/* ── 内联 SVG 图标（替换 emoji，对齐 demo 视觉语言）── */
+.ch-ico { color: var(--accent); display: inline-flex; align-items: center; margin-right: 8px; }
+.ch-ico svg { width: 16px; height: 16px; display: block; }
+.st-ico svg { width: 16px; height: 16px; display: block; }
+.pb-ico { display: inline-flex; align-items: center; color: var(--accent); margin-right: 2px; }
+.pb-ico svg { width: 14px; height: 14px; }
+.ev-ico { display: inline-flex; align-items: center; color: var(--accent); margin-right: 4px; vertical-align: -2px; }
+.ev-ico svg { width: 14px; height: 14px; }
+.ld-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px rgba(0,168,107,.22); vertical-align: middle; }
+.live-dot.offline .ld-dot { background: var(--text-dim); box-shadow: none; }
+
 /* ── 浅色(Stripe)仪表盘组件 reskin：仿 demo 视觉语言 ── */
 [data-theme="light"] .card {
   background: #FFFFFF;

@@ -756,9 +756,9 @@ const BasemapSwitcher = L.Control.extend({
   onAdd: function() {
     const div = L.DomUtil.create('div', 'basemap-switcher');
     const btns = [
-      { key: 'terrain', icon: '🗺️', title: t('basemap.terrain') },
-      { key: 'topo',    icon: '🥾', title: t('basemap.topo') },
-      { key: 'dark',    icon: '🌙', title: t('basemap.dark') }
+      { key: 'terrain', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M9 3 3 5v16l6-2 6 2 6-2V3l-6 2-6-2z"/><path d="M9 3v16M15 5v16"/></svg>', title: t('basemap.terrain') },
+      { key: 'topo',    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M3 20l6-9 4 5 3-4 5 8z"/></svg>', title: t('basemap.topo') },
+      { key: 'dark',    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M21 12.8A9 9 0 1111.2 3 7 7 0 0021 12.8z"/></svg>', title: t('basemap.dark') }
     ];
     btns.forEach((b, i) => {
       const btn = L.DomUtil.create('button', 'basemap-btn' + (i === 0 ? ' active' : ''), div);
@@ -1574,14 +1574,21 @@ function currentStatusHTML() {
     campSub = (sec.name || '起点') + ' · 未出发';
   }
 
+  const ic = {
+    camp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.3-7-11a7 7 0 0114 0c0 4.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>',
+    area: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3 3 5v16l6-2 6 2 6-2V3l-6 2-6-2z"/><path d="M9 3v16M15 5v16"/></svg>',
+    elev: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18L14 7l-4 6-2-3z"/></svg>',
+    pass: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20l6-9 4 5 3-4 5 8z"/></svg>',
+    clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'
+  };
   const row = (ico, k, v, sub) => '<div class="st-row"><span class="st-ico">' + ico + '</span><span class="st-k">' + k + '</span><span class="st-v">' + v + (sub ? '<small>' + sub + '</small>' : '') + '</span></div>';
-  return '<div class="card-h"><span>当前状态</span><span class="en">CURRENT STATUS</span></div>' +
+  return '<div class="card-h"><span class="ch-ico">' + ic.camp + '</span><span>当前状态</span><span class="en">CURRENT STATUS</span></div>' +
     '<div class="card-b">' +
-    row('🏕️', t('st.camp'), campVal, campSub) +
-    row('🗺️', t('st.area'), prov, '') +
-    row('🔺', t('st.elev'), elev != null ? fmtNum(elev) + 'm' : '—', '') +
-    row('⛰️', t('st.pass'), np ? esc(np.name || np.desc || '未命名') : '—', np && np.elev != null ? fmtNum(np.elev) + 'm' : '') +
-    row('⏱️', t('st.eta'), eta, '') +
+    row(ic.camp, t('st.camp'), campVal, campSub) +
+    row(ic.area, t('st.area'), prov, '') +
+    row(ic.elev, t('st.elev'), elev != null ? fmtNum(elev) + 'm' : '—', '') +
+    row(ic.pass, t('st.pass'), np ? esc(np.name || np.desc || '未命名') : '—', np && np.elev != null ? fmtNum(np.elev) + 'm' : '') +
+    row(ic.clock, t('st.eta'), eta, '') +
     '</div>';
 }
 
@@ -1660,9 +1667,10 @@ function passesHTML() {
         (elev ? '<span class="pass-elev">' + elev + '</span>' : '') + '</div>';
     }).join('');
   }
-  const summary = total ? '<div class="pass-summary"><span class="pass-summary-num">⛰️ ' + done + ' / ' + total + '</span>' +
+  const mtn = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;vertical-align:-2px"><path d="M3 20l6-9 4 5 3-4 5 8z"/></svg>';
+  const summary = total ? '<div class="pass-summary"><span class="pass-summary-num">' + mtn + ' ' + done + ' / ' + total + '</span>' +
     '<div class="pass-summary-bar"><i style="width:' + (total ? Math.round(done / total * 100) : 0) + '%"></i></div></div>' : '';
-  return '<div class="card-h"><span>垭口清单</span><span class="en">PASS CHECKLIST</span></div>' +
+  return '<div class="card-h"><span class="ch-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20l6-9 4 5 3-4 5 8z"/></svg></span><span>垭口清单</span><span class="en">PASS CHECKLIST</span></div>' +
     summary +
     '<div class="card-b pass-list">' + rows + (total ? '<a class="more-link" href="sections.html" target="_blank" rel="noopener">' + t('pass.all') + '</a>' : '') + '</div>';
 }
@@ -1684,10 +1692,10 @@ function updateLiveStatus() {
   const hasLive = APP.currentPosition && APP.actualTracks && APP.actualTracks.length;
   if (hasLive) {
     el.className = 'live-dot';
-    el.innerHTML = '🟢 Live Tracking Active · 实时追踪中';
+    el.innerHTML = '<span class="ld-dot"></span> Live Tracking Active · 实时追踪中';
   } else {
     el.className = 'live-dot offline';
-    el.innerHTML = '⚪ 计划中 · 尚未出发';
+    el.innerHTML = '<span class="ld-dot offline"></span> 计划中 · 尚未出发';
   }
 }
 

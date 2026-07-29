@@ -38,9 +38,9 @@
     </div>
     <nav class="topnav-tabs" aria-label="主导航">
       <button class="tn-tab active" data-view="dashboard">Dashboard</button>
-      <a class="tn-ext" id="navItinerary" href="itinerary.html?v=3" target="_blank" rel="noopener" title="计划 vs 实际 · 行程对比 →">📅 行程对比 ↗</a>
-      <a class="tn-ext" id="navSections" href="sections.html?v=2" target="_blank" rel="noopener" title="路段进度 · 按 已完成/进行中/未完成 分组 →">🏔️ 路段 ↗</a>
-      <a class="tn-ext" id="navJournal" href="journal.html?v=2" target="_blank" rel="noopener" title="远征日志 · 按路段分组 →">📝 日志 ↗</a>
+      <a class="tn-ext" id="navItinerary" href="itinerary.html?v=3" target="_blank" rel="noopener" title="计划 vs 实际 · 行程对比 →">行程对比 ↗</a>
+      <a class="tn-ext" id="navSections" href="sections.html?v=2" target="_blank" rel="noopener" title="路段进度 · 按 已完成/进行中/未完成 分组 →">路段 ↗</a>
+      <a class="tn-ext" id="navJournal" href="journal.html?v=2" target="_blank" rel="noopener" title="远征日志 · 按路段分组 →">日志 ↗</a>
     </nav>
     <div class="topnav-right">
       <button class="lang-btn">Language ▾</button>
@@ -61,10 +61,11 @@
 
     <!-- CENTER -->
     <main class="col-center">
+      <div class="card-h"><span class="ch-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3 3 5v16l6-2 6 2 6-2V3l-6 2-6-2z"/><path d="M9 3v16M15 5v16"/></svg></span><span>交互地图</span><span class="en">MAP</span></div>
       <div class="map-wrap">
         <div id="map"></div>
         <div class="map-overlay pos-badge" id="currentPosBadge">
-          📍 当前位置: <span class="prov-name">--</span><span class="prov-elev"></span>
+          <span class="pb-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M12 21s-7-6.3-7-11a7 7 0 0114 0c0 4.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></span> 当前位置: <span class="prov-name">--</span><span class="prov-elev"></span>
         </div>
         <div class="map-overlay map-compass" title="正北方向 N">
           <svg viewBox="0 0 40 40" width="22" height="22" aria-hidden="true">
@@ -82,7 +83,7 @@
       </div>
       <div class="elevation-panel" id="elevationPanel">
         <div class="elevation-header">
-          <span>📈 海拔剖面 · <span id="elevScopeName">预设轨迹</span> · <span id="elevLabel">--</span></span>
+          <span><span class="ev-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M3 17l5-6 4 4 3-5 6 7"/><path d="M3 21h18"/></svg></span> 海拔剖面 · <span id="elevScopeName">预设轨迹</span> · <span id="elevLabel">--</span></span>
           <span class="elev-scope" id="elevScope">
             <button type="button" data-scope="full" class="on" onclick="setElevScope('full')">全程</button>
             <button type="button" data-scope="region" onclick="setElevScope('region')">当前区域</button>
@@ -102,7 +103,7 @@
   <!-- ── BOTTOM STATUS BAR ── -->
   <footer class="statusbar">
     <span>© 2026 GHT 高线追踪</span>
-    <span class="live-dot" id="liveDot">🟢 Live Tracking Active · 实时追踪中</span>
+    <span class="live-dot" id="liveDot"><span class="ld-dot"></span> Live Tracking Active · 实时追踪中</span>
     <span class="spacer"></span>
     <span>数据来源: GPX</span>
     <span>底图: © OpenStreetMap · Esri · OpenTopoMap</span>
