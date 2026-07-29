@@ -1519,11 +1519,13 @@ function progressCardHTML() {
     ? APP.presetTrack.stats.elevGain : 0;
   const elev = getDisplayElev();
   const np = getNextPass();
-  // ── 圆环（全程进度）──
-  const RC = 2 * Math.PI * 28; // r=28 → 周长 ≈175.93
-  const ringOffset = RC * (1 - pct / 100);
-  const ring =
-    '<div class="ring-wrap">' +
+
+  // ── 注入 header 圆环区域（仅 DOM 存在时）──
+  var hdrRing = document.getElementById('hdrRingWrap');
+  if (hdrRing) {
+    var RC = 2 * Math.PI * 28;
+    var ringOffset = RC * (1 - pct / 100);
+    hdrRing.innerHTML =
       '<svg width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="全程进度 ' + pct.toFixed(1) + '%">' +
         '<circle class="ring-track" cx="32" cy="32" r="28" fill="none" stroke-width="7"/>' +
         '<circle class="ring-val" cx="32" cy="32" r="28" fill="none" stroke-width="7" stroke-linecap="round" ' +
@@ -1534,20 +1536,25 @@ function progressCardHTML() {
       '<div class="ring-meta">' +
         '<span class="rv tnum">Day ' + doneDays + '<span class="rd"> / ' + totalDays + '</span></span>' +
         '<span class="rl">远征第 ' + doneDays + ' 天</span>' +
-      '</div>' +
-    '</div>';
+      '</div>';
+  }
 
+  // ── 更新 header 实时追踪状态 ──
+  var hdrLive = document.getElementById('hdrLive');
+  if (hdrLive) {
+    var isLive = !!(APP.lastGPSTime && (Date.now() - APP.lastGPSTime < 36e5));
+    hdrLive.innerHTML = (isLive ? '<span class="dot"></span>' : '<span class="dot idle"></span>') +
+      (isLive ? '实时追踪中' : '计划中 · 尚未出发');
+    hdrLive.className = isLive ? 'live' : 'live live-idle';
+  }
+
+  // ── KPI 数据条（4 格，不含总体进度——已在 header 圆环展示）──
   const kpi = function (label, value, unit, sub) {
     return '<div class="kpi"><div class="k-label">' + label + '</div>' +
       '<div class="k-value tnum">' + value + (unit ? '<span class="u">' + unit + '</span>' : '') + '</div>' +
       (sub ? '<div class="k-sub">' + sub + '</div>' : '') + '</div>';
   };
-  // 去掉第一格「总体进度」（圆环已展示），保留其余 4 格
-  return '<div class="prog-head">' +
-      '<div class="prog-title"><h2>进度总览</h2><span class="en">PROGRESS</span></div>' +
-      '<div class="prog-right">' + ring + '<span class="live"><span class="ld-dot"></span>实时追踪中</span></div>' +
-    '</div>' +
-    '<div class="kpi-strip">' +
+  return '<div class="kpi-strip">' +
     kpi('已完成里程', fmtNum(doneKm, 0), 'km', '全程 ' + fmtNum(totalKm, 0) + ' km') +
     kpi('累计爬升', gain ? fmtNum(gain) : '—', 'm', '已翻越 ' + doneDays + ' 座') +
     kpi('当前海拔', elev != null ? fmtNum(elev) : '—', 'm', '营地实时') +

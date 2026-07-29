@@ -167,6 +167,106 @@
 [data-theme="light"] .ght-theme-toggle { box-shadow: 0 4px 16px rgba(10, 37, 64, 0.12); }
 
 /* ════════════════════════════════════════════════════════════
+   新顶部 Header（仿 demo topbar：品牌 + 圆环 + 导航）
+   ════════════════════════════════════════════════════════════ */
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 8px 0 18px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0;
+  background: var(--bg);
+}
+.brand-block { display: flex; align-items: center; gap: 14px; }
+.brand-mark {
+  width: 40px; height: 40px; border-radius: 10px;
+  background: var(--accent);
+  display: grid; place-items: center; color: #fff;
+  box-shadow: 0 2px 8px rgba(99, 91, 255, .3);
+  flex-shrink: 0;
+}
+.brand-mark svg { width: 22px; height: 22px; }
+.brand-text h1 {
+  font-size: 19px; font-weight: 700; letter-spacing: -.01em;
+  line-height: 1.2; color: var(--text); margin: 0;
+}
+.brand-text p {
+  font-size: 12px; color: var(--text-dim); margin-top: 2px; line-height: 1.3;
+}
+.header-right {
+  display: flex; align-items: center; gap: 16px;
+  flex-wrap: wrap;
+}
+.ring-wrap { display: flex; align-items: center; gap: 12px; }
+.ring-track { stroke: var(--border); }
+.ring-val {
+  stroke: var(--accent);
+  transition: stroke .25s ease;
+}
+.ring-pct { fill: var(--text); font-family: var(--font-mono); }
+.ring-cap { fill: var(--text-dim); font-family: var(--font-body); }
+.ring-meta { display: flex; flex-direction: column; line-height: 1.25; }
+.ring-meta .rv { font-size: 21px; font-weight: 700; color: var(--text); }
+.ring-meta .rd { font-weight: 400; color: var(--text-dim); }
+.ring-meta .rl {
+  font-size: 11px; font-weight: 600; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--text-dim);
+}
+.live {
+  padding: 6px 14px; border: 1px solid var(--border);
+  background: var(--panel); border-radius: 999px;
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 13px; font-weight: 500; color: var(--text-dim);
+  white-space: nowrap;
+}
+.live .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--green); position: relative; flex-shrink: 0;
+}
+.live .dot::after {
+  content: ""; position: absolute; inset: -4px; border-radius: 50%;
+  background: var(--green); opacity: .35;
+  animation: hdr-ping 2.4s ease-out infinite;
+}
+.live .dot.idle { background: var(--text-faint); }
+.live .dot.idle::after { animation: none; opacity: 0; }
+.live-idle { color: var(--text-dimmer); }
+@keyframes hdr-ping {
+  0%   { transform: scale(.6); opacity: .5; }
+  80%,100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* header 内导航链接 */
+.hdr-nav { display: flex; align-items: center; gap: 4px; }
+.hn-link {
+  font-size: 13px; font-weight: 500; color: var(--text-dim);
+  text-decoration: none; padding: 6px 14px;
+  border-radius: 999px; border: 1px solid transparent;
+  transition: all .15s ease; white-space: nowrap;
+}
+.hn-link:hover {
+  color: var(--accent); background: var(--accent-bg);
+  border-color: var(--border);
+}
+
+/* 暗色主题 header 微调 */
+[data-theme="dark"] .site-header { border-bottom-color: var(--border); }
+[data-theme="dark"] .brand-mark {
+  box-shadow: 0 2px 12px rgba(45, 212, 191, .2);
+  background: linear-gradient(135deg, #2DD4BF, #14B8A6);
+}
+[data-theme="dark"] .brand-mark svg { stroke: #06231f; }
+[data-theme="dark"] .ring-val { stroke: var(--accent); }
+[data-theme="dark"] .live { background: var(--panel-alt); }
+[data-theme="dark"] .hn-link:hover { background: rgba(45, 212, 191, .08); }
+
+/* 隐藏旧 topnav（防止残留） */
+.topnav { display: none !important; }
+
+/* ════════════════════════════════════════════════════════════
    仪表盘布局重构：仿 demo 单列滚动（kpi → 双栏 → 地图/海拔 → 垭口）
    ════════════════════════════════════════════════════════════ */
 /* ── ① 解除 app 的 100vh 锁定，让内容可滚动 ── */
@@ -252,29 +352,12 @@ body, .app, .topnav, .statusbar, .dash-grid, .col-left, .col-right, .col-center,
 }
 [data-theme="light"] .card-h .en { color: var(--text-dim); font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
 [data-theme="light"] .card-b { padding: 14px 18px; }
-/* KPI 条 */
+/* KPI 条（纯数据，圆环已移至 header） */
 [data-theme="light"] .kpi-host {
   background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
   box-shadow: 0 1px 2px rgba(10, 37, 64, .06), 0 1px 1px rgba(10, 37, 64, .04);
   overflow: hidden;
 }
-[data-theme="light"] .prog-head { padding: 16px 18px; border-bottom: 1px solid var(--border); }
-/* 进度 header（圆环 + Day + 实时） */
-[data-theme="light"] .prog-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
-[data-theme="light"] .prog-title h2 { font-size: 16px; font-weight: 700; color: var(--text); margin: 0; }
-[data-theme="light"] .prog-title .en { font-size: 10px; letter-spacing: .5px; text-transform: uppercase; color: var(--accent); font-weight: 700; }
-[data-theme="light"] .prog-right { display: flex; align-items: center; gap: 14px; }
-[data-theme="light"] .ring-wrap { display: flex; align-items: center; gap: 12px; }
-[data-theme="light"] .ring-track { stroke: var(--border); }
-[data-theme="light"] .ring-val { stroke: var(--accent); }
-[data-theme="light"] .ring-pct { fill: var(--text); font-family: var(--font-mono); }
-[data-theme="light"] .ring-cap { fill: var(--text-dim); }
-[data-theme="light"] .ring-meta { display: flex; flex-direction: column; line-height: 1.2; }
-[data-theme="light"] .ring-meta .rv { font-size: 22px; font-weight: 700; color: var(--text); }
-[data-theme="light"] .ring-meta .rd { color: var(--text-dim); font-weight: 400; }
-[data-theme="light"] .ring-meta .rl { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text-dim); }
-[data-theme="light"] .live { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--border); background: var(--panel); border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--text-dim); }
-[data-theme="light"] .live .ld-dot { background: var(--green); box-shadow: 0 0 0 3px rgba(0,168,107,.22); }
 [data-theme="light"] .kpi-strip { display: grid; grid-template-columns: repeat(4, 1fr); background: var(--panel-alt); }
 [data-theme="light"] .kpi { padding: 16px 18px; border-right: 1px solid var(--border); }
 [data-theme="light"] .kpi:last-child { border-right: none; }
@@ -352,21 +435,6 @@ body, .app, .topnav, .statusbar, .dash-grid, .col-left, .col-right, .col-center,
 [data-theme="dark"] .card-h { background: transparent; border-bottom: 1px solid var(--border); padding: 14px 18px; font-size: 15px; font-weight: 600; color: var(--text); }
 [data-theme="dark"] .card-h .en { color: var(--text-dim); font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
 [data-theme="dark"] .kpi-host { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 0 0 1px var(--border), 0 0 16px rgba(45, 212, 191, .05); overflow: hidden; }
-[data-theme="dark"] .prog-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 18px; border-bottom: 1px solid var(--border); }
-[data-theme="dark"] .prog-title h2 { font-size: 16px; font-weight: 700; color: var(--text); margin: 0; }
-[data-theme="dark"] .prog-title .en { font-size: 10px; letter-spacing: .5px; text-transform: uppercase; color: var(--text-dim); font-weight: 700; }
-[data-theme="dark"] .prog-right { display: flex; align-items: center; gap: 14px; }
-[data-theme="dark"] .ring-wrap { display: flex; align-items: center; gap: 12px; }
-[data-theme="dark"] .ring-track { stroke: var(--border); }
-[data-theme="dark"] .ring-val { stroke: var(--accent); }
-[data-theme="dark"] .ring-pct { fill: var(--text); font-family: var(--font-mono); }
-[data-theme="dark"] .ring-cap { fill: var(--text-dim); }
-[data-theme="dark"] .ring-meta { display: flex; flex-direction: column; line-height: 1.2; }
-[data-theme="dark"] .ring-meta .rv { font-size: 22px; font-weight: 700; color: var(--text); }
-[data-theme="dark"] .ring-meta .rd { color: var(--text-dim); font-weight: 400; }
-[data-theme="dark"] .ring-meta .rl { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text-dim); }
-[data-theme="dark"] .live { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--border); background: var(--panel-alt); border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--text-dim); }
-[data-theme="dark"] .live .ld-dot { background: var(--green); box-shadow: 0 0 0 3px rgba(52,211,153,.22); }
 [data-theme="dark"] .kpi-strip { display: grid; grid-template-columns: repeat(4, 1fr); background: var(--panel-alt); }
 [data-theme="dark"] .kpi { padding: 16px 18px; border-right: 1px solid var(--border); }
 [data-theme="dark"] .kpi:last-child { border-right: none; }

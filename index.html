@@ -19,31 +19,29 @@
 
 <div class="app">
 
-  <!-- ── TOP NAV ── -->
-  <header class="topnav">
-    <div class="brand">
-      <svg class="brand-logo" width="22" height="22" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
-        <defs>
-          <linearGradient id="ghtBrandGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#79c0ff"/>
-            <stop offset="1" stop-color="#1f6feb"/>
-          </linearGradient>
-        </defs>
-        <path d="M2 24 L9 14 L15 21 L21 11 L30 24 Z" fill="#27406b"/>
-        <path d="M5 26 L14 8 L20 19 L26 13 L30 26 Z" fill="url(#ghtBrandGrad)"/>
-        <path d="M14 8 L18 15 L10 15 Z" fill="#eaf2ff"/>
-        <path d="M9 26 C13 21 16 19 14 15 C12 12 17 11 20 8" stroke="#f0883e" stroke-width="1.6" fill="none" stroke-linecap="round"/>
-      </svg>
-      GHT <span class="sub">大喜马拉雅高线 · GREAT HIMALAYA TRAIL</span>
+  <!-- ── TOP HEADER（仿 demo topbar）── -->
+  <header class="site-header" id="siteHeader">
+    <div class="brand-block">
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 19l5-7 4 5 3-4 6 6"/><circle cx="17" cy="6" r="2"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1>GHT 大喜马拉雅高线徒步追踪</h1>
+        <p>Great Himalaya Trail · 远征追踪面板</p>
+      </div>
     </div>
-    <nav class="topnav-tabs" aria-label="主导航">
-      <button class="tn-tab active" data-view="dashboard">Dashboard</button>
-      <a class="tn-ext" id="navItinerary" href="itinerary.html?v=3" target="_blank" rel="noopener" title="计划 vs 实际 · 行程对比 →">行程对比 ↗</a>
-      <a class="tn-ext" id="navSections" href="sections.html?v=2" target="_blank" rel="noopener" title="路段进度 · 按 已完成/进行中/未完成 分组 →">路段 ↗</a>
-      <a class="tn-ext" id="navJournal" href="journal.html?v=2" target="_blank" rel="noopener" title="远征日志 · 按路段分组 →">日志 ↗</a>
-    </nav>
-    <div class="topnav-right">
-      <button class="lang-btn">Language ▾</button>
+    <div class="header-right">
+      <div class="ring-wrap" id="hdrRingWrap">
+        <!-- 由 app.js progressCardHeader() 动态填充 -->
+      </div>
+      <span class="live" id="hdrLive"><span class="dot"></span>实时追踪中</span>
+      <nav class="hdr-nav" aria-label="页面导航">
+        <a class="hn-link" id="navItinerary" href="itinerary.html?v=3" target="_blank" rel="noopener">行程</a>
+        <a class="hn-link" id="navSections" href="sections.html?v=2" target="_blank" rel="noopener">路段</a>
+        <a class="hn-link" id="navJournal" href="journal.html?v=2" target="_blank" rel="noopener">日志</a>
+      </nav>
     </div>
   </header>
 
