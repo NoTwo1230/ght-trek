@@ -1618,12 +1618,12 @@ function currentStatusHTML() {
 function todaySummaryHTML() {
   const last = [...(APP.actualTracks || [])].reverse().find(t => t.stats);
   const s = last ? last.stats : null;
-  const cell = (v, l) => '<div class="tg-cell"><div class="v">' + (v == null ? '—' : v) + '</div><div class="l">' + l + '</div></div>';
+  const cell = (v, l, cls) => '<div class="tg-cell"><div class="l">' + l + '</div><div class="v' + (cls ? ' ' + cls : '') + '">' + (v == null ? '—' : v) + '</div></div>';
   return '<div class="card-h"><span>今日摘要</span><span class="en">TODAY\'S SUMMARY</span></div>' +
     '<div class="card-b"><div class="tg">' +
     cell(s ? fmtNum(s.distance, 1) + 'km' : '—', t('today.dist')) +
-    cell(s ? '+' + fmtNum(s.elevGain) + 'm' : '—', t('today.gain')) +
-    cell(s ? fmtNum(s.elevLoss) + 'm' : '—', t('today.loss')) +
+    cell(s ? '+' + fmtNum(s.elevGain) + 'm' : '—', t('today.gain'), 'up') +
+    cell(s ? fmtNum(s.elevLoss) + 'm' : '—', t('today.loss'), 'down') +
     cell(s && s.durationStr ? s.durationStr : '—', t('today.move')) +
     cell(s && s.avgSpeed ? s.avgSpeed + '' : '—', t('today.speed')) +
     cell(s ? fmtNum(s.maxElev) + 'm' : '—', t('today.max')) +
