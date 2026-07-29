@@ -341,7 +341,7 @@ body {
 .col-center .card.map-card .map-wrap { border: none !important; border-radius: 0 !important; }
 .col-center .elevation-panel { height: auto !important; border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel); flex-shrink: 0; }
 .col-center .elevation-panel .elevation-header { border-bottom: 1px solid var(--border); padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.col-center .elevation-body { height: 150px; }
+.col-center .elevation-body { height: 280px !important; min-height: 280px; overflow: visible !important; }
 .pass-list { max-height: none !important; }
 
 /* ── 平滑过渡（仅颜色，不影响布局）── */
