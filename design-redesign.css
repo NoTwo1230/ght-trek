@@ -147,6 +147,8 @@
   box-shadow: none;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
+  margin-left: 4px;
+  flex-shrink: 0;
 }
 .ght-theme-toggle button {
   border: none;
@@ -175,7 +177,7 @@
   justify-content: space-between;
   gap: 20px;
   flex-wrap: wrap;
-  padding: 8px 0 18px;
+  padding: 8px 20px 18px;
   border-bottom: 1px solid var(--border);
   margin-bottom: 0;
   background: var(--bg);

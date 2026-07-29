@@ -62,7 +62,8 @@
     wrap.appendChild(bDark);
 
     // 挂载点
-    var mount = document.querySelector('.topnav-right') ||
+    var mount = document.querySelector('.header-right') ||
+                document.querySelector('.topnav-right') ||
                 document.querySelector('.admin-top');
     if (mount) {
       wrap.classList.add('in-header');
