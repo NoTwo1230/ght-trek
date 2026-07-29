@@ -1519,13 +1519,35 @@ function progressCardHTML() {
     ? APP.presetTrack.stats.elevGain : 0;
   const elev = getDisplayElev();
   const np = getNextPass();
+  // ── 圆环（全程进度）──
+  const RC = 2 * Math.PI * 28; // r=28 → 周长 ≈175.93
+  const ringOffset = RC * (1 - pct / 100);
+  const ring =
+    '<div class="ring-wrap">' +
+      '<svg width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="全程进度 ' + pct.toFixed(1) + '%">' +
+        '<circle class="ring-track" cx="32" cy="32" r="28" fill="none" stroke-width="7"/>' +
+        '<circle class="ring-val" cx="32" cy="32" r="28" fill="none" stroke-width="7" stroke-linecap="round" ' +
+          'stroke-dasharray="' + RC.toFixed(2) + '" stroke-dashoffset="' + ringOffset.toFixed(2) + '" transform="rotate(-90 32 32)"/>' +
+        '<text class="ring-pct" x="32" y="30" text-anchor="middle" font-size="14" font-weight="700">' + pct.toFixed(1) + '%</text>' +
+        '<text class="ring-cap" x="32" y="42" text-anchor="middle" font-size="8">全程进度</text>' +
+      '</svg>' +
+      '<div class="ring-meta">' +
+        '<span class="rv tnum">Day ' + doneDays + '<span class="rd"> / ' + totalDays + '</span></span>' +
+        '<span class="rl">远征第 ' + doneDays + ' 天</span>' +
+      '</div>' +
+    '</div>';
+
   const kpi = function (label, value, unit, sub) {
     return '<div class="kpi"><div class="k-label">' + label + '</div>' +
       '<div class="k-value tnum">' + value + (unit ? '<span class="u">' + unit + '</span>' : '') + '</div>' +
       (sub ? '<div class="k-sub">' + sub + '</div>' : '') + '</div>';
   };
-  return '<div class="kpi-strip">' +
-    kpi('总体进度', pct.toFixed(1), '%', 'Day ' + doneDays + ' / ' + totalDays) +
+  // 去掉第一格「总体进度」（圆环已展示），保留其余 4 格
+  return '<div class="prog-head">' +
+      '<div class="prog-title"><h2>进度总览</h2><span class="en">PROGRESS</span></div>' +
+      '<div class="prog-right">' + ring + '<span class="live"><span class="ld-dot"></span>实时追踪中</span></div>' +
+    '</div>' +
+    '<div class="kpi-strip">' +
     kpi('已完成里程', fmtNum(doneKm, 0), 'km', '全程 ' + fmtNum(totalKm, 0) + ' km') +
     kpi('累计爬升', gain ? fmtNum(gain) : '—', 'm', '已翻越 ' + doneDays + ' 座') +
     kpi('当前海拔', elev != null ? fmtNum(elev) : '—', 'm', '营地实时') +
