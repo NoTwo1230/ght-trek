@@ -168,21 +168,48 @@
 /* ════════════════════════════════════════════════════════════
    仪表盘布局重构：仿 demo 单列滚动（kpi → 双栏 → 地图/海拔 → 垭口）
    ════════════════════════════════════════════════════════════ */
+/* ── ① 解除 app 的 100vh 锁定，让内容可滚动 ── */
+.app {
+  height: auto !important;
+  min-height: 100vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* ── ② dash-grid 改为单列流动布局 ── */
 .dash-grid {
-  grid-template-columns: 1fr !important;
-  overflow-y: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
   gap: 14px !important;
   padding: 14px !important;
-  align-content: start !important;
+  overflow-y: visible !important;
+  overflow-x: hidden !important;
+  min-height: 0 !important;
+  height: auto !important;
+  grid-row: unset !important;
 }
 .dash-grid > .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .col-left, .col-right { overflow: visible; border: none; padding: 0; }
-.col-center { display: flex; flex-direction: column; gap: 14px; min-height: 0; }
-.col-center .map-wrap { flex: none; height: 440px !important; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.col-right {
+  display: block !important;
+  position: static !important;
+  overflow: visible !important;
+  border: none !important;
+  padding: 0 !important;
+  background: transparent !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  flex: none !important;
+}
+.col-left { display: none !important; }
+
+/* ── ⑥ KPI 全宽 ── */
+.kpi-host { width: 100%; }
+.col-center { display: flex !important; flex-direction: column !important; gap: 14px !important; position: relative !important; z-index: 0 !important; }
+.col-center .map-wrap { flex: none !important; height: 420px !important; min-height: 0 !important; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; position: relative !important; }
 .col-center .elevation-panel { height: auto !important; border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel); flex-shrink: 0; }
 .col-center .elevation-body { height: 150px; }
-.col-right { overflow: visible; }
-.pass-list { max-height: 70vh !important; }
+.pass-list { max-height: none !important; }
 
 /* ── 平滑过渡（仅颜色，不影响布局）── */
 body, .app, .topnav, .statusbar, .dash-grid, .col-left, .col-right, .col-center,
@@ -604,5 +631,5 @@ body, .app, .topnav, .statusbar, .dash-grid, .col-left, .col-right, .col-center,
 @media (max-width: 760px) {
   .dash-grid > .two-col { grid-template-columns: 1fr; }
   [data-theme="light"] .kpi-strip, [data-theme="dark"] .kpi-strip { grid-template-columns: repeat(2, 1fr); }
-  .col-center .map-wrap { height: 320px !important; }
+  .col-center .map-wrap { height: 300px !important; }
 }
