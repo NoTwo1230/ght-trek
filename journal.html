@@ -146,6 +146,8 @@
     .page-head h1{font-size:22px}
   }
 </style>
+<link rel="stylesheet" href="design-redesign.css" />
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('ght-theme')==='light'?'light':'';}catch(e){}</script>
 </head>
 <body>
 
@@ -587,5 +589,6 @@
   if (delMask) delMask.addEventListener('click', e => { if (e.target === delMask) closeDelModal(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && delMask && !delMask.hidden) closeDelModal(); });
 </script>
+<script src="theme-toggle.js"></script>
 </body>
 </html>

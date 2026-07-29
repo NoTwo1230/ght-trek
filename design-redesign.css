@@ -1,0 +1,173 @@
+/* =============================================================
+   GHT 大喜马拉雅高线追踪 · 双主题重设计层 (design-redesign.css)
+   -------------------------------------------------------------
+   采用"切换版(D)"设计语言：默认沿用站点原有暗色(Adventure Dark)，
+   新增 Stripe 浅色(A) 作为可切换主题。通过 [data-theme="light"]
+   覆盖各页共用的 CSS 变量实现，不改动任何业务逻辑。
+   变量名与 styles.css / itinerary / journal / sections 的 :root 一致，
+   故本文件可统一定制全站浅色主题。
+   ============================================================= */
+
+/* ── 浅色(Stripe)主题令牌：仅当 html[data-theme="light"] 时生效 ── */
+[data-theme="light"] {
+  --bg: #FFFFFF;
+  --panel: #F6F9FC;
+  --panel-alt: #EBF0F7;
+  --panel-bg: rgba(246, 249, 252, 0.95);
+  --panel-2: rgba(10, 37, 64, 0.05);
+  --bg-soft: #EEF2F7;
+  --border: #E3E8EE;
+  --border-light: #D6DEE8;
+  --text: #0A2540;
+  --text-dim: #425466;
+  --text-dimmer: #6B7C93;
+  --text-faint: #9AA7B8;
+  --accent: #635BFF;            /* Stripe indigo 品牌色 */
+  --accent-bg: #EEEBFF;
+  --accent-soft: #ECE9FF;
+  --accent2: #F5A623;
+  --route-done: #EF9F27;
+  --route-plan: #9AA4B2;
+  --green: #00A86B;
+  --red: #DF1B41;
+  --red-deep: #B62324;
+  --purple: #BC8CFF;
+  --yellow: #B7791F;
+  --gold: #B7791F;
+  --amber: #B7791F;
+  --orange: #C2410C;
+  --cyan: #2DD4BF;
+  --current-province: rgba(99, 91, 255, 0.12);
+}
+
+/* ── 浅色下：把原暗色专用的白色半透明 hover/边框改写为浅底深色 ── */
+[data-theme="light"] .nav-left .nav-btn:hover,
+[data-theme="light"] .panel-right .panel-close:hover,
+[data-theme="light"] .tn-tab:hover,
+[data-theme="light"] .sec-card:hover {
+  background: rgba(10, 37, 64, 0.05);
+}
+[data-theme="light"] .lang-btn,
+[data-theme="light"] .top-btn {
+  background: rgba(10, 37, 64, 0.04);
+  border-color: var(--border);
+  color: var(--text);
+}
+[data-theme="light"] .lang-btn:hover,
+[data-theme="light"] .top-btn:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+[data-theme="light"] .pc-bar,
+[data-theme="light"] .pass-summary-bar,
+[data-theme="light"] .progress-bar-outer,
+[data-theme="light"] .tg-cell,
+[data-theme="light"] .stat-card,
+[data-theme="light"] .info-chip,
+[data-theme="light"] .info-sub,
+[data-theme="light"] .itinerary-header .it-stat,
+[data-theme="light"] .itinerary-day,
+[data-theme="light"] .log-entry,
+[data-theme="light"] .sec-card,
+[data-theme="light"] .section-item {
+  background: var(--panel);
+  border-color: var(--border);
+}
+[data-theme="light"] .sec-bar { background: rgba(10, 37, 64, 0.06); }
+[data-theme="light"] .elev-box { background: rgba(10, 37, 64, 0.03); }
+[data-theme="light"] .pass-row.done .pass-name { text-decoration-color: rgba(10, 37, 64, 0.35); }
+
+/* ── 浅色下：地图容器与 Leaflet 控件适配 ── */
+[data-theme="light"] #map { background: #EEF2F7; }
+[data-theme="light"] .basemap-btn,
+[data-theme="light"] .fitview-btn { border-color: var(--border); color: var(--text); }
+[data-theme="light"] .basemap-btn + .basemap-btn { border-top-color: var(--border); }
+[data-theme="light"] .basemap-btn:hover,
+[data-theme="light"] .fitview-btn:hover { background: rgba(10, 37, 64, 0.06); color: var(--text); }
+[data-theme="light"] .leaflet-control-zoom a,
+[data-theme="light"] .leaflet-control-scale-line {
+  background: var(--panel-bg) !important;
+  border-color: var(--border) !important;
+  color: var(--text-dim) !important;
+}
+[data-theme="light"] .leaflet-control-zoom a:hover { background: var(--accent-soft) !important; color: var(--text) !important; }
+[data-theme="light"] .region-tooltip,
+[data-theme="light"] .wpt-tooltip {
+  background: var(--panel-bg) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+[data-theme="light"] .leaflet-control-attribution {
+  background: rgba(246, 249, 252, 0.92) !important;
+  color: var(--text-dim) !important;
+}
+[data-theme="light"] .leaflet-control-attribution a { color: var(--accent) !important; }
+
+/* ── 浅色下：admin 顶栏由深色玻璃改为浅色玻璃 ── */
+[data-theme="light"] .admin-top {
+  background: rgba(255, 255, 255, 0.92);
+  border-bottom-color: var(--border);
+}
+[data-theme="light"] .admin-top a,
+[data-theme="light"] .admin-top button {
+  background: rgba(10, 37, 64, 0.04);
+  border-color: var(--border);
+  color: var(--text);
+}
+[data-theme="light"] .admin-top a:hover,
+[data-theme="light"] .admin-top button:hover { color: var(--accent); border-color: var(--accent); }
+
+/* ── 主题切换控件 ── */
+.ght-theme-toggle {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 6000;
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+  font-family: inherit;
+}
+.ght-theme-toggle.in-header {
+  position: static;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.ght-theme-toggle button {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  padding: 5px 12px;
+  border-radius: 999px;
+  transition: background-color .15s, color .15s;
+  line-height: 1;
+  white-space: nowrap;
+}
+.ght-theme-toggle button:hover { color: var(--text); }
+.ght-theme-toggle button.active { background: var(--accent); color: #fff; }
+[data-theme="light"] .ght-theme-toggle { box-shadow: 0 4px 16px rgba(10, 37, 64, 0.12); }
+
+/* ── 平滑过渡（仅颜色，不影响布局）── */
+body, .app, .topnav, .statusbar, .dash-grid, .col-left, .col-right, .col-center,
+.map-wrap, #map, .elevation-panel, .card, .panel, .info-bar, .info-strip,
+.stat-card, .section-item, .itinerary-day, .itinerary-header .it-stat,
+.log-entry, .sec-card, .admin-top, .modal, .btn, .tn-tab, .tn-ext, .lang-btn,
+.top-btn, .pass-row, .st-row, .tg-cell, .pc-stat, .exped-summary, .itineray-edit-form {
+  transition: background-color .25s ease, border-color .25s ease, color .25s ease;
+}
+
+/* ── 无障碍：尊重 reduced-motion ── */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
