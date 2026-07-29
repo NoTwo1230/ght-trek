@@ -1520,24 +1520,7 @@ function progressCardHTML() {
   const elev = getDisplayElev();
   const np = getNextPass();
 
-  // ── 注入 header 圆环区域（仅 DOM 存在时）──
-  var hdrRing = document.getElementById('hdrRingWrap');
-  if (hdrRing) {
-    var RC = 2 * Math.PI * 28;
-    var ringOffset = RC * (1 - pct / 100);
-    hdrRing.innerHTML =
-      '<svg width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="全程进度 ' + pct.toFixed(1) + '%">' +
-        '<circle class="ring-track" cx="32" cy="32" r="28" fill="none" stroke-width="7"/>' +
-        '<circle class="ring-val" cx="32" cy="32" r="28" fill="none" stroke-width="7" stroke-linecap="round" ' +
-          'stroke-dasharray="' + RC.toFixed(2) + '" stroke-dashoffset="' + ringOffset.toFixed(2) + '" transform="rotate(-90 32 32)"/>' +
-        '<text class="ring-pct" x="32" y="30" text-anchor="middle" font-size="14" font-weight="700">' + pct.toFixed(1) + '%</text>' +
-        '<text class="ring-cap" x="32" y="42" text-anchor="middle" font-size="8">全程进度</text>' +
-      '</svg>' +
-      '<div class="ring-meta">' +
-        '<span class="rv tnum">Day ' + doneDays + '<span class="rd"> / ' + totalDays + '</span></span>' +
-        '<span class="rl">远征第 ' + doneDays + ' 天</span>' +
-      '</div>';
-  }
+  // （圆环已移至「整体进度」栏目，见 statusRingHTML()）
 
   // ── 更新 header 实时追踪状态 ──
   var hdrLive = document.getElementById('hdrLive');
@@ -1559,6 +1542,30 @@ function progressCardHTML() {
     kpi('累计爬升', gain ? fmtNum(gain) : '—', 'm', '已翻越 ' + doneDays + ' 座') +
     kpi('当前海拔', elev != null ? fmtNum(elev) : '—', 'm', '营地实时') +
     kpi('下一垭口', (np && np.elev != null) ? fmtNum(np.elev) : '—', 'm', (np ? esc(np.name || np.desc || '未命名') : '—') + ' · 待通过') +
+    '</div>';
+}
+
+// ── A2. 整体进度大圆环（替换「当前状态」栏目，Day 置于圆环中心）──
+function statusRingHTML() {
+  const pct = APP.progressPercentage || APP.progressPct || 0;
+  const days = APP.itinerary || [];
+  const totalDays = days.length;
+  const doneDays = days.filter(d => d.actual).length;
+  const RC = 2 * Math.PI * 78;            // r=78 → 周长 ≈ 490.09
+  const ringOffset = RC * (1 - pct / 100);
+  const ringIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"/><path d="M12 12l4-2"/></svg>';
+  return '<div class="card-h"><span class="ch-ico">' + ringIcon + '</span><span>整体进度</span><span class="en">OVERALL PROGRESS</span></div>' +
+    '<div class="card-b ring-card-b">' +
+      '<div class="big-ring">' +
+        '<svg viewBox="0 0 180 180" width="180" height="180" role="img" aria-label="全程进度 ' + pct.toFixed(1) + '%">' +
+          '<circle class="ring-track-lg" cx="90" cy="90" r="78" fill="none" stroke-width="14"/>' +
+          '<circle class="ring-val-lg" cx="90" cy="90" r="78" fill="none" stroke-width="14" stroke-linecap="round" ' +
+            'stroke-dasharray="' + RC.toFixed(2) + '" stroke-dashoffset="' + ringOffset.toFixed(2) + '" transform="rotate(-90 90 90)"/>' +
+          '<text class="ring-day-num" x="90" y="86" text-anchor="middle">Day ' + doneDays + '<tspan class="ring-day-tot" dx="2"> / ' + totalDays + '</tspan></text>' +
+          '<text class="ring-day-sub" x="90" y="112" text-anchor="middle">远征第 ' + doneDays + ' 天</text>' +
+        '</svg>' +
+      '</div>' +
+      '<div class="ring-cap-below">全程进度 <b>' + pct.toFixed(1) + '%</b> · 已完成 ' + doneDays + ' / ' + totalDays + ' 日</div>' +
     '</div>';
 }
 
@@ -1730,7 +1737,7 @@ function updateLiveStatus() {
 
 function renderDashboard() {
   setCard('cardProgress', progressCardHTML());
-  setCard('cardStatus', currentStatusHTML());
+  setCard('cardStatus', statusRingHTML());
   setCard('cardToday', todaySummaryHTML());
   setCard('cardPasses', passesHTML());
   updateLiveStatus();
