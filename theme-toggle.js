@@ -16,7 +16,7 @@
   function getTheme() {
     try {
       var t = localStorage.getItem(STORE_KEY);
-      return t === 'light' ? 'light' : 'dark';
+      return t === 'light' ? 'light' : 'light';
     } catch (e) { return 'dark'; }
   }
 

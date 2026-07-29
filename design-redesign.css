@@ -171,3 +171,295 @@ body, .app, .topnav, .statusbar, .dash-grid, .col-left, .col-right, .col-center,
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+/* ════════════════════════════════════════════════════════════
+   全站浅色补充：itinerary / journal / sections 页面专用
+   这些页面有独立的内联 :root 暗色变量与白色半透明组件，
+   以下 [data-theme="light"] 规则统一翻转。
+   ════════════════════════════════════════════════════════════ */
+
+/* ── 通用：暗色玻璃顶栏 → 浅色玻璃 ── */
+[data-theme="light"] .topbar,
+[data-theme="light"] .toolbar {
+  background: rgba(255, 255, 255, 0.88) !important;
+  border-bottom-color: var(--border) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+[data-theme="light"] .topbar .title .glyph,
+[data-theme="light"] .brand .logo {
+  background: var(--accent-soft) !important;
+  border-color: var(--accent) !important;
+}
+
+/* ── 返回链接 + 语言按钮（三页共用类名）── */
+[data-theme="light"] .back-link {
+  background: var(--panel);
+  border-color: var(--border);
+  color: var(--text-dim);
+}
+[data-theme="light"] .back-link:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+[data-theme="light"] .lang-btn {
+  background: rgba(10, 37, 64, 0.04) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+[data-theme="light"] .lang-btn:hover {
+  color: var(--accent) !important;
+  border-color: var(--accent) !important;
+  background: var(--accent-soft) !important;
+}
+
+/* ── itinerary：日历页专用 ── */
+[data-theme="light"] body:has(.cal-wrap) {
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(99, 91, 255, 0.06), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(0, 168, 107, 0.05), transparent 60%),
+    var(--bg) !important;
+}
+[data-theme="light"] .summary .stat,
+[data-theme="light"] .legend {
+  background: var(--panel) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="light"] .seg {
+  background: var(--panel);
+  border-color: var(--border);
+}
+[data-theme="light"] .seg button { color: var(--text-dim); }
+[data-theme="light"] .seg button:hover { color: var(--text); }
+[data-theme="light"] .seg button.active {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+[data-theme="light"] .cell {
+  background: var(--panel);
+  border-color: var(--border);
+}
+[data-theme="light"] .cell.today {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(99, 91, 255, 0.35);
+}
+[data-theme="light"] .chip {
+  background: var(--panel-alt);
+  border-color: var(--border-light);
+  box-shadow: 0 2px 8px rgba(10, 37, 64, 0.08);
+}
+[data-theme="light"] .chip:hover {
+  box-shadow: 0 6px 20px rgba(10, 37, 64, 0.12), 0 0 0 1px var(--accent);
+  transform: translateY(-2px);
+}
+[data-theme="light"] .chip.is-rest {
+  background: rgba(0, 168, 107, 0.06);
+  border-color: rgba(0, 168, 107, 0.25);
+}
+[data-theme="light"] .chip.is-delay {
+  background: rgba(245, 166, 35, 0.06);
+  border-color: rgba(245, 166, 35, 0.25);
+}
+[data-theme="light"] .cal-nav button {
+  background: var(--panel);
+  border-color: var(--border);
+  color: var(--text);
+}
+[data-theme="light"] .cal-nav button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+[data-theme="light"] .drawer {
+  background: #fff;
+  border-left-color: var(--border-light);
+  box-shadow: -16px 0 48px rgba(10, 37, 64, 0.12);
+}
+[data-theme="light"] .scrim { background: rgba(10, 14, 20, 0.3); }
+[data-theme="light"] .drawer .dhead { border-bottom-color: var(--border); }
+[data-theme="light"] .drawer .dclose {
+  background: var(--panel);
+  border-color: var(--border);
+  color: var(--text-dim);
+}
+[data-theme="light"] .drawer .dclose:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+[data-theme="light"] .dv-sep { border-top-color: var(--border-light); }
+[data-theme="light"] .day-badge {
+  background: var(--panel);
+  border-color: var(--border-light);
+}
+[data-theme="light"] .col.plan {
+  background: rgba(99, 91, 255, 0.04);
+  border-color: rgba(99, 91, 255, 0.14);
+}
+[data-theme="light"] .col.actual {
+  background: rgba(0, 168, 107, 0.04);
+  border-color: rgba(0, 168, 107, 0.14);
+}
+[data-theme="light"] .slip-note {
+  background: rgba(245, 166, 35, 0.08);
+  border-color: rgba(245, 166, 35, 0.30);
+  color: #B7791F;
+}
+[data-theme="light"] .date-warn {
+  background: rgba(223, 27, 65, 0.06);
+  border-color: rgba(223, 27, 65, 0.25);
+  color: var(--red);
+}
+[data-theme="light"] .date-warn a { color: var(--red); }
+
+/* ── journal：日志页专用 ── */
+[data-theme="light"] body:has(.feed) {
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(99, 91, 255, 0.05), transparent 60%),
+    radial-gradient(900px 500px at -5% 10%, rgba(186, 140, 255, 0.04), transparent 55%),
+    var(--bg) !important;
+}
+[data-theme="light"] .stats .stat,
+[data-theme="light"] .card {
+  background: var(--panel);
+  border-color: var(--border);
+  box-shadow: 0 1px 3px rgba(10, 37, 64, 0.05);
+}
+[data-theme="light] .card:hover {
+  border-color: var(--border-light);
+  background: var(--panel-alt);
+}
+[data-theme="light"] .filters .chip {
+  background: var(--panel);
+  border-color: var(--border);
+  color: var(--text-dim);
+}
+[data-theme="light"] .filters .chip:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+[data-theme="light"] .filters .chip.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+[data-theme="light"] .day-badge {
+  background: var(--panel-alt);
+  border-color: var(--border-light);
+  color: var(--text-dim);
+}
+[data-theme="light"] .gps-badge {
+  background: rgba(0, 168, 107, 0.08);
+  border-color: rgba(0, 168, 107, 0.25);
+  color: var(--green);
+}
+[data-theme="light"] .sc {
+  background: var(--panel);
+  border-color: var(--border);
+}
+[data-theme="light"] .spark {
+  background: linear-gradient(180deg, rgba(99, 91, 255, 0.04), transparent);
+  border-color: var(--border);
+}
+[data-theme="light"] .composer-box {
+  background: var(--panel);
+  border-color: var(--border);
+}
+[data-theme="light"] .composer-box select,
+[data-theme="light"] .composer-box textarea,
+[data-theme="light"] .composer-box input.j-pwd {
+  background: var(--bg-soft);
+  border-color: var(--border);
+  color: var(--text);
+}
+[data-theme="light"] .modal {
+  background: #fff;
+  border-color: var(--border);
+  box-shadow: 0 20px 60px rgba(10, 37, 64, 0.15);
+}
+[data-theme="light"] .modal-mask { background: rgba(10, 14, 20, 0.3); }
+[data-theme="light"] .btn-cancel {
+  background: var(--panel);
+  border-color: var(--border);
+  color: var(--text);
+}
+[data-theme="light"] .btn-cancel:hover { border-color: var(--text-dim); }
+[data-theme="light"] .del-btn {
+  background: var(--panel);
+  border-color: var(--border);
+  color: var(--text-dim);
+}
+[data-theme="light"] .del-btn:hover {
+  color: var(--orange);
+  border-color: var(--orange);
+  background: rgba(245, 166, 35, 0.06);
+}
+
+/* ── sections：路段全景页专用 ── */
+[data-theme="light"] body:has(.cover-wrap) {
+  background:
+    radial-gradient(1200px 600px at 85% -10%, rgba(99, 91, 255, 0.05), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(240, 136, 62, 0.04), transparent 60%),
+    var(--bg) !important;
+}
+[data-theme="light"] .note {
+  background: var(--panel);
+  border-color: var(--border);
+  border-left-color: var(--amber);
+}
+[data-theme="light"] .cf-arrow {
+  background: var(--panel);
+  border-color: var(--border-light);
+  color: var(--text-dim);
+}
+[data-theme="light"] .cf-arrow:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+[data-theme="light"] .cfc {
+  border-color: var(--border-light);
+  box-shadow: 0 8px 24px rgba(10, 37, 64, 0.1);
+}
+[data-theme="light"] .cfc.is-active {
+  box-shadow: 0 16px 48px rgba(10, 37, 64, 0.16), 0 0 0 2px var(--rc, var(--accent));
+}
+[data-theme="light"] .cfc-view {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: var(--border-light);
+  color: var(--text);
+}
+[data-theme="light"] .cfc-view:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+[data-theme="light"] .detail-card {
+  background: #fff;
+  border-color: var(--border-light);
+  box-shadow: 0 32px 80px rgba(10, 37, 64, 0.18);
+}
+[data-theme="light"] .d-backdrop { background: rgba(246, 249, 252, 0.85); }
+[data-theme="light"] .d-close {
+  background: var(--panel);
+  border-color: var(--border-light);
+  color: var(--text-dim);
+}
+[data-theme="light"] .d-close:hover {
+  background: var(--red);
+  border-color: var(--red);
+  color: #fff;
+}
+[data-theme="light"] .d-stat {
+  background: var(--panel);
+  border-color: var(--border-light);
+}
+[data-theme="light"] .pchip {
+  background: rgba(45, 212, 191, 0.06);
+  border-color: rgba(45, 212, 191, 0.2);
+  color: var(--cyan);
+}
+[data-theme="light"] .lb { background: rgba(246, 249, 252, 0.92); }
+[data-theme="light"] .lb-imgs img {
+  background: var(--panel);
+  border-color: var(--border-light);
+}
