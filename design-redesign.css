@@ -26,8 +26,8 @@
   --accent-soft: #ECE9FF;
   --accent-grad: linear-gradient(135deg, #635BFF 0%, #2DD4BF 100%);  /* 品牌渐变点缀 */
   --accent2: #F5A623;
-  --route-done: #EF9F27;
-  --route-plan: #9AA4B2;
+  --route-done: #00A86B;
+  --route-plan: #635BFF;
   --green: #00A86B;
   --red: #DF1B41;
   --red-deep: #B62324;
@@ -497,8 +497,9 @@ body, .app, .topnav, .statusbar, .dash-grid, .col-left, .col-right, .col-center,
   border-color: var(--border);
 }
 [data-theme="light"] .cell.today {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 1px rgba(99, 91, 255, 0.35);
+  border: 2px solid var(--accent);
+  background: var(--accent-bg);
+  box-shadow: 0 0 0 1px rgba(99, 91, 255, 0.25);
 }
 [data-theme="light"] .chip {
   background: var(--panel-alt);
@@ -510,8 +511,8 @@ body, .app, .topnav, .statusbar, .dash-grid, .col-left, .col-right, .col-center,
   transform: translateY(-2px);
 }
 [data-theme="light"] .chip.is-rest {
-  background: rgba(0, 168, 107, 0.06);
-  border-color: rgba(0, 168, 107, 0.25);
+  background: rgba(107, 124, 147, 0.06);
+  border-color: rgba(107, 124, 147, 0.25);
 }
 [data-theme="light"] .chip.is-delay {
   background: rgba(245, 166, 35, 0.06);
