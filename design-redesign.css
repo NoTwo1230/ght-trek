@@ -828,10 +828,10 @@ body, .app, .topnav, .statusbar, .dash-grid, .col-left, .col-right, .col-center,
   border-color: var(--border-light);
 }
 
-/* ── 响应式：窄屏（手机）单列 + 卡片内重排 ── */
-@media (max-width: 760px) {
-  /* ── 布局：双栏→单列 ── */
-  .dash-grid > .two-col { grid-template-columns: 1fr; }
+/* ── 响应式：窄屏（手机/平板）单列 + 卡片内重排 ── */
+@media (max-width: 1024px) {
+  /* ── 布局：双栏→单列（核心！!important 确保不被覆盖）── */
+  .dash-grid > .two-col { grid-template-columns: 1fr !important; }
 
   /* ── Header 紧凑化 ── */
   .site-header { padding: 10px 14px 14px; gap: 12px; }
@@ -885,9 +885,4 @@ body, .app, .topnav, .statusbar, .dash-grid, .col-left, .col-right, .col-center,
 
   /* ── 旧 KPI 条兜底（如果还有残留）── */
   [data-theme="light"] .kpi-strip, [data-theme="dark"] .kpi-strip { grid-template-columns: repeat(2, 1fr); }
-}
-
-/* ── 早断点：手机横屏(736–932) / 小平板(768) 常报 >760px，原断点漏掉 → 单独兜底 ── */
-@media (max-width: 860px) {
-  .dash-grid > .two-col { grid-template-columns: 1fr !important; }
 }
