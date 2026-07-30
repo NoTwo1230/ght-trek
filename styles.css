@@ -12,28 +12,38 @@
   :focus:not(:focus-visible) { outline: none; }
 
   :root {
-    /* ── Adventure Dark Palette ── */
-    --bg: #0a0e14;
-    --panel: #0d1219;
-    --panel-alt: #161b22;
-    --panel-bg: rgba(13,18,25,0.95);
-    --border: #1c2333;
-    --border-light: #21262d;
-    --text: #e6edf3;
-    --text-dim: #8b949e;
-    --text-dimmer: #7d8590;
-    --accent: #58a6ff;
-    --accent-bg: #1a3a5c;
-    --accent2: #f0883e;
-    --route-done: #ef9f27;
-    --route-plan: #484f58;
-    --green: #3fb950;
-    --red: #f85149;
-    --red-deep: #b62324;
-    --purple: #bc8cff;
-    --yellow: #d29922;
-    --cyan: #39d2c0;
-    --current-province: rgba(88,166,255,0.20);
+    /* ── Stripe 浅色调色板（全站唯一主题） ── */
+    --bg: #FFFFFF;
+    --panel: #F6F9FC;
+    --panel-alt: #EBF0F7;
+    --panel-bg: rgba(246, 249, 252, 0.95);
+    --panel-2: rgba(10, 37, 64, 0.05);
+    --bg-soft: #EEF2F7;
+    --border: #E3E8EE;
+    --border-light: #D6DEE8;
+    --text: #0A2540;
+    --text-dim: #425466;
+    --text-dimmer: #6B7C93;
+    --text-faint: #9AA7B8;
+    --accent: #635BFF;
+    --accent-bg: #EEEBFF;
+    --accent-soft: #ECE9FF;
+    --accent2: #F5A623;
+    --route-done: #EF9F27;
+    --route-plan: #9AA4B2;
+    --green: #00A86B;
+    --red: #DF1B41;
+    --red-deep: #B62324;
+    --danger-bg-soft: rgba(223, 27, 65, .05);
+    --purple: #BC8CFF;
+    --yellow: #B7791F;
+    --cyan: #2DD4BF;
+    --current-province: rgba(99, 91, 255, 0.12);
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow-raised: 0 1px 2px rgba(10, 37, 64, .06), 0 1px 1px rgba(10, 37, 64, .04);
+    --shadow-float: 0 4px 16px rgba(10, 37, 64, .08);
+    --grid-line: transparent;
   }
 
   body {

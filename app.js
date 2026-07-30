@@ -776,21 +776,7 @@ const currentBasemap = { layer: basemaps.terrain };
 basemaps.terrain.addTo(map);
 currentBasemap.layer = basemaps.terrain;
 
-// ━━ 双主题：随主题切换地图瓦片（ght:themechange 由 theme-toggle.js 派发）━━
-document.addEventListener('ght:themechange', function (e) {
-  if (typeof basemaps === 'undefined' || !map) return;
-  var theme = e && e.detail ? e.detail.theme : 'dark';
-  var target = (theme !== 'light') ? basemaps.dark : basemaps.terrain;
-  if (currentBasemap.layer === target) return;
-  var prev = currentBasemap.layer;
-  map.addLayer(target);
-  var onFirstTile = function () {
-    if (prev && prev !== target) map.removeLayer(prev);
-    target.off('tileload', onFirstTile);
-  };
-  target.on('tileload', onFirstTile);
-  currentBasemap.layer = target;
-});
+// 主题切换已移除：地图默认使用浅色 terrain 瓦片（basemaps.terrain），全站仅 Stripe 浅色。
 L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
 // ━━ Fit-to-route control (between zoom and basemap, bottom-left) ━━

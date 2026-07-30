@@ -1,11 +1,10 @@
 /* =============================================================
    GHT 大喜马拉雅高线追踪 · 双主题重设计层 (design-redesign.css)
    -------------------------------------------------------------
-   采用"切换版(D)"设计语言：默认沿用站点原有暗色(Adventure Dark)，
-   新增 Stripe 浅色(A) 作为可切换主题。通过 [data-theme="light"]
-   覆盖各页共用的 CSS 变量实现，不改动任何业务逻辑。
-   变量名与 styles.css / itinerary / journal / sections 的 :root 一致，
-   故本文件可统一定制全站浅色主题。
+  全站统一 Stripe 浅色主题层（暗色主题已移除，主题切换按钮已删除）。
+  通过 [data-theme="light"] 覆盖各页共用的 CSS 变量实现，不改动任何业务逻辑。
+  变量名与 styles.css / itinerary / journal / sections 的 :root 一致，
+  故本文件可统一定制全站浅色主题；各页 <head> 已强制 data-theme="light"。
    ============================================================= */
 
 /* ── 浅色(Stripe)主题令牌：仅当 html[data-theme="light"] 时生效 ── */
@@ -125,48 +124,7 @@
 [data-theme="light"] .admin-top a:hover,
 [data-theme="light"] .admin-top button:hover { color: var(--accent); border-color: var(--accent); }
 
-/* ── 主题切换控件 ── */
-.ght-theme-toggle {
-  position: fixed;
-  top: 10px;
-  right: 10px;
-  z-index: 6000;
-  display: inline-flex;
-  gap: 2px;
-  padding: 3px;
-  background: var(--panel-bg);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
-  font-family: inherit;
-}
-.ght-theme-toggle.in-header {
-  position: static;
-  box-shadow: none;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  margin-left: 4px;
-  flex-shrink: 0;
-}
-.ght-theme-toggle button {
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-dim);
-  padding: 5px 12px;
-  border-radius: 999px;
-  transition: background-color .15s, color .15s;
-  line-height: 1;
-  white-space: nowrap;
-}
-.ght-theme-toggle button:hover { color: var(--text); }
-.ght-theme-toggle button.active { background: var(--accent); color: #fff; }
-[data-theme="light"] .ght-theme-toggle { box-shadow: 0 4px 16px rgba(10, 37, 64, 0.12); }
+/* 主题切换控件已移除：全站仅保留 Stripe 浅色 */
 
 /* ════════════════════════════════════════════════════════════
    新顶部 Header（仿 demo topbar：品牌 + 圆环 + 导航）
@@ -254,16 +212,7 @@
   border-color: var(--border);
 }
 
-/* 暗色主题 header 微调 */
-[data-theme="dark"] .site-header { border-bottom-color: var(--border); }
-[data-theme="dark"] .brand-mark {
-  box-shadow: 0 2px 12px rgba(45, 212, 191, .2);
-  background: linear-gradient(135deg, #2DD4BF, #14B8A6);
-}
-[data-theme="dark"] .brand-mark svg { stroke: #06231f; }
-[data-theme="dark"] .ring-val { stroke: var(--accent); }
-[data-theme="dark"] .live { background: var(--panel-alt); }
-[data-theme="dark"] .hn-link:hover { background: rgba(45, 212, 191, .08); }
+/* 暗色主题 header 微调已移除（全站仅 Stripe 浅色） */
 
 /* 隐藏旧 topnav（防止残留） */
 .topnav { display: none !important; }
@@ -467,75 +416,7 @@ body, .app, .topnav, .statusbar, .dash-grid, .col-left, .col-right, .col-center,
   * { transition: none !important; animation: none !important; }
 }
 
-/* ════════════════════════════════════════════════════════════
-/* ════════════════════════════════════════════════════════════
-   暗色(dark-precision)对齐：把默认暗色显式锁定为遥测风
-   ════════════════════════════════════════════════════════════ */
-[data-theme="dark"] {
-  --accent: #2DD4BF;
-  --accent-bg: rgba(45, 212, 191, .12);
-  --green: #34D399;
-  --red: #F43F5E;
-  --danger-bg-soft: rgba(244, 63, 94, .07);
-  --bg: #0A0E14;
-  --panel: #131A24;
-  --panel-alt: #1B2430;
-  --panel-bg: rgba(19, 26, 36, .92);
-  --border: #26303D;
-  --text: #E6EDF3;
-  --text-dim: #8B98A5;
-  --radius: 10px;
-}
-[data-theme="dark"] .card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 0 0 1px var(--border), 0 0 16px rgba(45, 212, 191, .05); }
-[data-theme="dark"] .card-h { background: transparent; border-bottom: 1px solid var(--border); padding: 14px 18px; font-size: 15px; font-weight: 600; color: var(--text); }
-[data-theme="dark"] .card-h .en { color: var(--text-dim); font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
-[data-theme="dark"] .kpi-host { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 0 0 1px var(--border), 0 0 16px rgba(45, 212, 191, .05); overflow: hidden; }
-[data-theme="dark"] .kpi-strip { display: grid; grid-template-columns: repeat(4, 1fr); background: var(--panel-alt); }
-[data-theme="dark"] .kpi { padding: 16px 18px; border-right: 1px solid var(--border); }
-[data-theme="dark"] .kpi:last-child { border-right: none; }
-[data-theme="dark"] .kpi .k-label { font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--text-dim); font-weight: 600; margin-bottom: 8px; }
-[data-theme="dark"] .kpi .k-value { font-family: var(--font-mono); font-size: 28px; font-weight: 700; color: var(--text); line-height: 1; letter-spacing: -.02em; }
-[data-theme="dark"] .kpi .k-value .u { font-size: 14px; color: var(--text-dim); font-weight: 600; margin-left: 3px; }
-[data-theme="dark"] .kpi .k-sub { font-size: 12px; color: var(--text-dim); margin-top: 6px; }
-[data-theme="dark"] .st-row { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: baseline; padding: 11px 2px; border-bottom: 1px solid var(--border); }
-[data-theme="dark"] .st-row:last-child { border-bottom: none; }
-[data-theme="dark"] .st-ico { color: var(--accent); display: inline-flex; }
-[data-theme="dark"] .st-ico svg { width: 16px; height: 16px; }
-[data-theme="dark"] .st-k { font-size: 13px; color: var(--text-dim); }
-[data-theme="dark"] .st-v { font-size: 15px; font-weight: 600; text-align: right; }
-[data-theme="dark"] .st-v small { display: block; font-size: 12px; font-weight: 400; color: var(--text-dim); margin-top: 2px; }
-[data-theme="dark"] .tg { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; margin: 14px 0 6px; }
-[data-theme="dark"] .tg-cell { background: var(--bg); padding: 14px 16px; }
-[data-theme="dark"] .tg-cell .v { font-family: var(--font-mono); font-size: 24px; font-weight: 700; color: var(--text); letter-spacing: -.02em; }
-[data-theme="dark"] .tg-cell .l { font-size: 12px; color: var(--text-dim); margin-bottom: 6px; }
-[data-theme="dark"] .tg-cell .v.up { color: var(--green); }
-[data-theme="dark"] .tg-cell .v.down { color: #F97316; }
-[data-theme="dark"] .pass-row { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 11px 14px; border-radius: var(--radius-sm); border-left: 3px solid transparent; }
-[data-theme="dark"] .pass-row + .pass-row { border-top: 1px solid var(--border); }
-[data-theme="dark"] .pass-row:hover { background: var(--panel-alt); }
-[data-theme="dark"] .pass-row.done { border-left-color: var(--green); }
-[data-theme="dark"] .pass-row.done .pass-name { color: var(--text-dim); }
-[data-theme="dark"] .pass-row.danger { border-left-color: var(--red); background: var(--danger-bg-soft); }
-[data-theme="dark"] .pass-name { font-size: 14px; font-weight: 600; color: var(--text); }
-[data-theme="dark"] .pass-elev { font-family: var(--font-mono); font-size: 14px; color: var(--text-dim); text-align: right; }
-[data-theme="dark"] .pass-check { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--green); color: #06231f; font-size: 12px; font-weight: 700; }
-[data-theme="dark"] .pass-dot { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border); }
-[data-theme="dark"] .pass-days { background: rgba(52, 211, 153, .15); color: var(--green); }
-[data-theme="dark"] .pass-days.far { background: rgba(139, 152, 165, .15); color: var(--text-dim); }
-[data-theme="dark"] .pass-summary-bar > i { background: linear-gradient(90deg, var(--accent), var(--green)); }
-[data-theme="dark"] .elev-scope button.on { background: var(--accent); color: #06231f; border-color: var(--accent); }
-/* 地图夜空网格叠加 */
-[data-theme="dark"] .map-wrap {
-  background: radial-gradient(900px 420px at 70% -10%, rgba(45, 212, 191, .06), transparent 60%), var(--bg);
-}
-[data-theme="dark"] .map-wrap::before {
-  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 400;
-  background-image:
-    linear-gradient(var(--border) 1px, transparent 1px),
-    linear-gradient(90deg, var(--border) 1px, transparent 1px);
-  background-size: 32px 32px; opacity: .22;
-}
-[data-theme="dark"] .map-overlay { z-index: 600; }
+/* 暗色(dark)主题已移除 — 全站仅保留 Stripe 浅色 */
 
    全站浅色补充：itinerary / journal / sections 页面专用
    这些页面有独立的内联 :root 暗色变量与白色半透明组件，
