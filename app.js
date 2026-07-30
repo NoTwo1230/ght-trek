@@ -621,7 +621,24 @@ const I18N = {
     'pass.none': '暂无垭口数据', 'pass.soon': '近日', 'pass.seg': '段', 'pass.all': '查看全部路段 →',
     'up.btn': '📤 上传GPS轨迹', 'up.hint': '支持批量多文件 (.gpx/.kml)<br>PeakVisor / Strava / Garmin 均可', 'up.date': '出发日期：', 'up.reset': '🗑️ 重置本机数据',
     'view.empty': '暂无内容',
-    'dm.title': '数据管理', 'dm.pwdHint': '请输入主人密码以管理轨迹数据', 'dm.unlock': '解锁', 'dm.pwdErr': '密码错误', 'dm.connErr': '无法连接服务器（后端未启动？）'
+    'dm.title': '数据管理', 'dm.pwdHint': '请输入主人密码以管理轨迹数据', 'dm.unlock': '解锁', 'dm.pwdErr': '密码错误', 'dm.connErr': '无法连接服务器（后端未启动？）',
+    // ── 整体进度模块 ──
+    'prog.title': '整体进度', 'prog.doneKm': '已完成里程', 'prog.totalGain': '累计爬升', 'prog.goal': '目标约',
+    'prog.curElev': '当前海拔', 'prog.nextPass': '下一垭口', 'prog.ringDay': '远征第 {d} 天',
+    'prog.ringCap': '全程进度', 'prog.ringDone': '已完成', 'prog.ringDayUnit': '日',
+    // ── 今日摘要 / 当前状态 / 垭口 ──
+    'today.title': '今日摘要', 'st.title': '当前状态', 'pass.title': '垭口清单',
+    'st.start': '起点', 'st.notStarted': '未出发', 'st.unnamed': '未命名',
+    // ── 地图 / 海拔 ──
+    'map.title': '交互地图', 'leg.actual': '实际徒步轨迹', 'leg.plan': '计划路线 · 目标',
+    'elev.title': '海拔剖面', 'elev.scopeFull': '全程', 'elev.scopeRegion': '当前区域',
+    'elev.scopePreset': '预设轨迹', 'elev.highest': '最高', 'elev.lowest': '最低',
+    'elev.climbLabel': '累计爬升', 'elev.current': '当前',
+    // ── Header / Footer / 其他 ──
+    'hdr.live': '实时追踪中', 'hdr.idle': '计划中 · 尚未出发',
+    'brand.title': 'GHT 大喜马拉雅高线徒步追踪', 'brand.sub': '远征追踪面板',
+    'footer.copyright': '© 2026 GHT 高线追踪', 'footer.dataSrc': '数据来源: GPX',
+    'loading.parse': '正在解析 GPX 轨迹...'
   },
   en: {
     'nav.dashboard': 'Dashboard', 'nav.sections': 'Sections', 'nav.itinerary': 'Itinerary', 'nav.datamgmt': 'Data',
@@ -638,7 +655,24 @@ const I18N = {
     'pass.none': 'No pass data', 'pass.soon': 'Soon', 'pass.seg': 'seg', 'pass.all': 'All sections →',
     'up.btn': '📤 Upload GPS track', 'up.hint': 'Batch upload (.gpx/.kml)<br>PeakVisor / Strava / Garmin supported', 'up.date': 'Start date: ', 'up.reset': '🗑️ Reset data',
     'view.empty': 'No content',
-    'dm.title': 'Data Management', 'dm.pwdHint': 'Enter owner password to manage track data', 'dm.unlock': 'Unlock', 'dm.pwdErr': 'Wrong password', 'dm.connErr': 'Cannot reach server (backend down?)'
+    'dm.title': 'Data Management', 'dm.pwdHint': 'Enter owner password to manage track data', 'dm.unlock': 'Unlock', 'dm.pwdErr': 'Wrong password', 'dm.connErr': 'Cannot reach server (backend down?)',
+    // ── Overall Progress module ──
+    'prog.title': 'Overall Progress', 'prog.doneKm': 'Distance done', 'prog.totalGain': 'Total ascent', 'prog.goal': 'Goal ~',
+    'prog.curElev': 'Current elev', 'prog.nextPass': 'Next pass', 'prog.ringDay': 'Expedition Day {d}',
+    'prog.ringCap': 'Progress', 'prog.ringDone': 'done', 'prog.ringDayUnit': 'days',
+    // ── Today / Status / Passes ──
+    'today.title': "Today's Summary", 'st.title': 'Current Status', 'pass.title': 'Pass Checklist',
+    'st.start': 'Start', 'st.notStarted': 'Not started', 'st.unnamed': 'Unnamed',
+    // ── Map / Elevation ──
+    'map.title': 'Interactive Map', 'leg.actual': 'Actual track', 'leg.plan': 'Planned route · target',
+    'elev.title': 'Elevation Profile', 'elev.scopeFull': 'Full Route', 'elev.scopeRegion': 'Current Region',
+    'elev.scopePreset': 'Preset Track', 'elev.highest': 'Highest', 'elev.lowest': 'Lowest',
+    'elev.climbLabel': 'Total climb', 'elev.current': 'Current',
+    // ── Header / Footer / Misc ──
+    'hdr.live': 'Live Tracking', 'hdr.idle': 'Planned · Not started',
+    'brand.title': 'GHT Great Himalaya Trail', 'brand.sub': 'Expedition Tracker',
+    'footer.copyright': '© 2026 GHT Tracker', 'footer.dataSrc': 'Data source: GPX',
+    'loading.parse': 'Parsing GPX track...'
   }
 };
 function t(k, def) {
@@ -671,6 +705,27 @@ function applyLang() {
   const dph = document.getElementById('dmPwdHint'); if (dph) dph.textContent = t('dm.pwdHint');
   const du = document.getElementById('dmUnlock'); if (du) du.textContent = t('dm.unlock');
   const de = document.getElementById('dmPwdErr'); if (de) de.textContent = t('dm.pwdErr');
+  // ── 首页静态元素 i18n（index.html 中非 JS 渲染的硬编码中文）──
+  const brandH1 = document.querySelector('.brand-text h1'); if (brandH1) brandH1.textContent = t('brand.title');
+  const brandP = document.querySelector('.brand-text p'); if (brandP) brandP.textContent = 'Great Himalaya Trail · ' + t('brand.sub');
+  // 地图卡片标题
+  const mapTitle = document.querySelector('.map-card .card-h'); if (mapTitle) { const sps = mapTitle.querySelectorAll('span'); if (sps[1]) sps[1].textContent = t('map.title'); }
+  // 位置徽章标签
+  const posBadge = document.getElementById('currentPosBadge'); if (posBadge) { const txt = posBadge.childNodes; for (let i = 0; i < txt.length; i++) { if (txt[i].nodeType === 3 && /当前位置|Current location/.test(txt[i].nodeValue)) { txt[i].nodeValue = t('pos.prefix'); break; } } }
+  // 图例
+  const legendRows = document.querySelectorAll('.map-legend .lg-row');
+  if (legendRows.length >= 2) { legendRows[0].lastChild.textContent = t('leg.actual'); legendRows[1].lastChild.textContent = t('leg.plan'); }
+  // 海拔面板
+  const evTitle = document.querySelector('.ev-title'); if (evTitle) evTitle.textContent = t('elev.title');
+  const evScopeName = document.getElementById('elevScopeName'); if (evScopeName && !evScopeName.dataset.translated) { evScopeName.textContent = t('elev.scopePreset'); evScopeName.dataset.translated = '1'; }
+  const scopeBtns = document.querySelectorAll('#elevScope button');
+  if (scopeBtns.length >= 2) { scopeBtns[0].textContent = t('elev.scopeFull'); scopeBtns[1].textContent = t('elev.scopeRegion'); }
+  // 页脚
+  const footerCopy = document.querySelector('.statusbar span:first-child'); if (footerCopy && /GHT/.test(footerCopy.textContent)) footerCopy.textContent = t('footer.copyright');
+  const footerData = document.querySelector('.statusbar span[data-i18n="dataSrc"]') || Array.from(document.querySelectorAll('.statusbar span')).find(s => /数据来源|Data source/.test(s.textContent));
+  if (footerData) footerData.textContent = t('footer.dataSrc');
+  // 加载遮罩
+  const loadingTxt = document.querySelector('.loading-card div:last-child'); if (loadingTxt && /解析|Parsing/.test(loadingTxt.textContent)) loadingTxt.textContent = t('loading.parse');
 }
 const DELAY_ICON = { weather: '☁️', injured: '🩹', tired: '😴', other: '⚠️' };
 function delayLabel(reason) { return t('it.delay.' + (reason || 'other')); }
@@ -1032,7 +1087,7 @@ async function restoreSession() {
 function openDataModal(mode) {
   APP._uploadMode = mode || null;
   const dmTitle = document.getElementById('dmTitle');
-  if (dmTitle) dmTitle.textContent = '数据管理' + (mode === 'preset' ? ' · 预设轨迹' : mode === 'actual' ? ' · 实际轨迹' : '');
+  if (dmTitle) dmTitle.textContent = t('dm.title') + (mode === 'preset' ? ' · ' + t('elev.scopePreset') : mode === 'actual' ? ' · Actual' : '');
   const m = document.getElementById('dataModal');
   if (!m) return;
   m.classList.add('open');
@@ -1153,7 +1208,7 @@ function updateElevScopeUI() {
   const btns = document.querySelectorAll('#elevScope button');
   btns.forEach(b => b.classList.toggle('on', b.dataset.scope === ELEV_SCOPE));
   const nm = document.getElementById('elevScopeName');
-  if (nm) nm.textContent = (ELEV_SCOPE === 'region') ? '当前区域' : '预设轨迹';
+  if (nm) nm.textContent = (ELEV_SCOPE === 'region') ? t('elev.scopeRegion') : t('elev.scopePreset');
 }
 function drawElevationProfile() {
   const container = document.getElementById('elevationBody');
@@ -1221,7 +1276,7 @@ function drawElevationProfile() {
   if (ELEV_SCOPE === 'region' && scopeRegion) {
     // 区域模式：只标当前段名（居中）
     const color = scopeRegion.regionColor || '#888';
-    sectionLabels = `<text x="${(pad.left + pw / 2).toFixed(1)}" y="${h - 2}" text-anchor="middle" font-size="9" fill="${color}" opacity="0.95">${scopeRegion.regionZh || '当前区域'}</text>`;
+    sectionLabels = `<text x="${(pad.left + pw / 2).toFixed(1)}" y="${h - 2}" text-anchor="middle" font-size="9" fill="${color}" opacity="0.95">${scopeRegion.regionZh || t('elev.scopeRegion')}</text>`;
   } else if (APP.sectionRanges && APP.sectionRanges.length > 0) {
     APP.sectionRanges.forEach((range, idx) => {
       const midIdx = Math.floor((range.startIndex + range.endIndex) / 2);
@@ -1257,7 +1312,7 @@ function drawElevationProfile() {
       const cx = pad.left + (closestI / (points.length - 1)) * pw;
       const ce = APP.currentPosition.elev || 0;
       const cy = pad.top + ph - ((Math.max(minE, ce) - minE) / range) * ph;
-      const lbl = '当前 ' + Math.round(ce).toLocaleString() + 'm';
+      const lbl = t('elev.current') + ' ' + Math.round(ce).toLocaleString() + 'm';
       const lw = lbl.length * 6 + 16;
       const lx = Math.max(pad.left, Math.min(cx - lw / 2, pad.left + pw - lw));
       posLine = '<g class="elev-cur">' +
@@ -1295,9 +1350,9 @@ function drawElevationProfile() {
   const fmtM = v => Math.round(v).toLocaleString() + 'm';
   const statsEl = document.getElementById('elevStats');
   if (statsEl) statsEl.innerHTML =
-    '<span class="ev-stat"><i>最高</i>' + fmtM(dispMax) + '</span>' +
-    '<span class="ev-stat"><i>最低</i>' + fmtM(dispMin) + '</span>' +
-    '<span class="ev-stat"><i>累计爬升</i>' + fmtM(dispClimb) + '</span>' +
+    '<span class="ev-stat"><i>' + t('elev.highest') + '</i>' + fmtM(dispMax) + '</span>' +
+    '<span class="ev-stat"><i>' + t('elev.lowest') + '</i>' + fmtM(dispMin) + '</span>' +
+    '<span class="ev-stat"><i>' + t('elev.climbLabel') + '</i>' + fmtM(dispClimb) + '</span>' +
     (scopeNote ? '<span class="ev-note">' + scopeNote + '</span>' : '');
 
   // 路段色标行（移出图表）：passed / current / upcoming 三态着色
@@ -1306,7 +1361,7 @@ function drawElevationProfile() {
   const curRi = ranges.indexOf(curR);
   let placebar = '';
   if (ELEV_SCOPE === 'region' && scopeRegion) {
-    placebar = '<span class="pl-item current"><i class="pl-dot"></i>' + (scopeRegion.regionZh || '当前区域') + '</span>';
+    placebar = '<span class="pl-item current"><i class="pl-dot"></i>' + (scopeRegion.regionZh || t('elev.scopeRegion')) + '</span>';
   } else if (ranges.length) {
     ranges.forEach((r, i) => {
       const cls = (curRi >= 0 && i < curRi) ? 'passed' : (i === curRi ? 'current' : 'upcoming');
@@ -1534,7 +1589,7 @@ function updateHeaderLive() {
   if (hdrLive) {
     var isLive = !!(APP.lastGPSTime && (Date.now() - APP.lastGPSTime < 36e5));
     hdrLive.innerHTML = (isLive ? '<span class="dot"></span>' : '<span class="dot idle"></span>') +
-      (isLive ? '实时追踪中' : '计划中 · 尚未出发');
+      (isLive ? t('hdr.live') : t('hdr.idle'));
     hdrLive.className = isLive ? 'live' : 'live live-idle';
   }
 }
@@ -1552,14 +1607,14 @@ function progressModuleHTML() {
   const goalGain = gain ? Math.round(gain * 1.12) : 0;
   const kcell = (v, l, s, cls) => '<div class="tg-cell' + (cls ? ' ' + cls : '') + '"><div class="l">' + l + '</div><div class="v">' + (v == null ? '—' : v) + '</div>' + (s ? '<div class="s">' + s + '</div>' : '') + '</div>';
   const ringIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"/><path d="M12 12l4-2"/></svg>';
-  return '<div class="card-h"><span class="ch-ico">' + ringIcon + '</span><span>整体进度</span><span class="en">OVERALL PROGRESS</span></div>' +
+  return '<div class="card-h"><span class="ch-ico">' + ringIcon + '</span><span>' + t('prog.title') + '</span><span class="en">OVERALL PROGRESS</span></div>' +
     '<div class="card-b prog-mod">' +
       statusRingHTML() +
       '<div class="tg progress-kpi">' +
-        kcell(fmtNum(doneKm, 0) + 'km', '已完成里程', '总 ' + fmtNum(totalKm, 0) + 'km') +
-        kcell(gain ? fmtNum(gain) + 'm' : '—', '累计爬升', '目标约 ' + fmtNum(goalGain) + 'm', 'k-green') +
-        kcell(elev != null ? fmtNum(elev) + 'm' : '—', '当前海拔', 'Day ' + doneDays, 'k-indigo') +
-        kcell((np && np.elev != null) ? fmtNum(np.elev) + 'm' : '—', '下一垭口', (np && np.name ? esc(np.name) : '—'), 'k-pass') +
+        kcell(fmtNum(doneKm, 0) + 'km', t('prog.doneKm'), 'Total ' + fmtNum(totalKm, 0) + 'km') +
+        kcell(gain ? fmtNum(gain) + 'm' : '—', t('prog.totalGain'), t('prog.goal') + ' ' + fmtNum(goalGain) + 'm', 'k-green') +
+        kcell(elev != null ? fmtNum(elev) + 'm' : '—', t('prog.curElev'), 'Day ' + doneDays, 'k-indigo') +
+        kcell((np && np.elev != null) ? fmtNum(np.elev) + 'm' : '—', t('prog.nextPass'), (np && np.name ? esc(np.name) : '—'), 'k-pass') +
       '</div>' +
     '</div>';
 }
@@ -1573,15 +1628,15 @@ function statusRingHTML() {
   const RC = 2 * Math.PI * 88;            // r=88 → 周长 ≈ 552.92
   const ringOffset = RC * (1 - pct / 100);
   return '<div class="big-ring">' +
-    '<svg viewBox="0 0 200 200" width="160" height="160" role="img" aria-label="全程进度 ' + pct.toFixed(1) + '%">' +
+    '<svg viewBox="0 0 200 200" width="160" height="160" role="img" aria-label="' + t('prog.title') + ' ' + pct.toFixed(1) + '%">' +
       '<circle class="ring-track-lg" cx="100" cy="100" r="88" fill="none" stroke-width="15"/>' +
       '<circle class="ring-val-lg" cx="100" cy="100" r="88" fill="none" stroke-width="15" stroke-linecap="round" ' +
         'stroke-dasharray="' + RC.toFixed(2) + '" stroke-dashoffset="' + ringOffset.toFixed(2) + '" transform="rotate(-90 100 100)"/>' +
       '<text class="ring-day-num" x="100" y="94" text-anchor="middle">Day ' + doneDays + '<tspan class="ring-day-tot" dx="2"> / ' + totalDays + '</tspan></text>' +
-      '<text class="ring-day-sub" x="100" y="122" text-anchor="middle">远征第 ' + doneDays + ' 天</text>' +
+      '<text class="ring-day-sub" x="100" y="122" text-anchor="middle">' + t('prog.ringDay').replace('{d}', doneDays) + '</text>' +
     '</svg>' +
   '</div>' +
-  '<div class="ring-cap-below">全程进度 <b>' + pct.toFixed(1) + '%</b> · 已完成 ' + doneDays + ' / ' + totalDays + ' 日</div>';
+  '<div class="ring-cap-below">' + t('prog.ringCap') + ' <b>' + pct.toFixed(1) + '%</b> · ' + t('prog.ringDone') + ' ' + doneDays + ' / ' + totalDays + ' ' + t('prog.ringDayUnit') + '</div>';
 }
 
 // 与子页面(sections.html 等)同款 HTML 转义，防自由文本注入 innerHTML（自 XSS 加固）
@@ -1620,9 +1675,9 @@ function currentStatusHTML() {
     campVal = lbl || (sec.nameEn || sec.name || '—');
     campSub = sec.name || '';
   } else {
-    const startCamp = (APP.itinerary && APP.itinerary[0] && APP.itinerary[0].from) || APP.startPlaceName || '起点';
+    const startCamp = (APP.itinerary && APP.itinerary[0] && APP.itinerary[0].from) || APP.startPlaceName || t('st.start');
     campVal = '🚩 ' + esc(startCamp);
-    campSub = (sec.name || '起点') + ' · 未出发';
+    campSub = (sec.name || t('st.start')) + ' · ' + t('st.notStarted');
   }
 
   const ic = {
@@ -1633,12 +1688,12 @@ function currentStatusHTML() {
     clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'
   };
   const row = (ico, k, v, sub) => '<div class="st-row"><span class="st-ico">' + ico + '</span><span class="st-k">' + k + '</span><span class="st-v">' + v + (sub ? '<small>' + sub + '</small>' : '') + '</span></div>';
-  return '<div class="card-h"><span class="ch-ico">' + ic.camp + '</span><span>当前状态</span><span class="en">CURRENT STATUS</span></div>' +
+  return '<div class="card-h"><span class="ch-ico">' + ic.camp + '</span><span>' + t('st.title') + '</span><span class="en">CURRENT STATUS</span></div>' +
     '<div class="card-b">' +
     row(ic.camp, t('st.camp'), campVal, campSub) +
     row(ic.area, t('st.area'), prov, '') +
     row(ic.elev, t('st.elev'), elev != null ? fmtNum(elev) + 'm' : '—', '') +
-    row(ic.pass, t('st.pass'), np ? esc(np.name || np.desc || '未命名') : '—', np && np.elev != null ? fmtNum(np.elev) + 'm' : '') +
+    row(ic.pass, t('st.pass'), np ? esc(np.name || np.desc || t('st.unnamed')) : '—', np && np.elev != null ? fmtNum(np.elev) + 'm' : '') +
     row(ic.clock, t('st.eta'), eta, '') +
     '</div>';
 }
@@ -1648,7 +1703,7 @@ function todaySummaryHTML() {
   const last = [...(APP.actualTracks || [])].reverse().find(t => t.stats);
   const s = last ? last.stats : null;
   const cell = (v, l, cls) => '<div class="tg-cell"><div class="l">' + l + '</div><div class="v' + (cls ? ' ' + cls : '') + '">' + (v == null ? '—' : v) + '</div></div>';
-  return '<div class="card-h"><span>今日摘要</span><span class="en">TODAY\'S SUMMARY</span></div>' +
+  return '<div class="card-h"><span>' + t('today.title') + '</span><span class="en">TODAY\'S SUMMARY</span></div>' +
     '<div class="card-b"><div class="tg">' +
     cell(s ? fmtNum(s.distance, 1) + 'km' : '—', t('today.dist')) +
     cell(s ? '+' + fmtNum(s.elevGain) + 'm' : '—', t('today.gain'), 'up') +
@@ -1714,14 +1769,14 @@ function passesHTML() {
       const mark = p.done ? '<span class="pass-check">✓</span>' : '<span class="pass-dot"></span>';
       const elev = p.elev != null ? fmtNum(p.elev) + 'm' : '';
       return '<div class="' + cls + '">' + mark +
-        '<span class="pass-name">' + esc(p.nm || '未命名') + '</span>' +
+        '<span class="pass-name">' + esc(p.nm || t('st.unnamed')) + '</span>' +
         (elev ? '<span class="pass-elev">' + elev + '</span>' : '') + '</div>';
     }).join('');
   }
   const mtn = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;vertical-align:-2px"><path d="M3 20l6-9 4 5 3-4 5 8z"/></svg>';
   const summary = total ? '<div class="pass-summary"><span class="pass-summary-num">' + mtn + ' ' + done + ' / ' + total + '</span>' +
     '<div class="pass-summary-bar"><i style="width:' + (total ? Math.round(done / total * 100) : 0) + '%"></i></div></div>' : '';
-  return '<div class="card-h"><span class="ch-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20l6-9 4 5 3-4 5 8z"/></svg></span><span>垭口清单</span><span class="en">PASS CHECKLIST</span></div>' +
+  return '<div class="card-h"><span class="ch-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20l6-9 4 5 3-4 5 8z"/></svg></span><span>' + t('pass.title') + '</span><span class="en">PASS CHECKLIST</span></div>' +
     summary +
     '<div class="card-b pass-list">' + rows + (total ? '<a class="more-link" href="sections.html" target="_blank" rel="noopener">' + t('pass.all') + '</a>' : '') + '</div>';
 }
@@ -1743,10 +1798,10 @@ function updateLiveStatus() {
   const hasLive = APP.currentPosition && APP.actualTracks && APP.actualTracks.length;
   if (hasLive) {
     el.className = 'live-dot';
-    el.innerHTML = '<span class="ld-dot"></span> Live Tracking Active · 实时追踪中';
+    el.innerHTML = '<span class="ld-dot"></span> Live Tracking Active · ' + t('hdr.live');
   } else {
     el.className = 'live-dot offline';
-    el.innerHTML = '<span class="ld-dot offline"></span> 计划中 · 尚未出发';
+    el.innerHTML = '<span class="ld-dot offline"></span> ' + t('hdr.idle');
   }
 }
 
