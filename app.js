@@ -177,7 +177,7 @@ function nearestWaypointLabel(waypoints, pt, maxDist) {
 function friendlyPointLabel(pt) {
   if (!pt) return '—';
   const sec = sectionForPoint(pt);
-  if (sec && sec.regionZh) return sec.regionZh + '营地';
+  if (sec && sec.regionZh) return (currentLang === 'en' ? (sec.regionEn || sec.regionZh) : sec.regionZh) + (currentLang === 'en' ? ' Camp' : '营地');
   return fmtCoordLabel(pt);                 // 仅极端无预设场景才退回裸坐标
 }
 
@@ -1284,14 +1284,14 @@ function drawElevationProfile() {
   if (ELEV_SCOPE === 'region' && scopeRegion) {
     // 区域模式：只标当前段名（居中）
     const color = scopeRegion.regionColor || '#888';
-    sectionLabels = `<text x="${(pad.left + pw / 2).toFixed(1)}" y="${h - 2}" text-anchor="middle" font-size="9" fill="${color}" opacity="0.95">${scopeRegion.regionZh || t('elev.scopeRegion')}</text>`;
+    sectionLabels = `<text x="${(pad.left + pw / 2).toFixed(1)}" y="${h - 2}" text-anchor="middle" font-size="9" fill="${color}" opacity="0.95">${currentLang === 'en' ? (scopeRegion.regionEn || scopeRegion.regionZh) : (scopeRegion.regionZh || t('elev.scopeRegion'))}</text>`;
   } else if (APP.sectionRanges && APP.sectionRanges.length > 0) {
     APP.sectionRanges.forEach((range, idx) => {
       const midIdx = Math.floor((range.startIndex + range.endIndex) / 2);
       const frac = midIdx / (points.length - 1);
       const x = pad.left + frac * pw;
       const color = range.regionColor || sectionColors[idx] || '#888';
-      sectionLabels += `<text x="${x.toFixed(1)}" y="${h - 2}" text-anchor="middle" font-size="8" fill="${color}" opacity="0.85">${range.regionZh || (idx+1)}</text>`;
+      sectionLabels += `<text x="${x.toFixed(1)}" y="${h - 2}" text-anchor="middle" font-size="8" fill="${color}" opacity="0.85">${currentLang === 'en' ? (range.regionEn || range.regionZh || (idx+1)) : (range.regionZh || (idx+1))}</text>`;
     });
   }
 
@@ -1368,11 +1368,11 @@ function drawElevationProfile() {
   const curRi = ranges.indexOf(curR);
   let placebar = '';
   if (ELEV_SCOPE === 'region' && scopeRegion) {
-    placebar = '<span class="pl-item current"><i class="pl-dot"></i>' + (scopeRegion.regionZh || t('elev.scopeRegion')) + '</span>';
+    placebar = '<span class="pl-item current"><i class="pl-dot"></i>' + (currentLang === 'en' ? (scopeRegion.regionEn || scopeRegion.regionZh) : (scopeRegion.regionZh || t('elev.scopeRegion'))) + '</span>';
   } else if (ranges.length) {
     ranges.forEach((r, i) => {
       const cls = (curRi >= 0 && i < curRi) ? 'passed' : (i === curRi ? 'current' : 'upcoming');
-      placebar += '<span class="pl-item ' + cls + '"><i class="pl-dot"></i>' + (r.regionZh || (i + 1)) + '</span>';
+      placebar += '<span class="pl-item ' + cls + '"><i class="pl-dot"></i>' + (currentLang === 'en' ? (r.regionEn || r.regionZh || (i + 1)) : (r.regionZh || (i + 1))) + '</span>';
     });
   }
   const pbEl = document.getElementById('elevPlacebar');
@@ -1681,11 +1681,11 @@ function currentStatusHTML() {
   if (hasPos) {
     const lbl = nearestWaypointLabel(APP.allWpts, pos, 6000);
     campVal = lbl || (sec.nameEn || sec.name || '—');
-    campSub = sec.name || '';
+    campSub = (currentLang === 'en' ? (sec.nameEn || sec.name) : sec.name) || '';
   } else {
     const startCamp = (APP.itinerary && APP.itinerary[0] && APP.itinerary[0].from) || APP.startPlaceName || t('st.start');
     campVal = '🚩 ' + esc(startCamp);
-    campSub = (sec.name || t('st.start')) + ' · ' + t('st.notStarted');
+    campSub = ((currentLang === 'en' ? (sec.nameEn || sec.name) : sec.name) || t('st.start')) + ' · ' + t('st.notStarted');
   }
 
   const ic = {
