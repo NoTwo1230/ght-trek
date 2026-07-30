@@ -1235,7 +1235,7 @@ function drawElevationProfile() {
 
   const w = container.clientWidth || 800;
   const h = container.clientHeight || 80;
-  const pad = { top: 14, right: 10, bottom: 18, left: 40 };
+  const pad = { top: 40, right: 10, bottom: 18, left: 40 };
   const pw = w - pad.left - pad.right;
   const ph = h - pad.top - pad.bottom;
 
