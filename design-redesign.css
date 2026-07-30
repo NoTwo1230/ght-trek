@@ -395,7 +395,7 @@ body, .app, .topnav, .statusbar, .dash-grid, .col-left, .col-right, .col-center,
 [data-theme="light"] .tg-cell .v.up { color: var(--green); }
 [data-theme="light"] .tg-cell .v.down { color: #F76B1C; }
 /* 垭口清单 */
-[data-theme="light"] .pass-summary { padding: 8px 0 4px; }
+[data-theme="light"] .pass-summary { padding: 8px 18px 4px; }
 [data-theme="light"] .pass-summary-num { color: var(--text); font-weight: 700; }
 [data-theme="light"] .pass-summary-bar > i { background: linear-gradient(90deg, var(--accent), var(--green)); }
 [data-theme="light"] .pass-row { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 11px 14px; border-radius: var(--radius-sm); border-left: 3px solid transparent; }

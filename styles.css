@@ -1177,7 +1177,7 @@
   .pass-days { font-size: 10px; padding: 1px 6px; border-radius: 10px; background: rgba(63,185,80,0.15); color: var(--green); white-space: nowrap; }
   .pass-days.far { background: rgba(139,148,158,0.15); color: var(--text-dim); }
   .more-link { display: block; text-align: center; font-size: 11px; color: var(--accent); padding: 8px 0 2px; cursor: pointer; }
-  .pass-summary { display: flex; align-items: center; gap: 10px; padding: 2px 0 10px; }
+  .pass-summary { display: flex; align-items: center; gap: 10px; padding: 2px 18px 10px; }
   .pass-summary-num { font-size: 12px; font-weight: 700; color: var(--text); white-space: nowrap; }
   .pass-summary-bar { flex: 1; height: 5px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; }
   .pass-summary-bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--green), var(--accent)); transition: width .4s ease; }
