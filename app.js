@@ -681,6 +681,12 @@ function t(k, def) {
   if (I18N.zh[k] != null) return I18N.zh[k];
   return def != null ? def : k;
 }
+// 卡片标题：中文模式显示「中文+EN副标题」，英文模式只显示英文（去掉重复）
+function cardTitle(i18nKey, enText, extraHtml) {
+  const en = enText || t(i18nKey);
+  if (currentLang === 'en') return '<span>' + en + '</span>' + (extraHtml || '');
+  return '<span>' + t(i18nKey) + '</span><span class="en">' + en + '</span>' + (extraHtml || '');
+}
 function getProvEN(pid) {
   const m = { koshi: 'Koshi', bagmati: 'Bagmati', gandaki: 'Gandaki', lumbini: 'Lumbini', karnali: 'Karnali', sudurpashchim: 'Sudurpashchim' };
   return m[pid] || pid || '—';
@@ -1170,6 +1176,8 @@ const VIEW_TITLES = {
   itinerary: ['📅 行程安排', 'ITINERARY'],
   about: ['ℹ️ 关于本程', 'ABOUT']
 };
+// 根据 currentLang 返回正确的标题 [中文, 英文]
+function vt(key) { const v = VIEW_TITLES[key]; return v ? (currentLang === 'en' ? [v[1], v[1]] : v) : ['视图', 'VIEW']; }
 
 function showView(view) {
   APP.activeView = view;
@@ -1180,7 +1188,7 @@ function showView(view) {
   let html = '';
   if (view === 'sections') html = renderSections();
   else if (view === 'itinerary') html = renderItinerary();
-  const title = VIEW_TITLES[view] || ['视图', 'VIEW'];
+  const title = vt(view);
   card.innerHTML = '<div class="card-h"><span>' + title[0] + '</span><span class="en">' + title[1] + '</span></div><div class="card-b">' +
     (html || '<div style="color:var(--text-dim);font-size:11px;padding:8px;">' + t('view.empty') + '</div>') + '</div>';
 }
@@ -1453,7 +1461,7 @@ function updateProgressDOM() {
   if (detail && APP.sectionRanges) {
     const completedCount = APP.sectionRanges.filter(r => r.status === 'completed').length;
     const inProgressCount = APP.sectionRanges.filter(r => r.status === 'in-progress').length;
-    detail.textContent = completedCount + '✅ ' + (inProgressCount > 0 ? '+' + inProgressCount + '🔵 ' : '') + '/ ' + APP.sectionRanges.length + ' 段';
+    detail.textContent = completedCount + '✅ ' + (inProgressCount > 0 ? '+' + inProgressCount + '🔵 ' : '') + '/ ' + APP.sectionRanges.length + ' ' + t('pass.seg');
   }
   renderDashboard();
 }
@@ -1608,7 +1616,7 @@ function progressModuleHTML() {
   const goalGain = gain ? Math.round(gain * 1.12) : 0;
   const kcell = (v, l, s, cls) => '<div class="tg-cell' + (cls ? ' ' + cls : '') + '"><div class="l">' + l + '</div><div class="v">' + (v == null ? '—' : v) + '</div>' + (s ? '<div class="s">' + s + '</div>' : '') + '</div>';
   const ringIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"/><path d="M12 12l4-2"/></svg>';
-  return '<div class="card-h"><span class="ch-ico">' + ringIcon + '</span><span>' + t('prog.title') + '</span><span class="en">OVERALL PROGRESS</span><span class="ch-cap">' + t('prog.ringCap') + ' <b>' + pct.toFixed(1) + '%</b> · ' + t('prog.ringDone') + ' ' + doneDays + ' / ' + totalDays + ' ' + t('prog.ringDayUnit') + '</span></div>' +
+  return '<div class="card-h"><span class="ch-ico">' + ringIcon + '</span>' + cardTitle('prog.title', 'OVERALL PROGRESS', '<span class="ch-cap">' + t('prog.ringCap') + ' <b>' + pct.toFixed(1) + '%</b> · ' + t('prog.ringDone') + ' ' + doneDays + ' / ' + totalDays + ' ' + t('prog.ringDayUnit') + '</span>') + '</div>' +
     '<div class="card-b prog-mod">' +
       statusRingHTML() +
       '<div class="tg progress-kpi">' +
@@ -1688,7 +1696,7 @@ function currentStatusHTML() {
     clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'
   };
   const row = (ico, k, v, sub) => '<div class="st-row"><span class="st-ico">' + ico + '</span><span class="st-k">' + k + '</span><span class="st-v">' + v + (sub ? '<small>' + sub + '</small>' : '') + '</span></div>';
-  return '<div class="card-h"><span class="ch-ico">' + ic.camp + '</span><span>' + t('st.title') + '</span><span class="en">CURRENT STATUS</span></div>' +
+  return '<div class="card-h"><span class="ch-ico">' + ic.camp + '</span>' + cardTitle('st.title', 'CURRENT STATUS') + '</div>' +
     '<div class="card-b">' +
     row(ic.camp, t('st.camp'), campVal, campSub) +
     row(ic.area, t('st.area'), prov, '') +
@@ -1707,7 +1715,7 @@ function todaySummaryHTML() {
   let dayBadge = '';
   if (s && last.dayNum) { dayBadge = '<b>Day ' + last.dayNum + '</b>' + (last.date ? ' · ' + last.date : ''); }
   else if (!s) { dayBadge = ''; }
-  return '<div class="card-h"><span>' + t('today.title') + '</span><span class="en">TODAY\'S SUMMARY</span>' + (dayBadge ? '<span class="ch-cap">' + dayBadge + '</span>' : '') + '</div>' +
+  return '<div class="card-h">' + cardTitle('today.title', "TODAY'S SUMMARY", dayBadge ? '<span class="ch-cap">' + dayBadge + '</span>' : '') + '</div>' +
     '<div class="card-b"><div class="tg">' +
     cell(s ? fmtNum(s.distance, 1) + 'km' : '—', t('today.dist')) +
     cell(s ? '+' + fmtNum(s.elevGain) + 'm' : '—', t('today.gain'), 'up') +
@@ -1776,7 +1784,7 @@ function passesHTML() {
   const mtn = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;vertical-align:-2px"><path d="M3 20l6-9 4 5 3-4 5 8z"/></svg>';
   const summary = total ? '<div class="pass-summary"><span class="pass-summary-num">' + mtn + ' ' + done + ' / ' + total + '</span>' +
     '<div class="pass-summary-bar"><i style="width:' + (total ? Math.round(done / total * 100) : 0) + '%"></i></div></div>' : '';
-  return '<div class="card-h"><span class="ch-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20l6-9 4 5 3-4 5 8z"/></svg></span><span>' + t('pass.title') + '</span><span class="en">PASS CHECKLIST</span></div>' +
+  return '<div class="card-h"><span class="ch-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20l6-9 4 5 3-4 5 8z"/></svg></span>' + cardTitle('pass.title', 'PASS CHECKLIST') + '</div>' +
     summary +
     '<div class="card-b pass-list">' + rows + (total ? '<a class="more-link" href="sections.html" target="_blank" rel="noopener">' + t('pass.all') + '</a>' : '') + '</div>';
 }

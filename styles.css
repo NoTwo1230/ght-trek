@@ -1117,7 +1117,8 @@
   }
   /* English subtitle: hidden on the Chinese page; shown as the title only in EN mode */
   .card-h .en { display: none; }
-  html[lang="en"] .card-h > span:first-child { display: none; }
+  /* Hide Chinese title spans in EN mode; preserve icons (.ch-ico), EN span (.en), and ch-cap badges */
+  html[lang="en"] .card-h > span:not(.en):not(.ch-cap):not(.ch-ico) { display: none; }
   html[lang="en"] .card-h .en { display: inline; font-size: 11px; color: var(--text); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
   .card-b { padding: 12px; }
 
