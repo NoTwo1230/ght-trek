@@ -80,12 +80,20 @@
       </section>
       <div class="elevation-panel" id="elevationPanel">
         <div class="elevation-header">
-          <span><span class="ev-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M3 17l5-6 4 4 3-5 6 7"/><path d="M3 21h18"/></svg></span> 海拔剖面 · <span id="elevScopeName">预设轨迹</span> · <span id="elevLabel">--</span></span>
-          <span class="elev-scope" id="elevScope">
-            <button type="button" data-scope="full" class="on" onclick="setElevScope('full')">全程</button>
-            <button type="button" data-scope="region" onclick="setElevScope('region')">当前区域</button>
-          </span>
+          <div class="ev-h-left">
+            <span class="ev-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M3 17l5-6 4 4 3-5 6 7"/><path d="M3 21h18"/></svg></span>
+            <span class="ev-title">海拔剖面</span>
+            <span class="ev-sub" id="elevScopeName">预设轨迹</span>
+          </div>
+          <div class="ev-h-right">
+            <div class="ev-stats" id="elevStats"></div>
+            <span class="elev-scope" id="elevScope">
+              <button type="button" data-scope="full" class="on" onclick="setElevScope('full')">全程</button>
+              <button type="button" data-scope="region" onclick="setElevScope('region')">当前区域</button>
+            </span>
+          </div>
         </div>
+        <div class="elevation-placebar" id="elevPlacebar"></div>
         <div class="elevation-body" id="elevationBody"></div>
       </div>
     </main>

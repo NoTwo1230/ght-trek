@@ -1245,7 +1245,7 @@ function drawElevationProfile() {
     }
   }
 
-  // Current position line
+  // Current position line (脉冲点 + 虚线 + 浮动「当前 Xm」标签)
   let posLine = '';
   if (APP.currentPosition && APP.presetTrack) {
     let closestI = -1, closestD = Infinity;
@@ -1257,8 +1257,18 @@ function drawElevationProfile() {
       const cx = pad.left + (closestI / (points.length - 1)) * pw;
       const ce = APP.currentPosition.elev || 0;
       const cy = pad.top + ph - ((Math.max(minE, ce) - minE) / range) * ph;
-      posLine = `<line x1="${cx.toFixed(1)}" y1="${pad.top}" x2="${cx.toFixed(1)}" y2="${pad.top+ph}" stroke="var(--accent)" stroke-width="2" stroke-dasharray="3,3" opacity="0.8"/>
-        <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="4" fill="#fff" stroke="var(--accent)" stroke-width="2"/>`;
+      const lbl = '当前 ' + Math.round(ce).toLocaleString() + 'm';
+      const lw = lbl.length * 6 + 16;
+      const lx = Math.max(pad.left, Math.min(cx - lw / 2, pad.left + pw - lw));
+      posLine = '<g class="elev-cur">' +
+        '<line x1="' + cx.toFixed(1) + '" y1="' + pad.top + '" x2="' + cx.toFixed(1) + '" y2="' + (pad.top + ph) + '" stroke="var(--accent)" stroke-width="2" stroke-dasharray="3,3" opacity="0.85"/>' +
+        '<circle class="elev-pulse" cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="5" fill="var(--accent)"/>' +
+        '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="4" fill="#fff" stroke="var(--accent)" stroke-width="2"/>' +
+        '<g transform="translate(' + lx.toFixed(1) + ',' + pad.top + ')">' +
+          '<rect x="0" y="-17" width="' + lw.toFixed(0) + '" height="16" rx="8" fill="var(--accent)"/>' +
+          '<text x="' + (lw / 2).toFixed(0) + '" y="-5" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">' + lbl + '</text>' +
+        '</g>' +
+      '</g>';
     }
   }
 
@@ -1276,34 +1286,45 @@ function drawElevationProfile() {
     gridLines += `<text x="${pad.left - 4}" y="${ly.toFixed(1)}" text-anchor="end" font-size="8" fill="var(--text-dim)">${e}</text>`;
   }
 
-  // 头部统计：全程模式取预设轨迹的 authoritative stats（上传时全量点统计，
-  // 不受刷新后抽稀到 4000 点影响），保证与首页「征途总进度」卡一致；
-  // 区域模式改用当前段切片自身算出的 min/max/climb（更贴合「这段要爬多少」）。
+  // 头部统计：全程模式取预设轨迹的 authoritative stats，区域模式用切片自身 min/max/climb
   const st = (APP.presetTrack && APP.presetTrack.stats) || {};
   const useRegion = (ELEV_SCOPE === 'region' && scopeRegion);
   const dispMax = useRegion ? trueMax : (st.maxElev != null ? st.maxElev : trueMax);
   const dispMin = useRegion ? trueMin : (st.minElev != null ? st.minElev : trueMin);
   const dispClimb = useRegion ? climb : (st.elevGain != null ? st.elevGain : climb);
   const fmtM = v => Math.round(v).toLocaleString() + 'm';
-  document.getElementById('elevLabel').textContent =
-    '最高 ' + fmtM(dispMax) + ' · 最低 ' + fmtM(dispMin) + ' · 累计爬升 ' + fmtM(dispClimb)
-    + (scopeNote ? ' · ' + scopeNote : '');
+  const statsEl = document.getElementById('elevStats');
+  if (statsEl) statsEl.innerHTML =
+    '<span class="ev-stat"><i>最高</i>' + fmtM(dispMax) + '</span>' +
+    '<span class="ev-stat"><i>最低</i>' + fmtM(dispMin) + '</span>' +
+    '<span class="ev-stat"><i>累计爬升</i>' + fmtM(dispClimb) + '</span>' +
+    (scopeNote ? '<span class="ev-note">' + scopeNote + '</span>' : '');
 
-  container.innerHTML = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="100%" preserveAspectRatio="none">
-    <rect width="${w}" height="${h}" fill="transparent"/>
-    ${gridLines}
-    ${sectionDividers}
-    <path d="${pathD}" fill="none" stroke="var(--accent)" stroke-width="1.5" opacity="0.6"/>
-    <path d="${pathD}" fill="url(#elevGrad)" stroke="none" opacity="0.15"/>
-    ${posLine}
-    ${sectionLabels}
-    <defs>
-      <linearGradient id="elevGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.3"/>
-        <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
-      </linearGradient>
-    </defs>
-  </svg>`;
+  // 路段色标行（移出图表）：passed / current / upcoming 三态着色
+  const ranges = APP.sectionRanges || [];
+  const curR = getCurrentSectionRange();
+  const curRi = ranges.indexOf(curR);
+  let placebar = '';
+  if (ELEV_SCOPE === 'region' && scopeRegion) {
+    placebar = '<span class="pl-item current"><i class="pl-dot"></i>' + (scopeRegion.regionZh || '当前区域') + '</span>';
+  } else if (ranges.length) {
+    ranges.forEach((r, i) => {
+      const cls = (curRi >= 0 && i < curRi) ? 'passed' : (i === curRi ? 'current' : 'upcoming');
+      placebar += '<span class="pl-item ' + cls + '"><i class="pl-dot"></i>' + (r.regionZh || (i + 1)) + '</span>';
+    });
+  }
+  const pbEl = document.getElementById('elevPlacebar');
+  if (pbEl) pbEl.innerHTML = placebar;
+
+  container.innerHTML = '<div class="elev-chart"><svg viewBox="0 0 ' + w + ' ' + h + '" width="100%" height="100%" preserveAspectRatio="none">' +
+    '<rect width="' + w + '" height="' + h + '" fill="transparent"/>' +
+    gridLines +
+    sectionDividers +
+    '<path d="' + pathD + '" fill="none" stroke="var(--accent)" stroke-width="1.5" opacity="0.6"/>' +
+    '<path d="' + pathD + '" fill="url(#elevGrad)" stroke="none" opacity="0.15"/>' +
+    posLine +
+    '<defs><linearGradient id="elevGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--accent)" stop-opacity="0.3"/><stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>' +
+    '</svg></div>';
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1528,16 +1549,17 @@ function progressModuleHTML() {
     ? APP.presetTrack.stats.elevGain : 0;
   const elev = getDisplayElev();
   const np = getNextPass();
-  const kcell = (v, l) => '<div class="tg-cell"><div class="l">' + l + '</div><div class="v">' + (v == null ? '—' : v) + '</div></div>';
+  const goalGain = gain ? Math.round(gain * 1.12) : 0;
+  const kcell = (v, l, s, cls) => '<div class="tg-cell' + (cls ? ' ' + cls : '') + '"><div class="l">' + l + '</div><div class="v">' + (v == null ? '—' : v) + '</div>' + (s ? '<div class="s">' + s + '</div>' : '') + '</div>';
   const ringIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"/><path d="M12 12l4-2"/></svg>';
   return '<div class="card-h"><span class="ch-ico">' + ringIcon + '</span><span>整体进度</span><span class="en">OVERALL PROGRESS</span></div>' +
-    '<div class="card-b ring-card-b">' +
+    '<div class="card-b prog-mod">' +
       statusRingHTML() +
       '<div class="tg progress-kpi">' +
-        kcell(fmtNum(doneKm, 0) + 'km', '已完成里程') +
-        kcell(gain ? fmtNum(gain) + 'm' : '—', '累计爬升') +
-        kcell(elev != null ? fmtNum(elev) + 'm' : '—', '当前海拔') +
-        kcell((np && np.elev != null) ? fmtNum(np.elev) + 'm' : '—', '下一垭口') +
+        kcell(fmtNum(doneKm, 0) + 'km', '已完成里程', '总 ' + fmtNum(totalKm, 0) + 'km') +
+        kcell(gain ? fmtNum(gain) + 'm' : '—', '累计爬升', '目标约 ' + fmtNum(goalGain) + 'm', 'k-green') +
+        kcell(elev != null ? fmtNum(elev) + 'm' : '—', '当前海拔', 'Day ' + doneDays, 'k-indigo') +
+        kcell((np && np.elev != null) ? fmtNum(np.elev) + 'm' : '—', '下一垭口', (np && np.name ? esc(np.name) : '—'), 'k-pass') +
       '</div>' +
     '</div>';
 }
@@ -1551,7 +1573,7 @@ function statusRingHTML() {
   const RC = 2 * Math.PI * 88;            // r=88 → 周长 ≈ 552.92
   const ringOffset = RC * (1 - pct / 100);
   return '<div class="big-ring">' +
-    '<svg viewBox="0 0 200 200" width="210" height="210" role="img" aria-label="全程进度 ' + pct.toFixed(1) + '%">' +
+    '<svg viewBox="0 0 200 200" width="160" height="160" role="img" aria-label="全程进度 ' + pct.toFixed(1) + '%">' +
       '<circle class="ring-track-lg" cx="100" cy="100" r="88" fill="none" stroke-width="15"/>' +
       '<circle class="ring-val-lg" cx="100" cy="100" r="88" fill="none" stroke-width="15" stroke-linecap="round" ' +
         'stroke-dasharray="' + RC.toFixed(2) + '" stroke-dashoffset="' + ringOffset.toFixed(2) + '" transform="rotate(-90 100 100)"/>' +
