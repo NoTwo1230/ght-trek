@@ -276,6 +276,16 @@ body {
   grid-row: unset !important;
 }
 .dash-grid > .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+/* ── 地图 + 垭口：并排小区域（互不挤占，垭口内部可滚动）── */
+.dash-duo { display: grid; grid-template-columns: 1.7fr 1fr; gap: 20px; align-items: stretch; }
+.dash-duo > .card { height: 300px; display: flex; flex-direction: column; overflow: hidden; }
+.dash-duo .map-card .map-wrap { flex: 1 1 auto; height: auto; min-height: 0; border: 1px solid var(--border); border-radius: var(--radius); }
+.dash-duo #cardPasses { overflow-y: auto; }
+@media (max-width: 880px) {
+  .dash-duo { grid-template-columns: 1fr; }
+  .dash-duo > .card { height: 260px; }
+}
 .col-left, .col-right { overflow: visible; border: none; padding: 0; }
 .col-right {
   display: block !important;

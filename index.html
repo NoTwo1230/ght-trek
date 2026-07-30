@@ -54,8 +54,8 @@
       <section class="card" id="cardToday"></section>
     </div>
 
-    <!-- CENTER -->
-    <main class="col-center">
+    <!-- 地图 + 垭口：并排小区域 -->
+    <div class="dash-duo">
       <section class="card map-card">
       <div class="card-h"><span class="ch-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3 3 5v16l6-2 6 2 6-2V3l-6 2-6-2z"/><path d="M9 3v16M15 5v16"/></svg></span><span>交互地图</span><span class="en">MAP</span></div>
       <div class="map-wrap">
@@ -78,6 +78,11 @@
         <div class="map-overlay region-info" id="regionInfo" hidden></div>
       </div>
       </section>
+      <section class="card" id="cardPasses"></section>
+    </div>
+
+    <!-- 海拔剖面（独立全宽行） -->
+    <main class="col-center">
       <div class="elevation-panel" id="elevationPanel">
         <div class="elevation-header">
           <div class="ev-h-left">
@@ -97,11 +102,6 @@
         <div class="elevation-body" id="elevationBody"></div>
       </div>
     </main>
-
-    <!-- RIGHT COLUMN -->
-    <aside class="col-right">
-      <section class="card" id="cardPasses"></section>
-    </aside>
 
   </div>
 
