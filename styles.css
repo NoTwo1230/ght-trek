@@ -12,11 +12,11 @@
   :focus:not(:focus-visible) { outline: none; }
 
   :root {
-    /* ── Stripe 浅色调色板（全站唯一主题） ── */
-    --bg: #FFFFFF;
-    --panel: #F6F9FC;
-    --panel-alt: #EBF0F7;
-    --panel-bg: rgba(246, 249, 252, 0.95);
+    /* ── Stripe 浅色调色板（全站唯一主题）：灰底白卡，制造层次、去"全白" ── */
+    --bg: #F6F9FC;            /* 页面底：浅灰（原纯白） */
+    --panel: #FFFFFF;         /* 卡片/浮层：纯白（原浅灰），在灰底上立起 */
+    --panel-alt: #EEF2F7;     /* 嵌套内嵌块：略深灰 */
+    --panel-bg: rgba(255, 255, 255, 0.92);  /* 地图/浮层：白透 */
     --panel-2: rgba(10, 37, 64, 0.05);
     --bg-soft: #EEF2F7;
     --border: #E3E8EE;
@@ -28,6 +28,7 @@
     --accent: #635BFF;
     --accent-bg: #EEEBFF;
     --accent-soft: #ECE9FF;
+    --accent-grad: linear-gradient(135deg, #635BFF 0%, #2DD4BF 100%);  /* 品牌渐变点缀 */
     --accent2: #F5A623;
     --route-done: #EF9F27;
     --route-plan: #9AA4B2;
@@ -41,8 +42,8 @@
     --current-province: rgba(99, 91, 255, 0.12);
     --radius: 12px;
     --radius-sm: 8px;
-    --shadow-raised: 0 1px 2px rgba(10, 37, 64, .06), 0 1px 1px rgba(10, 37, 64, .04);
-    --shadow-float: 0 4px 16px rgba(10, 37, 64, .08);
+    --shadow-raised: 0 1px 3px rgba(10, 37, 64, .08), 0 1px 2px rgba(10, 37, 64, .04);
+    --shadow-float: 0 8px 24px rgba(10, 37, 64, .10);
     --grid-line: transparent;
   }
 
