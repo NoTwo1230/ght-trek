@@ -1704,7 +1704,11 @@ function todaySummaryHTML() {
   const last = [...(APP.actualTracks || [])].reverse().find(t => t.stats);
   const s = last ? last.stats : null;
   const cell = (v, l, cls) => '<div class="tg-cell"><div class="l">' + l + '</div><div class="v' + (cls ? ' ' + cls : '') + '">' + (v == null ? '—' : v) + '</div></div>';
-  return '<div class="card-h"><span>' + t('today.title') + '</span><span class="en">TODAY\'S SUMMARY</span></div>' +
+  // Build Day badge for header
+  let dayBadge = '';
+  if (s && last.dayNum) { dayBadge = '<b>Day ' + last.dayNum + '</b>' + (last.date ? ' · ' + last.date : ''); }
+  else if (!s) { dayBadge = ''; }
+  return '<div class="card-h"><span>' + t('today.title') + '</span><span class="en">TODAY\'S SUMMARY</span>' + (dayBadge ? '<span class="ch-cap">' + dayBadge + '</span>' : '') + '</div>' +
     '<div class="card-b"><div class="tg">' +
     cell(s ? fmtNum(s.distance, 1) + 'km' : '—', t('today.dist')) +
     cell(s ? '+' + fmtNum(s.elevGain) + 'm' : '—', t('today.gain'), 'up') +
@@ -1712,11 +1716,7 @@ function todaySummaryHTML() {
     cell(s && s.durationStr ? s.durationStr : '—', t('today.move')) +
     cell(s && s.avgSpeed ? s.avgSpeed + '' : '—', t('today.speed')) +
     cell(s ? fmtNum(s.maxElev) + 'm' : '—', t('today.max')) +
-    '</div>' +
-    (!s ? '<div style="font-size:10px;color:var(--text-dim);margin-top:8px;text-align:center;">' + t('today.nodata') + '</div>'
-        : (last.date ? '<div style="font-size:10px;color:var(--text-dim);margin-top:8px;text-align:center;">' + t('today.dateLbl') + last.date + (last.dayNum ? ' · Day ' + last.dayNum : '') + '</div>'
-                     : (last.dayNum ? '<div style="font-size:10px;color:var(--text-dim);margin-top:8px;text-align:center;">Day ' + last.dayNum + '</div>' : ''))) +
-    '</div>';
+    '</div></div>';
 }
 
 // ── 垭口覆盖判定：实际轨迹(任一段,半径内)经过即算翻越 ──
