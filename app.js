@@ -1767,8 +1767,7 @@ function passesHTML() {
         (elev ? '<span class="pass-elev">' + elev + '</span>' : '') + '</div>';
     }).join('');
   }
-  const mtn = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;vertical-align:-2px"><path d="M3 20l6-9 4 5 3-4 5 8z"/></svg>';
-  const summary = total ? '<div class="pass-summary"><span class="pass-summary-num">' + mtn + ' ' + done + ' / ' + total + '</span>' +
+  const summary = total ? '<div class="pass-summary"><span class="pass-summary-num">' + done + ' / ' + total + '</span>' +
     '<div class="pass-summary-bar"><i style="width:' + (total ? Math.round(done / total * 100) : 0) + '%"></i></div></div>' : '';
   return '<div class="card-h"><span class="ch-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20l6-9 4 5 3-4 5 8z"/></svg></span>' + cardTitle('pass.title', 'PASS CHECKLIST') + '</div>' +
     summary +
