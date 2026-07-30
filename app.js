@@ -1600,6 +1600,8 @@ function progressModuleHTML() {
   const doneKm = (APP.completedDistance / 1000) || 0;
   const days = APP.itinerary || [];
   const doneDays = days.filter(d => d.actual).length;
+  const totalDays = days.length;
+  const pct = APP.progressPercentage || APP.progressPct || 0;
   const gain = (APP.presetTrack && APP.presetTrack.stats && APP.presetTrack.stats.elevGain)
     ? APP.presetTrack.stats.elevGain : 0;
   const elev = getDisplayElev();
@@ -1607,7 +1609,7 @@ function progressModuleHTML() {
   const goalGain = gain ? Math.round(gain * 1.12) : 0;
   const kcell = (v, l, s, cls) => '<div class="tg-cell' + (cls ? ' ' + cls : '') + '"><div class="l">' + l + '</div><div class="v">' + (v == null ? '—' : v) + '</div>' + (s ? '<div class="s">' + s + '</div>' : '') + '</div>';
   const ringIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"/><path d="M12 12l4-2"/></svg>';
-  return '<div class="card-h"><span class="ch-ico">' + ringIcon + '</span><span>' + t('prog.title') + '</span><span class="en">OVERALL PROGRESS</span></div>' +
+  return '<div class="card-h"><span class="ch-ico">' + ringIcon + '</span><span>' + t('prog.title') + '</span><span class="en">OVERALL PROGRESS</span><span class="ch-cap">' + t('prog.ringCap') + ' <b>' + pct.toFixed(1) + '%</b> · ' + t('prog.ringDone') + ' ' + doneDays + ' / ' + totalDays + ' ' + t('prog.ringDayUnit') + '</span></div>' +
     '<div class="card-b prog-mod">' +
       statusRingHTML() +
       '<div class="tg progress-kpi">' +
@@ -1635,8 +1637,7 @@ function statusRingHTML() {
       '<text class="ring-day-num" x="100" y="94" text-anchor="middle">Day ' + doneDays + '<tspan class="ring-day-tot" dx="2"> / ' + totalDays + '</tspan></text>' +
       '<text class="ring-day-sub" x="100" y="122" text-anchor="middle">' + t('prog.ringDay').replace('{d}', doneDays) + '</text>' +
     '</svg>' +
-  '</div>' +
-  '<div class="ring-cap-below">' + t('prog.ringCap') + ' <b>' + pct.toFixed(1) + '%</b> · ' + t('prog.ringDone') + ' ' + doneDays + ' / ' + totalDays + ' ' + t('prog.ringDayUnit') + '</div>';
+  '</div>';
 }
 
 // 与子页面(sections.html 等)同款 HTML 转义，防自由文本注入 innerHTML（自 XSS 加固）
