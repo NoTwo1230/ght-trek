@@ -3147,13 +3147,13 @@ const sectionColors = (window.GHT_SECTIONS || []).map(r => r.color);
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  轨迹着色规范（UI 设计决策, 2026-07-29 修订）
-//   · 实际徒步轨迹 = 紫色虚线（醒目、与计划线区分）
-//   · 计划路线（目标）= 黑色实线（#0d1219，沉稳基准线）
-//   · 预设已被实际轨迹覆盖的部分不再单独绘制，由紫色实际轨迹表达
+//   · 实际徒步轨迹 = 蓝色实线（#2563eb，醒目、连续）
+//   · 计划路线（目标）= 紫色虚线（#7c3aed / dashArray '6,8'，基准参考线）
+//   · 预设已被实际轨迹覆盖的部分不再单独绘制，由蓝色实际轨迹表达
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-const ACTUAL_TRACK_COLOR = '#7c3aed';   // 实际徒步轨迹：紫色
+const ACTUAL_TRACK_COLOR = '#2563eb';   // 实际徒步轨迹：蓝色实线
 
 // 将一条经纬度折线沿垂直方向偏移 dist 米，返回新折线（用于绘制双平行虚线）。
 function offsetPolyline(coords, dist) {
@@ -3185,12 +3185,12 @@ function metersPerPixelAt(lat) {
   return 156543.03392 * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoom);
 }
 
-// 画「计划轨迹」：黑色实线（沉稳基准线），与图例一致。
+// 画「计划轨迹」：紫色虚线（dashArray '6,8'，与图例一致）。
 function drawPlannedDoubleDashed(coords, layerGroup, popupHtml, weight, opacity) {
   if (!coords || coords.length < 2) return;
   const opts = {
-    color: '#0d1219', weight: weight || 1.8, opacity: (opacity == null ? 0.7 : opacity),
-    lineCap: 'round', lineJoin: 'round'
+    color: '#7c3aed', weight: weight || 1.8, opacity: (opacity == null ? 0.75 : opacity),
+    dashArray: '6,8', lineCap: 'round', lineJoin: 'round'
   };
   const r = L.polyline(coords, opts).addTo(layerGroup);
   if (popupHtml) r.bindPopup(popupHtml);
@@ -3291,7 +3291,7 @@ function renderAllTracks() {
     if (track.trackPoints.length < 2) return;
 
     // 匹配该轨迹所属区域（仅用于起点圆点的配色）
-    let sectionColor = '#7c3aed';
+    let sectionColor = '#2563eb';
     if (APP.sectionRanges && APP.sectionRanges.length > 0 && APP.presetTrack) {
       const midPt = track.trackPoints[Math.floor(track.trackPoints.length / 2)];
       let bestIdx = 0, bestDist = Infinity;
@@ -3304,11 +3304,11 @@ function renderAllTracks() {
       sectionColor = APP.sectionRanges[bestIdx].regionColor || '#3fb950';
     }
 
-    // 实际轨迹「整条连续紫虚线」：一整条画完，不按段切分。
+    // 实际轨迹「整条连续蓝实线」：一整条画完，不按段切分。
     // 深底描边提升在彩色地形上的对比度。
     const acoords = track.trackPoints.map(p => [p.lat, p.lon]);
-    L.polyline(acoords, { color: '#0d1219', weight: 6, opacity: 0.35, dashArray: '6,8', lineCap: 'round', lineJoin: 'round' }).addTo(uploadedTrackGroup);
-    L.polyline(acoords, { color: ACTUAL_TRACK_COLOR, weight: 3, opacity: 0.9, dashArray: '6,8', lineCap: 'round', lineJoin: 'round' }).addTo(uploadedTrackGroup);
+    L.polyline(acoords, { color: '#0d1219', weight: 6, opacity: 0.3, lineCap: 'round', lineJoin: 'round' }).addTo(uploadedTrackGroup);
+    L.polyline(acoords, { color: ACTUAL_TRACK_COLOR, weight: 3, opacity: 0.95, lineCap: 'round', lineJoin: 'round' }).addTo(uploadedTrackGroup);
 
     const s = track.trackPoints[0], e = track.trackPoints[track.trackPoints.length - 1];
     L.circleMarker([s.lat, s.lon], { radius: 4, color: '#fff', fillColor: sectionColor, fillOpacity: 1, weight: 2 })

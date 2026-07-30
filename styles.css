@@ -384,12 +384,13 @@
   }
   .map-legend .lg-row { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
   .map-legend .lg-sw { width: 16px; height: 4px; border-radius: 2px; flex-shrink: 0; }
-  /* 计划路线图例：黑色实线（沉稳基准线，与地图计划线 #0d1219 一致） */
+  /* 计划路线图例：紫色虚线（与地图计划线 #7c3aed / dashArray '6,8' 一致） */
   .map-legend .lg-plan {
     width: 24px; height: 3px; border: none;
-    background: #0d1219;
+    background: repeating-linear-gradient(90deg, #7c3aed 0 6px, transparent 6px 14px);
   }
-  .map-legend .lg-cyan { background: repeating-linear-gradient(90deg, #7c3aed 0 6px, transparent 6px 14px); }
+  /* 实际轨迹图例：蓝色实线（与地图实际轨迹 #2563eb 一致） */
+  .map-legend .lg-cyan { background: #2563eb; }
   @media (max-width: 640px) {
     .map-legend { width: 160px; top: 8px; left: 8px; }
     .map-compass { top: 8px; right: 8px; }
