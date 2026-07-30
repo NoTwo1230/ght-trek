@@ -828,9 +828,61 @@ body, .app, .topnav, .statusbar, .dash-grid, .col-left, .col-right, .col-center,
   border-color: var(--border-light);
 }
 
-/* ── 响应式：窄屏单列 ── */
+/* ── 响应式：窄屏（手机）单列 + 卡片内重排 ── */
 @media (max-width: 760px) {
+  /* ── 布局：双栏→单列 ── */
   .dash-grid > .two-col { grid-template-columns: 1fr; }
+
+  /* ── Header 紧凑化 ── */
+  .site-header { padding: 10px 14px 14px; gap: 12px; }
+  .brand-text h1 { font-size: 16px; }
+  .brand-text p { font-size: 11px; }
+  .header-right { gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .hdr-nav { gap: 2px; }
+  .hn-link { font-size: 12px; padding: 5px 10px; }
+  .live { font-size: 12px; padding: 5px 10px; }
+  .lang-btn { font-size: 12px !important; padding: 5px 8px !important; }
+
+  /* ── 卡片标题：允许换行，ch-cap 挤到第二行 ── */
+  .card-h {
+    flex-wrap: wrap; gap: 4px 10px;
+    padding: 10px 14px;
+  }
+  .card-h .ch-ico { display: none; }          /* 手机省掉图标腾空间 */
+  .ch-cap {
+    margin-left: 0; white-space: normal;
+    font-size: 11px; width: 100%; text-align: right;
+    order: 10;                                 /* 强制到最末 */
+  }
+
+  /* ── 整体进度卡：圆环置顶居中 + KPI 2×2 在下 ── */
+  .prog-mod {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 16px !important;
+    padding: 18px 14px !important;
+    min-height: auto !important;
+  }
+  .big-ring { width: 140px; height: 140px; }
+  .ring-day-num { font-size: 26px; }
+  .ring-day-tot { font-size: 15px; }
+  .ring-day-sub { font-size: 10px; }
+  .progress-kpi { width: 100%; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  /* ── 今日摘要：tg 保持 2 列，格内紧凑 ── */
+  .tg-cell { padding: 10px 12px !important; }
+  .tg-cell .v { font-size: 20px !important; }
+  .tg-cell .l { font-size: 11px !important; margin-bottom: 4px; }
+  .tg-cell .s { font-size: 9px !important; }
+
+  /* ── 地图 & 海拔 ── */
+  .col-center .map-wrap { height: 260px !important; }
+  [data-theme="light"] .elevation-body, [data-theme="dark"] .elevation-body {
+    height: 180px !important; min-height: 180px !important;
+  }
+  .elevation-header { flex-wrap: wrap; gap: 6px 10px; padding: 10px 14px !important; }
+  .ev-stats { order: -1; width: 100%; justify-content: flex-start; }
+
+  /* ── 旧 KPI 条兜底（如果还有残留）── */
   [data-theme="light"] .kpi-strip, [data-theme="dark"] .kpi-strip { grid-template-columns: repeat(2, 1fr); }
-  .col-center .map-wrap { height: 300px !important; }
 }
