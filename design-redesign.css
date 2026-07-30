@@ -363,8 +363,8 @@ body {
 .col-center .elevation-placebar .pl-item.current { color: var(--accent); font-weight: 700; }
 .col-center .elevation-placebar .pl-item.current .pl-dot { opacity: 1; }
 .col-center .elevation-placebar .pl-item.upcoming { color: var(--text-dim); }
-.col-center .elevation-body { height: auto !important; min-height: 0; padding: 14px 18px 18px; overflow: visible !important; }
-.col-center .elevation-body .elev-chart { position: relative; height: 220px; border: 1px solid var(--border); border-radius: 12px; background: linear-gradient(180deg, rgba(127,127,127,0.05), rgba(127,127,127,0.01)); overflow: hidden; }
+.col-center .elevation-body { height: auto !important; min-height: 0; padding: 14px 10px 18px 14px; overflow: visible !important; }
+.col-center .elevation-body .elev-chart { position: relative; height: 220px; border: 1px solid var(--border); border-radius: 12px; background: linear-gradient(180deg, rgba(127,127,127,0.05), rgba(127,127,127,0.01)); overflow: visible; }
 .col-center .elevation-body .elev-chart svg { display: block; }
 .elev-pulse { transform-box: fill-box; transform-origin: center; animation: elevPulse 1.8s ease-out infinite; }
 @keyframes elevPulse { 0% { transform: scale(1); opacity: .5; } 100% { transform: scale(2.8); opacity: 0; } }

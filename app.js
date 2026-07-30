@@ -1352,8 +1352,7 @@ function drawElevationProfile() {
   if (statsEl) statsEl.innerHTML =
     '<span class="ev-stat"><i>' + t('elev.highest') + '</i>' + fmtM(dispMax) + '</span>' +
     '<span class="ev-stat"><i>' + t('elev.lowest') + '</i>' + fmtM(dispMin) + '</span>' +
-    '<span class="ev-stat"><i>' + t('elev.climbLabel') + '</i>' + fmtM(dispClimb) + '</span>' +
-    (scopeNote ? '<span class="ev-note">' + scopeNote + '</span>' : '');
+    '<span class="ev-stat"><i>' + t('elev.climbLabel') + '</i>' + fmtM(dispClimb) + '</span>';
 
   // 路段色标行（移出图表）：passed / current / upcoming 三态着色
   const ranges = APP.sectionRanges || [];
