@@ -459,8 +459,8 @@ body, .app, .topnav, .statusbar, .dash-grid, .col-left, .col-right, .col-center,
 [data-theme="light"] .elevation-panel .elev-scope button.on { background: var(--accent); color: #fff; }
 [data-theme="light"] .pos-badge, [data-theme="light"] .region-info { background: var(--panel-bg); border: 1px solid var(--border); color: var(--text); }
 [data-theme="light"] .map-legend { background: var(--panel-bg); border: 1px solid var(--border); color: var(--text); }
-[data-theme="light"] .lg-sw.lg-cyan { background: var(--accent); }
-[data-theme="light"] .lg-sw.lg-plan { background: var(--text-dim); }
+[data-theme="light"] .lg-sw.lg-cyan { background: linear-gradient(90deg, #7c3aed 50%, transparent 50%); background-size: 10px 100%; border: 1px solid rgba(124,58,237,0.3); }
+[data-theme="light"] .lg-sw.lg-plan { background: #0d1219; }
 
 /* ── 无障碍：尊重 reduced-motion ── */
 @media (prefers-reduced-motion: reduce) {
