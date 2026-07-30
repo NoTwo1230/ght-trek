@@ -612,7 +612,7 @@ const I18N = {
     'nav.itinerary.title': '计划 vs 实际 · 行程对比', 'nav.sections.title': '路段进度 · 按 已完成/进行中/未完成 分组', 'nav.journal.title': '远征日志 · 按路段分组',
     'brand.sub': '大喜马拉雅高线',
     'pos.prefix': '📍 当前位置:',
-    'basemap.terrain': '户外图 (Esri 地形 · 默认)', 'basemap.topo': '地形图 (等高线)', 'basemap.dark': '暗色图 (OpenStreetMap)',
+    'basemap.terrain': '户外图 (Esri 地形 · 默认)', 'basemap.topo': '地形图 (等高线)',
     'prog.done': '已完成 km', 'prog.total': '总计 km',
     'st.camp': '当前营地', 'st.area': '所在区域', 'st.elev': '当前海拔', 'st.pass': '下一垭口', 'st.eta': '预计抵达',
     'today.dist': '距离', 'today.gain': '爬升', 'today.loss': '下降', 'today.move': '移动时间', 'today.speed': '均速 km/h', 'today.max': '最高海拔',
@@ -646,7 +646,7 @@ const I18N = {
     'nav.itinerary.title': 'Planned vs actual · itinerary', 'nav.sections.title': 'Section progress · grouped by done/in-progress/todo', 'nav.journal.title': 'Expedition journal · grouped by section',
     'brand.sub': 'GREAT HIMALAYA TRAIL',
     'pos.prefix': '📍 Current location:',
-    'basemap.terrain': 'Terrain (Esri Topo · default)', 'basemap.topo': 'Topographic (Contours)', 'basemap.dark': 'Dark (OpenStreetMap)',
+    'basemap.terrain': 'Terrain (Esri Topo · default)', 'basemap.topo': 'Topographic (Contours)',
     'prog.done': 'Done km', 'prog.left': 'Left km', 'prog.total': 'Total km',
     'st.camp': 'Current camp', 'st.area': 'Region', 'st.elev': 'Elevation', 'st.pass': 'Next pass', 'st.eta': 'ETA',
     'today.dist': 'Distance', 'today.gain': 'Ascent', 'today.loss': 'Descent', 'today.move': 'Moving time', 'today.speed': 'Avg km/h', 'today.max': 'Max elev',
@@ -698,7 +698,7 @@ function applyLang() {
   if (lb) lb.textContent = 'Language ▾';
   document.querySelectorAll('.tn-tab').forEach(el => { el.textContent = t('nav.' + el.dataset.view); });
   const sub = document.querySelector('.brand .sub'); if (sub) sub.textContent = t('brand.sub');
-  document.querySelectorAll('.basemap-btn').forEach((el, i) => { el.title = t(['basemap.terrain', 'basemap.topo', 'basemap.dark'][i]); });
+  document.querySelectorAll('.basemap-btn').forEach((el, i) => { el.title = t(['basemap.terrain', 'basemap.topo'][i]); });
   const dm = document.getElementById('btnDataMgmt'); if (dm) dm.textContent = '🔧 ' + t('nav.datamgmt');
   // 顶栏三个外链（行程对比 / 路段 / 日志）此前硬编码中文、未进翻译循环 → 补上 i18n
   const ni = document.getElementById('navItinerary');
@@ -764,11 +764,6 @@ const basemaps = {
   terrain: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
     attribution: '&copy; Esri',
     maxZoom: 13
-  }),
-  dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    subdomains: 'abcd',
-    maxZoom: 13
   })
 };
 const currentBasemap = { layer: basemaps.terrain };
@@ -804,8 +799,7 @@ const BasemapSwitcher = L.Control.extend({
     const div = L.DomUtil.create('div', 'basemap-switcher');
     const btns = [
       { key: 'terrain', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M9 3 3 5v16l6-2 6 2 6-2V3l-6 2-6-2z"/><path d="M9 3v16M15 5v16"/></svg>', title: t('basemap.terrain') },
-      { key: 'topo',    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M3 20l6-9 4 5 3-4 5 8z"/></svg>', title: t('basemap.topo') },
-      { key: 'dark',    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M21 12.8A9 9 0 1111.2 3 7 7 0 0021 12.8z"/></svg>', title: t('basemap.dark') }
+      { key: 'topo',    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M3 20l6-9 4 5 3-4 5 8z"/></svg>', title: t('basemap.topo') }
     ];
     btns.forEach((b, i) => {
       const btn = L.DomUtil.create('button', 'basemap-btn' + (i === 0 ? ' active' : ''), div);
