@@ -12,10 +12,10 @@
 <link rel="preload" as="image" href="assets/region-maps/everest_index.png">
 <style>
   :root{
-    --bg:#0a0e14; --panel:#0d1219; --panel-alt:#11161f; --border:#1c2333;
-    --border-light:#21262d; --text:#e6edf3; --text-dim:#8b949e; --text-dimmer:#6e7681;
-    --accent:#58a6ff; --accent-bg:#1a3a5c; --green:#3fb950; --amber:#d29922;
-    --red:#f85149; --purple:#bc8cff; --cyan:#39d2c0;
+    --bg:#FFFFFF; --panel:#F6F9FC; --panel-alt:#EBF0F7; --border:#E3E8EE;
+    --border-light:#D6DEE8; --text:#0A2540; --text-dim:#425466; --text-dimmer:#6B7C93;
+    --accent:#635BFF; --accent-bg:#EEEBFF; --green:#00A86B; --amber:#B7791F;
+    --red:#DF1B41; --purple:#BC8CFF; --cyan:#2DD4BF;
   }
   *{margin:0;padding:0;box-sizing:border-box}
   :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -26,21 +26,21 @@
                radial-gradient(900px 500px at -10% 110%,rgba(240,136,62,.05),transparent 60%),var(--bg);
     color:var(--text);-webkit-font-smoothing:antialiased;line-height:1.5;overflow-x:hidden;
   }
-  /* ── topbar ── */
+  /* ── topbar（Stripe 浅色主题）── */
   .topbar{position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:14px;
-    padding:13px 20px;background:rgba(10,14,20,.82);backdrop-filter:blur(12px);
-    -webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border);flex-wrap:wrap}
-  .topbar .title{font-size:16px;font-weight:700;display:flex;align-items:center;gap:9px;white-space:nowrap}
-  .topbar .title .glyph{width:30px;height:30px;border-radius:8px;background:var(--accent-bg);
-    border:1px solid rgba(88,166,255,.25);display:flex;align-items:center;justify-content:center;font-size:16px}
-  .topbar .title small{font-weight:400;color:var(--text-dim);font-size:11px}
-  .back-link{margin-left:auto;display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:var(--text-dim);
-    border:1px solid var(--border-light);border-radius:8px;padding:7px 13px;font-size:12px;transition:.2s}
-  .back-link:hover{color:var(--text);border-color:var(--accent);background:rgba(88,166,255,.08)}
+    padding:13px 20px;background:#FFFFFF;border-bottom:1px solid #E3E8EE;flex-wrap:wrap}
+  .topbar .title{font-size:16px;font-weight:500;color:#0A2540;display:flex;align-items:center;gap:11px;white-space:nowrap}
+  .topbar .title .glyph{width:34px;height:34px;border-radius:9px;background:#635BFF;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .topbar .title .glyph svg{width:18px;height:18px;stroke:#fff}
+  .topbar .title small{font-weight:400;color:#425466;font-size:11px}
+  .back-link{margin-left:auto;display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:#425466;
+    border:1px solid #D6DEE8;border-radius:8px;padding:7px 13px;font-size:13px;font-weight:400;transition:.2s}
+  .back-link:hover{color:#0A2540;border-color:#635BFF;background:#EEEBFF}
   .lang-btn{margin-left:14px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-family:inherit;
-    background:rgba(255,255,255,.04);color:var(--text);border:1px solid var(--border-light);
-    border-radius:8px;padding:7px 13px;font-size:12px;transition:.2s}
-  .lang-btn:hover{color:#fff;border-color:var(--accent);background:rgba(88,166,255,.08)}
+    background:#F6F9FC;color:#0A2540;border:1px solid #D6DEE8;
+    border-radius:8px;padding:7px 13px;font-size:13px;font-weight:400;transition:.2s}
+  .lang-btn:hover{color:#0A2540;border-color:#635BFF;background:#EEEBFF}
 
   /* ── intro banner ── */
   .banner{max-width:1320px;margin:0 auto;padding:20px 20px 4px}
@@ -70,7 +70,7 @@
   .cfc{position:absolute;left:50%;top:50%;width:344px;height:270px;border-radius:16px;overflow:hidden;
     transform-style:preserve-3d;cursor:pointer;will-change:transform,opacity;
     transition:transform .55s cubic-bezier(.22,.61,.36,1),opacity .4s ease,box-shadow .4s ease;
-    box-shadow:0 10px 30px rgba(0,0,0,.45);border:2px solid #D4A84A;background:#05080d}
+    box-shadow:0 10px 30px rgba(10,37,64,.12);border:2px solid #D4A84A;background:#F6F9FC}
   .cfc.is-active{box-shadow:0 26px 60px rgba(0,0,0,.6),0 0 0 2px var(--rb),0 0 36px -6px var(--rc)}
   .cfc-img{position:relative;width:100%;height:100%}
   .cfc-img img{width:100%;height:100%;object-fit:cover;object-position:center top;display:block;
@@ -84,7 +84,7 @@
   .cfc-status.meas{background:rgba(63,185,80,.2);color:var(--green);border:1px solid rgba(63,185,80,.55)}
   .cfc-status.plan{background:rgba(210,153,34,.18);color:var(--amber);border:1px solid rgba(210,153,34,.55)}
   .cfc-view{position:absolute;left:11px;right:11px;bottom:9px;z-index:4;cursor:pointer;
-    border:1px solid var(--rb);background:rgba(10,14,20,.55);color:#fff;backdrop-filter:blur(4px);
+    border:1px solid var(--rb);background:rgba(255,255,255,.92);color:#0A2540;
     border-radius:9px;padding:7px;font-size:11.5px;font-weight:600;font-family:inherit;
     opacity:0;transform:translateY(8px);transition:opacity .3s ease,transform .3s ease,background .2s}
   .cfc:hover .cfc-view,.cfc.is-active .cfc-view{opacity:1;transform:translateY(0)}
@@ -92,7 +92,7 @@
   .cfc-view:hover{box-shadow:0 0 18px -2px var(--rc)}
   /* arrows + dots */
   .cf-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:20;width:42px;height:42px;border-radius:50%;
-    border:1px solid var(--border-light);background:rgba(13,18,25,.7);color:var(--text-dim);font-size:22px;line-height:1;
+    border:1px solid var(--border-light);background:rgba(255,255,255,.92);color:#0A2540;font-size:22px;line-height:1;
     cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s;backdrop-filter:blur(6px)}
   .cf-arrow:hover{color:var(--text);border-color:var(--accent);background:rgba(88,166,255,.12)}
   .cf-prev{left:4px}.cf-next{right:4px}
@@ -110,11 +110,11 @@
     width:min(1120px,94vw);max-height:92vh;background:var(--panel);border:1px solid var(--border-light);
     border-radius:18px;overflow:hidden;display:grid;grid-template-columns:1.04fr 1fr;
     box-shadow:0 40px 100px rgba(0,0,0,.7);border-top:3px solid var(--rc)}
-  .d-media{position:relative;background:#05080d;min-height:440px}
+  .d-media{position:relative;background:#F6F9FC;min-height:440px}
   .d-media img{width:100%;height:100%;object-fit:cover;object-position:center top;display:block;cursor:zoom-in}
   .d-info{padding:24px 26px 26px;overflow:auto;display:flex;flex-direction:column;gap:15px}
   .d-close{position:absolute;top:12px;right:14px;z-index:5;width:34px;height:34px;border-radius:50%;
-    border:1px solid var(--border-light);background:rgba(13,18,25,.6);color:var(--text);font-size:20px;line-height:1;
+    border:1px solid var(--border-light);background:rgba(255,255,255,.92);color:#0A2540;font-size:20px;line-height:1;
     cursor:pointer;transition:.2s}
   .d-close:hover{background:var(--red);border-color:var(--red);color:#fff}
   .d-head{display:flex;align-items:center;gap:12px;padding-right:40px}
@@ -169,8 +169,8 @@
 </head>
 <body>
   <div class="topbar">
-    <div class="title"><span class="glyph">🏔️</span> <span data-i18n="sec.title">GHT 路段全景</span> <small data-i18n="sec.sub">· 13 段区域徒步指南</small></div>
-    <a class="back-link" href="index.html?v=2" title="返回首页" data-i18n="back.home" data-i18n-title="back.home">← 返回首页</a>
+    <div class="title"><span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19l5-7 4 5 3-4 6 6"/><circle cx="17" cy="6" r="2"/></svg></span> <span data-i18n="sec.title">GHT 路段全景</span> <small data-i18n="sec.sub">· 13 段区域徒步指南</small></div>
+    <a class="back-link" href="index.html?v=2" title="返回首页" data-i18n="back.home" data-i18n-title="back.home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> 返回首页</a>
     <button class="lang-btn" type="button">Language ▾</button>
   </div>
 

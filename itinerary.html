@@ -8,25 +8,25 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap">
 <style>
   :root {
-    /* ── 与主 app 完全一致的 Adventure Dark Palette ── */
-    --bg: #0a0e14;
-    --panel: #0d1219;
-    --panel-alt: #161b22;
-    --panel-bg: rgba(13,18,25,0.95);
-    --border: #1c2333;
-    --border-light: #21262d;
-    --text: #e6edf3;
-    --text-dim: #8b949e;
-    --text-dimmer: #7d8590;
-    --accent: #58a6ff;
-    --accent-bg: #1a3a5c;
-    --accent2: #f0883e;
-    --green: #3fb950;
-    --red: #f85149;
-    --red-deep: #b62324;
-    --purple: #bc8cff;
-    --yellow: #d29922;
-    --cyan: #39d2c0;
+    /* ── 与首页一致 Stripe 浅色主题（design-redesign.css 同款 token）── */
+    --bg: #FFFFFF;
+    --panel: #F6F9FC;
+    --panel-alt: #EBF0F7;
+    --panel-bg: rgba(246, 249, 252, 0.95);
+    --border: #E3E8EE;
+    --border-light: #D6DEE8;
+    --text: #0A2540;
+    --text-dim: #425466;
+    --text-dimmer: #6B7C93;
+    --accent: #635BFF;
+    --accent-bg: #EEEBFF;
+    --accent2: #F5A623;
+    --green: #00A86B;
+    --red: #DF1B41;
+    --red-deep: #B62324;
+    --purple: #BC8CFF;
+    --yellow: #B7791F;
+    --cyan: #2DD4BF;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -44,36 +44,35 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  /* ── 顶部栏（吸顶 + 毛玻璃）── */
+  /* ── 顶部栏（Stripe 浅色主题）── */
   .topbar {
     position: sticky; top: 0; z-index: 100;
     display: flex; align-items: center; gap: 14px;
-    padding: 14px 20px;
-    background: rgba(10,14,20,0.82);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border);
+    padding: 13px 20px;
+    background: #FFFFFF;
+    border-bottom: 1px solid #E3E8EE;
     flex-wrap: wrap;
   }
   .topbar .title {
-    font-size: 17px; font-weight: 700; letter-spacing: .3px;
-    display: flex; align-items: center; gap: 9px; white-space: nowrap;
+    font-size: 16px; font-weight: 500; color: #0A2540; letter-spacing: .2px;
+    display: flex; align-items: center; gap: 11px; white-space: nowrap;
   }
   .topbar .title .glyph {
-    width: 30px; height: 30px; border-radius: 8px;
-    background: var(--accent-bg); border: 1px solid rgba(88,166,255,0.25);
-    display: flex; align-items: center; justify-content: center; font-size: 16px;
+    width: 34px; height: 34px; border-radius: 9px;
+    background: #635BFF;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   }
-  .topbar .title small { font-weight: 400; color: var(--text-dim); font-size: 12px; }
+  .topbar .title .glyph svg { width: 18px; height: 18px; stroke: #fff; }
+  .topbar .title small { font-weight: 400; color: #425466; font-size: 12px; }
 
   .back-link {
     margin-left: auto;
     display: inline-flex; align-items: center; gap: 6px;
-    text-decoration: none; color: var(--text-dim);
-    border: 1px solid var(--border-light); border-radius: 8px;
-    padding: 7px 13px; font-size: 12px; transition: all .2s;
+    text-decoration: none; color: #425466;
+    border: 1px solid #D6DEE8; border-radius: 8px;
+    padding: 7px 13px; font-size: 13px; font-weight: 400; transition: all .2s;
   }
-  .back-link:hover { color: var(--text); border-color: var(--accent); background: rgba(88,166,255,0.08); }
+  .back-link:hover { color: #0A2540; border-color: #635BFF; background: #EEEBFF; }
 
   /* ── 摘要条 ── */
   .summary {
@@ -104,12 +103,11 @@
 
   /* ── 工具栏（位置基准 / 筛选）── */
   .toolbar {
-    position: sticky; top: 59px; z-index: 90;
+    position: sticky; top: 60px; z-index: 90;
     display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
     padding: 12px 20px;
-    background: rgba(10,14,20,0.78);
-    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--border);
+    background: #FFFFFF;
+    border-bottom: 1px solid #E3E8EE;
   }
   .toolbar .group { display: flex; align-items: center; gap: 6px; }
   .toolbar .glabel { font-size: 11px; color: var(--text-dim); margin-right: 2px; }
@@ -411,9 +409,9 @@
     .chip .route { font-size: 8px; }
   }
   .lang-btn{margin-left:14px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-family:inherit;
-    background:rgba(255,255,255,.04);color:var(--text);border:1px solid var(--border-light);
-    border-radius:8px;padding:7px 13px;font-size:12px;transition:.2s}
-  .lang-btn:hover{color:#fff;border-color:var(--accent);background:rgba(88,166,255,.08)}
+    background:#F6F9FC;color:#0A2540;border:1px solid #D6DEE8;
+    border-radius:8px;padding:7px 13px;font-size:13px;font-weight:400;transition:.2s}
+  .lang-btn:hover{color:#0A2540;border-color:#635BFF;background:#EEEBFF}
 </style>
 <script src="lang.js"></script>
 <link rel="stylesheet" href="design-redesign.css" />
@@ -423,10 +421,15 @@
 
 <header class="topbar">
   <div class="title">
-    <span class="glyph">📅</span>
+    <span class="glyph">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19l5-7 4 5 3-4 6 6"/><circle cx="17" cy="6" r="2"/></svg>
+    </span>
     <span><span data-i18n="it.title">行程日历</span><small data-i18n="it.sub"> · 计划 vs 实际徒步对比</small></span>
   </div>
-  <a class="back-link" href="index.html?v=2" title="返回首页" data-i18n="back.home" data-i18n-title="back.home">← 返回首页</a>
+  <a class="back-link" href="index.html?v=2" title="返回首页" data-i18n="back.home" data-i18n-title="back.home">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    返回首页
+  </a>
   <button class="lang-btn" type="button">Language ▾</button>
 </header>
 
