@@ -119,15 +119,16 @@
     var p = state.points[state.points.length - 1];
     if (!p) return;
     var isGpx = p.source === 'gpx';
-    var timeText = isGpx && G ? G.formatNepal(lastTs()) + '（尼泊尔时间）'
-      : new Date(lastTs()).toLocaleString('zh-CN', { hour12: false });
+    var en = false; try { en = localStorage.getItem('ght_lang') === 'en'; } catch (e) {}
+    var timeText = isGpx && G ? G.formatNepal(lastTs()) + (en ? ' (Nepal time)' : '（尼泊尔时间）')
+      : new Date(lastTs()).toLocaleString(en ? 'en-US' : 'zh-CN', { hour12: false });
     var levelCls = f.level === 'fresh' ? '' : (' is-' + f.level);
 
     var hdr = document.getElementById('hdrLive');
     if (hdr) {
       hdr.className = 'live' + levelCls;
       hdr.innerHTML = '<span class="dot' + (f.level === 'fresh' ? '' : ' idle') + '"></span>' + f.phrase;
-      hdr.title = '定位时间：' + timeText;
+      hdr.title = (en ? 'Position time: ' : '定位时间：') + timeText;
     }
     var foot = document.getElementById('liveDot');
     if (foot) {
@@ -256,4 +257,19 @@
 
   // app.js 的 zoomend 会把 currentPosition 重置为最后一条 GPX 终点，这里在其后恢复实时点
   map.on('zoomend', function () { setTimeout(applyLivePosition, 0); });
+
+  // 语言切换：gpx-live.js 的 freshness() 已按 localStorage 语言返回文案，这里触发重渲染
+  window.onLangChange = function () {
+    var en = false; try { en = localStorage.getItem('ght_lang') === 'en'; } catch (e) {}
+    if (state.points && state.points.length) {
+      updateStatusUI();
+    } else {
+      // 无实时点时，两处状态仍是静态初始文案，直接按语言重设
+      var idle = en ? 'Waiting for position data' : '等待定位数据';
+      var hdr = document.getElementById('hdrLive');
+      if (hdr) hdr.innerHTML = '<span class="dot idle"></span>' + idle;
+      var foot = document.getElementById('liveDot');
+      if (foot) foot.innerHTML = '<span class="ld-dot"></span> ' + idle;
+    }
+  };
 })();

@@ -608,7 +608,7 @@ let currentLang = (function(){ try { return localStorage.getItem('ght_lang') || 
 const I18N = {
   zh: {
     'nav.dashboard': '仪表盘', 'nav.sections': '路段', 'nav.itinerary': '行程', 'nav.datamgmt': '数据管理',
-    'nav.itinerary.full': '行程对比', 'nav.sections.full': '路段', 'nav.journal.full': '日志',
+    'nav.itinerary.full': '行程对比', 'nav.sections.full': '路段', 'nav.journal.full': '日志', 'nav.track': '实时轨迹',
     'nav.itinerary.title': '计划 vs 实际 · 行程对比', 'nav.sections.title': '路段进度 · 按 已完成/进行中/未完成 分组', 'nav.journal.title': '远征日志 · 按路段分组',
     'brand.sub': '大喜马拉雅高线',
     'pos.prefix': '📍 当前位置:',
@@ -642,7 +642,7 @@ const I18N = {
   },
   en: {
     'nav.dashboard': 'Dashboard', 'nav.sections': 'Sections', 'nav.itinerary': 'Itinerary', 'nav.datamgmt': 'Data',
-    'nav.itinerary.full': 'Itinerary', 'nav.sections.full': 'Sections', 'nav.journal.full': 'Journal',
+    'nav.itinerary.full': 'Itinerary', 'nav.sections.full': 'Sections', 'nav.journal.full': 'Journal', 'nav.track': 'Live Track',
     'nav.itinerary.title': 'Planned vs actual · itinerary', 'nav.sections.title': 'Section progress · grouped by done/in-progress/todo', 'nav.journal.title': 'Expedition journal · grouped by section',
     'brand.sub': 'GREAT HIMALAYA TRAIL',
     'pos.prefix': '📍 Current location:',
@@ -707,11 +707,22 @@ function applyLang() {
   if (ns) { ns.textContent = '🏔️ ' + t('nav.sections.full') + ' ↗'; ns.title = t('nav.sections.title'); }
   const nj = document.getElementById('navJournal');
   if (nj) { nj.textContent = '📝 ' + t('nav.journal.full') + ' ↗'; nj.title = t('nav.journal.title'); }
+  const nt = document.getElementById('navTrack');
+  if (nt) nt.textContent = t('nav.track');
+  // 底图版权行前缀（© 前的「底图:」↔「Basemap:」），双向切换
+  document.querySelectorAll('span').forEach(function (s) {
+    if (s.childNodes.length === 1 && s.textContent.indexOf('OpenStreetMap') >= 0 && /^(底图[:：]|Basemap:)/.test(s.textContent)) {
+      s.textContent = s.textContent.replace(/^(底图[:：]|Basemap:)\s*/, currentLang === 'en' ? 'Basemap: ' : '底图: ');
+    }
+  });
+  // 通知 demo-live 等模块按新语言重渲染动态状态文案
+  if (typeof window.onLangChange === 'function') { try { window.onLangChange(currentLang); } catch (e) {} }
   const dmt = document.getElementById('dmTitle'); if (dmt) dmt.textContent = t('dm.title');
   const dph = document.getElementById('dmPwdHint'); if (dph) dph.textContent = t('dm.pwdHint');
   const du = document.getElementById('dmUnlock'); if (du) du.textContent = t('dm.unlock');
   const de = document.getElementById('dmPwdErr'); if (de) de.textContent = t('dm.pwdErr');
   // ── 首页静态元素 i18n（index.html 中非 JS 渲染的硬编码中文）──
+  document.title = currentLang === 'en' ? 'GHT Great Himalaya Trail · Live Tracker' : 'GHT 大喜马拉雅高线徒步追踪';
   const brandH1 = document.querySelector('.brand-text h1'); if (brandH1) brandH1.textContent = t('brand.title');
   const brandP = document.querySelector('.brand-text p'); if (brandP) brandP.textContent = 'Great Himalaya Trail · ' + t('brand.sub');
   // 地图卡片标题

@@ -127,6 +127,11 @@
       'sec.note.part': '数据说明：已实测 <b>{m} 段</b>（约 {mk} km）的距离 / 爬升 / 下降 / 垭口来自<b>已上传的实测轨迹</b>；其余 <b>{p} 段</b>为 <b>计划 / 参考</b>里程（约 {pk} km），待轨迹上传后将自动更新为实测值。',
 
       /* journal.html */
+      /* itinerary.html 动态渲染补充 */
+      'it.cal.ym': '{y} 年 {m} 月', 'it.wd': ['一','二','三','四','五','六','日'], 'it.today': '今日',
+      'it.warn': '⚠️ 未设置出发日期（或格式无效）。日历按「今天」起算的<b>临时排期</b>显示 {n} 天；请到 <a href="index.html?v=2">地图追踪页</a> 设置真实出发日，以获得准确日历与「超前/落后」判定。',
+      'it.foot.temp': '（未设置出发日期 · 临时排期）',
+
       'jo.title': '📝 远征日志',
       'jo.en': 'JOURNAL · 时间线 · 最新在前',
       'jo.sub': '从 Phungling 到 Darchula 的全程纪实。沿途随笔按时间倒序排列，最新发布在最上方。山里信号不稳，只发文字、不传照片。',
@@ -150,7 +155,33 @@
       'jo.del.pwd': '主人密码',
       'jo.del.confirm': '确认删除',
       'jo.del.cancel': '取消',
-      'jo.del.err': '密码错误，删除未执行'
+      'jo.del.err': '密码错误，删除未执行',
+      'jo.unit.pcs': '篇', 'jo.unit.secs': '段',
+      'jo.gpx.dist': '距离', 'jo.gpx.asc': '爬升', 'jo.gpx.desc': '下降', 'jo.gpx.dur': '用时', 'jo.gpx.avg': '均速', 'jo.gpx.max': '最高',
+      'jo.badge.auto': '📡 自动记录', 'jo.badge.upload': '🥾 轨迹上传', 'jo.badge.preset': '🗺️ 预设上传',
+      'jo.republish': '🔄 重新发布共享', 'jo.republish.ok': '✅ 已将本机日志重新发布到云端',
+
+      /* track.html 全屏轨迹页 */
+      'tk.title': 'GHT 轨迹同步地图',
+      'tk.back': '返回首页',
+      'tk.waiting': '等待定位数据',
+      'tk.traveler': '行者信息',
+      'tk.person': '王琛',
+      'tk.project': '项目', 'tk.project.val': 'GHT 大喜马拉雅高线',
+      'tk.device': '记录设备', 'tk.device.val': '手表 / 手机 GPX',
+      'tk.location': '当前位置', 'tk.weather': '天气', 'tk.weather.val': '山区无实时气象站',
+      'tk.points': '轨迹点数', 'tk.enroute': '行进中', 'tk.ptUnit': '点',
+      'tk.sync': 'GPX 轨迹同步',
+      'tk.lat': '当前纬度 (LAT)', 'tk.lon': '当前经度 (LON)', 'tk.alt': '当前海拔 (ALT)', 'tk.spd': '即时速度 (SPD)',
+      'tk.distance': '累计徒步里程', 'tk.lastts': '最后同步点（尼泊尔时间）',
+      'tk.locate': '定位行者坐标', 'tk.mapview': '地图视图', 'tk.fit': '全览路线',
+      'tk.reports': '同步记录', 'tk.demo': '演示数据', 'tk.gpxsync': 'GPX 同步', 'tk.manual': '手动上报',
+      'tk.close': '收起', 'tk.fullroute': 'GHT 全线 · 最后同步位置',
+      'tk.base.terrain': '地形', 'tk.base.topo': '等高线', 'tk.base.satellite': '卫星',
+      'tk.sub.terrain': '底图：Esri World Topo · 与总览页一致',
+      'tk.sub.topo': '底图：OpenTopoMap · 与总览页一致',
+      'tk.sub.satellite': '底图：Esri 全球影像 · 卫星俯瞰，喜马拉雅山区清晰',
+      'tk.legend.plan': '计划路线 · 目标', 'tk.legend.actual': '实际徒步轨迹', 'tk.legend.live': 'GPX 同步轨迹（最后一段）'
     },
     en: {
       'brand.sub': 'GREAT HIMALAYA TRAIL',
@@ -262,6 +293,11 @@
       'sec.note.all': 'Data note: all <b>{n}</b> sections’ distance / ascent / descent / passes come from the imported <b>preset route</b> (planned / reference, ~{km} km). Actual GPS tracks will be uploaded section by section after the November departure and auto-updated to measured values.',
       'sec.note.part': 'Data note: <b>{m}</b> sections (~{mk} km) have measured distance / ascent / descent / passes from <b>uploaded GPS tracks</b>; the other <b>{p}</b> sections remain <b>plan / reference</b> (~{pk} km) and will auto-update once tracks are uploaded.',
 
+      /* itinerary.html dynamic additions */
+      'it.cal.ym': '{y} / {m}', 'it.wd': ['Mo','Tu','We','Th','Fr','Sa','Su'], 'it.today': 'Today',
+      'it.warn': '⚠️ No start date set (or invalid format). Calendar shows <b>temporary schedule</b> of {n} days counted from "today"; please set the real start date on the <a href="index.html?v=2">map tracking page</a> for accurate calendar and ahead/behind judgement.',
+      'it.foot.temp': '(No start date set · temporary schedule)',
+
       'jo.title': '📝 Expedition Journal',
       'jo.en': 'JOURNAL · Timeline · Newest first',
       'jo.sub': 'A full record from Phungling to Darchula. Notes are listed newest-first. Signal is unstable in the mountains — text only, no photos.',
@@ -285,7 +321,33 @@
       'jo.del.pwd': 'Master password',
       'jo.del.confirm': 'Delete',
       'jo.del.cancel': 'Cancel',
-      'jo.del.err': 'Wrong password — entry not deleted'
+      'jo.del.err': 'Wrong password — entry not deleted',
+      'jo.unit.pcs': '', 'jo.unit.secs': '',
+      'jo.gpx.dist': 'Dist', 'jo.gpx.asc': 'Ascent', 'jo.gpx.desc': 'Descent', 'jo.gpx.dur': 'Time', 'jo.gpx.avg': 'Avg', 'jo.gpx.max': 'Max',
+      'jo.badge.auto': '📡 Auto logged', 'jo.badge.upload': '🥾 Track uploaded', 'jo.badge.preset': '🗺️ Preset uploaded',
+      'jo.republish': '🔄 Republish share', 'jo.republish.ok': '✅ Local journal republished to cloud',
+
+      /* track.html full-screen track page */
+      'tk.title': 'GHT Track Sync Map',
+      'tk.back': 'Back to home',
+      'tk.waiting': 'Waiting for position data',
+      'tk.traveler': 'Traveler info',
+      'tk.person': 'Wang Chen',
+      'tk.project': 'Project', 'tk.project.val': 'Great Himalaya Trail',
+      'tk.device': 'Device', 'tk.device.val': 'Watch / Phone GPX',
+      'tk.location': 'Current location', 'tk.weather': 'Weather', 'tk.weather.val': 'No live weather station in mountains',
+      'tk.points': 'Track points', 'tk.enroute': 'En route', 'tk.ptUnit': 'pts',
+      'tk.sync': 'GPX track sync',
+      'tk.lat': 'Latitude (LAT)', 'tk.lon': 'Longitude (LON)', 'tk.alt': 'Altitude (ALT)', 'tk.spd': 'Speed (SPD)',
+      'tk.distance': 'Total distance', 'tk.lastts': 'Last sync (Nepal time)',
+      'tk.locate': 'Locate traveler', 'tk.mapview': 'Map view', 'tk.fit': 'Fit whole route',
+      'tk.reports': 'Sync reports', 'tk.demo': 'Demo data', 'tk.gpxsync': 'GPX sync', 'tk.manual': 'Manual report',
+      'tk.close': 'Close', 'tk.fullroute': 'GHT Full Route · Last synced position',
+      'tk.base.terrain': 'Terrain', 'tk.base.topo': 'Contours', 'tk.base.satellite': 'Satellite',
+      'tk.sub.terrain': 'Basemap: Esri World Topo · same as overview',
+      'tk.sub.topo': 'Basemap: OpenTopoMap · same as overview',
+      'tk.sub.satellite': 'Basemap: Esri World Imagery · clear Himalaya overview',
+      'tk.legend.plan': 'Planned route · target', 'tk.legend.actual': 'Actual track', 'tk.legend.live': 'GPX sync track (last segment)'
     }
   };
 
@@ -298,7 +360,7 @@
 
   function applyLang() {
     document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
-    document.querySelectorAll('.lang-btn').forEach(b => { b.textContent = t('lang.btn'); });
+    document.querySelectorAll('.lang-btn, .tk-lang-btn').forEach(b => { b.textContent = t('lang.btn'); });
     document.querySelectorAll('[data-i18n]').forEach(el => {
       const v = t(el.dataset.i18n);
       if (v !== el.dataset.i18n) el.textContent = v;
@@ -315,7 +377,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('.lang-btn').forEach(b => b.addEventListener('click', toggleLang));
+    document.querySelectorAll('.lang-btn, .tk-lang-btn').forEach(b => b.addEventListener('click', toggleLang));
     applyLang();
   });
 

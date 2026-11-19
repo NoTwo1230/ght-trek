@@ -13,25 +13,36 @@
 
   // 定位时间距现在多久 —— 前台状态栏与后台提示共用同一套判定
   // 表达的是"最后知道你在哪"距今多旧，不是设备在线离线
+  function isEn() {
+    try { return localStorage.getItem('ght_lang') === 'en'; } catch (e) { return false; }
+  }
+
   function freshness(ts) {
     var age = ts ? Math.max(0, Date.now() - Number(ts)) : Infinity;
     var level = age < DAY ? 'fresh' : (age < 3 * DAY ? 'aging' : 'stale');
     var label = ageText(age);
+    var en = isEn();
+    var just = en ? 'Just now' : '刚刚';
     return {
       age: age,
       level: level,                       // fresh / aging / stale
       label: label,                       // 刚刚 / 3 小时前 / 2 天前
-      phrase: label === '刚刚' ? '刚刚定位' : ('定位于 ' + label),
-      advise: level === 'fresh' ? '' : (level === 'aging' ? '定位已较旧，建议回传轨迹' : '定位已久未更新，请尽快回传轨迹')
+      phrase: label === (en ? 'Just now' : '刚刚')
+        ? (en ? 'Located just now' : '刚刚定位')
+        : ((en ? 'Located ' : '定位于 ') + label),
+      advise: level === 'fresh' ? '' : (level === 'aging'
+        ? (en ? 'Position getting old — please re-upload track' : '定位已较旧，建议回传轨迹')
+        : (en ? 'Position stale — please re-upload track soon' : '定位已久未更新，请尽快回传轨迹'))
     };
   }
 
   function ageText(age) {
-    if (!isFinite(age)) return '尚未定位';
-    if (age < MINUTE) return '刚刚';
-    if (age < HOUR) return Math.round(age / MINUTE) + ' 分钟前';
-    if (age < DAY) return Math.round(age / HOUR) + ' 小时前';
-    return Math.round(age / DAY) + ' 天前';
+    var en = isEn();
+    if (!isFinite(age)) return en ? 'Never located' : '尚未定位';
+    if (age < MINUTE) return en ? 'Just now' : '刚刚';
+    if (age < HOUR) return Math.round(age / MINUTE) + (en ? ' min ago' : ' 分钟前');
+    if (age < DAY) return Math.round(age / HOUR) + (en ? ' h ago' : ' 小时前');
+    return Math.round(age / DAY) + (en ? ' d ago' : ' 天前');
   }
 
   function parse(text) {

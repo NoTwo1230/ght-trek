@@ -6,6 +6,8 @@
   if (!window.L || !seed) return;
 
   var G = window.GpxLive;
+  var I = window.GHTI18N;
+  function t(k, def) { return I ? I.t(k, def) : def; }
   var KEY = G ? G.KEY : 'ght_live_demo_points';
   var MAX = 60;
   var MINUTE = 60000, HOUR = 3600000, DAY = 24 * HOUR;
@@ -55,8 +57,12 @@
     (seed.sections || []).forEach(function (r) {
       var slice = presetCoords.slice(r.startIndex, r.endIndex + 1);
       if (slice.length < 2) return;
+      var isEn = I && I.getLang() === 'en';
+      var st = r.status === 'completed'
+        ? (isEn ? 'Done' : '已完成')
+        : (r.status === 'in-progress' ? (isEn ? 'In progress' : '进行中') : (isEn ? 'Not started' : '未开始'));
       L.polyline(slice, { color: r.regionColor || '#635BFF', weight: 2.6, opacity: 0.95, lineCap: 'round' })
-        .bindPopup('<b>' + (r.regionZh || r.regionEn || '路段') + '</b><br>状态：' + (r.status === 'completed' ? '已完成' : r.status === 'in-progress' ? '进行中' : '未开始'))
+        .bindPopup('<b>' + (isEn ? (r.regionEn || r.regionZh) : (r.regionZh || r.regionEn) || '—') + '</b><br>' + (isEn ? 'Status: ' : '状态：') + st)
         .addTo(planLayer);
     });
   }
@@ -68,8 +74,9 @@
       var c = (t.trackPoints || []).map(proj);
       if (c.length < 2) return;
       L.polyline(c, { color: '#ffffff', weight: 6, opacity: 0.5, lineCap: 'round' }).addTo(actualLayer);
+      var isEnA = I && I.getLang() === 'en';
       L.polyline(c, { color: '#00A86B', weight: 3, opacity: 0.95, lineCap: 'round' })
-        .bindPopup('<b>实际轨迹 · ' + (t.date || t.fileName || '') + '</b><br>' + (t.distance || 0).toFixed(1) + ' km')
+        .bindPopup('<b>' + (isEnA ? 'Actual track' : '实际轨迹') + ' · ' + (t.date || t.fileName || '') + '</b><br>' + (t.distance || 0).toFixed(1) + ' km')
         .addTo(actualLayer);
     });
   }
@@ -150,8 +157,9 @@
       L.circleMarker(proj(p), { radius: 2.5, color: '#fff', fillColor: '#F85149', fillOpacity: 1, weight: 1 }).addTo(liveLayer);
     });
     var last = points[points.length - 1];
+    var isEnL = I && I.getLang() === 'en';
     L.marker(proj(last), { icon: personIcon() })
-      .bindPopup('<b>最后同步位置 · GPX</b><br>' + Number(last.lat).toFixed(5) + ', ' + Number(last.lon).toFixed(5))
+      .bindPopup('<b>' + (isEnL ? 'Last synced position · GPX' : '最后同步位置 · GPX') + '</b><br>' + Number(last.lat).toFixed(5) + ', ' + Number(last.lon).toFixed(5))
       .addTo(liveLayer);
   }
 
@@ -164,7 +172,9 @@
       var d = (q.lat - p.lat) * (q.lat - p.lat) + (q.lon - p.lon) * (q.lon - p.lon);
       if (d < bestD) { bestD = d; best = r; }
     });
-    return best ? (best.regionZh || best.regionEn || '—') : '—';
+    if (!best) return '—';
+    var isEn = I && I.getLang() === 'en';
+    return isEn ? (best.regionEn || best.regionZh || '—') : (best.regionZh || best.regionEn || '—');
   }
 
   function setText(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; }
@@ -190,15 +200,15 @@
     var done = (seed.actual || []).reduce(function (s, t) { return s + (Number(t.distance) || 0); }, 0);
     setText('tkDistance', done.toFixed(2) + ' / ' + (seed.totalDistance || 1602) + ' km');
     setText('tkLastTs', G ? G.formatNepal(lastTs()) : new Date(lastTs()).toLocaleString('zh-CN', { hour12: false }));
-    setText('tkRegion', regionForPoint(p) + ' · 行进中');
-    setText('tkBattery', points.length + ' 点');
+    setText('tkRegion', regionForPoint(p) + ' · ' + t('tk.enroute', '行进中'));
+    setText('tkBattery', points.length + ' ' + t('tk.ptUnit', '点'));
 
     var tl = document.getElementById('tkTimeline');
     if (tl) {
       tl.innerHTML = points.slice(-6).reverse().map(function (q) {
         var tm = q.source === 'gpx' ? (G ? G.formatNepal(q.ts) : new Date(q.ts).toLocaleTimeString('zh-CN', { hour12: false }))
           : new Date(q.ts || Date.now()).toLocaleTimeString('zh-CN', { hour12: false });
-        var tag = q.source === 'gpx' ? 'GPX 同步' : (q.source === 'admin' ? '手动上报' : '演示数据');
+        var tag = q.source === 'gpx' ? t('tk.gpxsync', 'GPX 同步') : (q.source === 'admin' ? t('tk.manual', '手动上报') : t('tk.demo', '演示数据'));
         return '<div class="tk-tl-item"><div class="tk-tl-time">' + tm + ' · ' + tag + '</div>' +
           '<div class="tk-tl-text">' + Number(q.lat).toFixed(4) + '°N ' + Number(q.lon).toFixed(4) + '°E · ' +
           (q.elev != null ? Math.round(q.elev) + ' m' : '—') + '</div></div>';
@@ -241,6 +251,9 @@
     });
   }
 
+  function toggleLabel(open) {
+    return (open ? '✕ ' + t('tk.close', '收起') : '☰ ' + t('tk.traveler', '行者信息'));
+  }
   function wire() {
     // 窄屏抽屉：点按钮展开/收起信息面板；点地图区域自动收起
     var toggle = document.getElementById('tkPanelToggle');
@@ -249,12 +262,12 @@
       toggle.onclick = function (e) {
         e.stopPropagation();
         var open = shell.classList.toggle('panel-open');
-        toggle.textContent = open ? '✕ 收起' : '☰ 行者信息';
+        toggle.textContent = toggleLabel(open);
       };
       document.getElementById('map').addEventListener('click', function () {
         if (shell.classList.contains('panel-open')) {
           shell.classList.remove('panel-open');
-          toggle.textContent = '☰ 行者信息';
+          toggle.textContent = toggleLabel(false);
         }
       });
     }
@@ -270,11 +283,13 @@
     document.getElementById('tkBaseSatellite').onclick = function () { switchBase('satellite'); };
   }
 
-  var BASE_SUB = {
-    terrain: '底图：Esri World Topo · 与总览页一致',
-    topo: '底图：OpenTopoMap · 与总览页一致',
-    satellite: '底图：Esri 全球影像 · 卫星俯瞰，喜马拉雅山区清晰'
-  };
+  function baseSub(key) {
+    return t('tk.sub.' + key, {
+      terrain: '底图：Esri World Topo · 与总览页一致',
+      topo: '底图：OpenTopoMap · 与总览页一致',
+      satellite: '底图：Esri 全球影像 · 卫星俯瞰，喜马拉雅山区清晰'
+    }[key]);
+  }
   function switchBase(key) {
     if (key === currentBase) return;
     map.removeLayer(basemaps[currentBase]);
@@ -288,8 +303,20 @@
       var btn = document.getElementById('tkBase' + k.charAt(0).toUpperCase() + k.slice(1));
       if (btn) btn.classList.toggle('on', k === key);
     });
-    setText('tkMapSub', BASE_SUB[key]);
+    setText('tkMapSub', baseSub(key));
   }
+
+  // 语言切换：重绘带文案的图层标注 + 动态 UI + 底图副标题 + 抽屉按钮
+  window.onLangChange = function () {
+    renderPlan();
+    renderActual();
+    renderLive();
+    setText('tkMapSub', baseSub(currentBase));
+    var tgl = document.getElementById('tkPanelToggle');
+    var sh = document.querySelector('.tk-shell');
+    if (tgl && sh) tgl.textContent = toggleLabel(sh.classList.contains('panel-open'));
+    updateUI();
+  };
 
   wire();
   wireSync();

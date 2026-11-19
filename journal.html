@@ -367,21 +367,21 @@
       const st = ds.startTime ? new Date(ds.startTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '';
       const et = ds.endTime ? new Date(ds.endTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '';
       const range = (st && et) ? ' · ' + st + ' → ' + et : '';
-      let label = '📡 自动记录';
-      if (e.kind === 'actual-upload') label = '🥾 轨迹上传';
-      else if (e.kind === 'preset-upload') label = '🗺️ 预设上传';
+      let label = t('jo.badge.auto');
+      if (e.kind === 'actual-upload') label = t('jo.badge.upload');
+      else if (e.kind === 'preset-upload') label = t('jo.badge.preset');
       gpsBadge = `<span class="gps-badge">${label}${range}</span>`;
     }
 
     let chips = '';
     if (isGps) {
       chips = `<div class="chips">`
-        + `<div class="sc"><div class="sv white">${(ds.distance || 0).toFixed(1)}<small>km</small></div><div class="sk">距离</div></div>`
-        + `<div class="sc"><div class="sv orange">${(ds.elevGain || 0).toLocaleString()}<small>m</small></div><div class="sk">爬升</div></div>`
-        + `<div class="sc"><div class="sv orange">${(ds.elevLoss || 0).toLocaleString()}<small>m</small></div><div class="sk">下降</div></div>`
-        + (ds.durationStr ? `<div class="sc"><div class="sv white">${ds.durationStr}</div><div class="sk">用时</div></div>` : '')
-        + (ds.avgSpeed ? `<div class="sc"><div class="sv white">${ds.avgSpeed}<small>km/h</small></div><div class="sk">均速</div></div>` : '')
-        + `<div class="sc"><div class="sv white">${(ds.maxElev || 0).toLocaleString()}<small>m</small></div><div class="sk">最高</div></div>`
+        + `<div class="sc"><div class="sv white">${(ds.distance || 0).toFixed(1)}<small>km</small></div><div class="sk">${t('jo.gpx.dist')}</div></div>`
+        + `<div class="sc"><div class="sv orange">${(ds.elevGain || 0).toLocaleString()}<small>m</small></div><div class="sk">${t('jo.gpx.asc')}</div></div>`
+        + `<div class="sc"><div class="sv orange">${(ds.elevLoss || 0).toLocaleString()}<small>m</small></div><div class="sk">${t('jo.gpx.desc')}</div></div>`
+        + (ds.durationStr ? `<div class="sc"><div class="sv white">${ds.durationStr}</div><div class="sk">${t('jo.gpx.dur')}</div></div>` : '')
+        + (ds.avgSpeed ? `<div class="sc"><div class="sv white">${ds.avgSpeed}<small>km/h</small></div><div class="sk">${t('jo.gpx.avg')}</div></div>` : '')
+        + `<div class="sc"><div class="sv white">${(ds.maxElev || 0).toLocaleString()}<small>m</small></div><div class="sk">${t('jo.gpx.max')}</div></div>`
         + `</div>`;
     }
     const spark = isGps ? sparkline(meta.points, region.color) : '';
@@ -429,10 +429,10 @@
       }
       if (e.sectionId && e.sectionId >= 1 && e.sectionId <= SECTIONS.length) covered.add(e.sectionId);
     });
-    document.getElementById('st-total').innerHTML = logEntries.length + '<small>篇</small>';
+    document.getElementById('st-total').innerHTML = logEntries.length + '<small>' + t('jo.unit.pcs') + '</small>';
     document.getElementById('st-dist').innerHTML = Math.round(dist).toLocaleString() + '<small>km</small>';
     document.getElementById('st-gain').innerHTML = (gain / 1000).toFixed(1) + '<small>k m</small>';
-    document.getElementById('st-sec').innerHTML = covered.size + '<small>段</small>';
+    document.getElementById('st-sec').innerHTML = covered.size + '<small>' + t('jo.unit.secs') + '</small>';
   }
 
   // ── 发布框（主人态显示；从首页迁移而来，原在 index.html 的 renderLog 内）──
@@ -469,7 +469,7 @@
       <div class="composer-box">
         <textarea id="jText" rows="3" placeholder="${t('jo.composer.ph')}"></textarea>
         <button class="btn-pub" id="jPub">${t('jo.composer.btn')}</button>
-        <button class="btn-pub" id="jRepublish" style="margin-top:8px;background:#3a7;" onclick="republishJournalShare()">🔄 重新发布共享</button>
+        <button class="btn-pub" id="jRepublish" style="margin-top:8px;background:#3a7;" onclick="republishJournalShare()">${t('jo.republish')}</button>
       </div>`;
     const btn = document.getElementById('jPub');
     if (btn) btn.addEventListener('click', addLogEntry);
@@ -512,7 +512,7 @@
     const fresh = await getShare();                 // 先以云端最新包（含 app 分片）为基底，避免覆盖刚由首页推上去的 app 数据
     if (fresh) sharedCache = fresh;
     pushJournalShare();   // 内部会 delete clearedAt + removeItem('ght_cleared_self')
-    alert('✅ 已将本机日志重新发布到云端');
+    alert(t('jo.republish.ok'));
   }
 
   // ── 删除日志（需再次输入主人密码确认，防误删）──

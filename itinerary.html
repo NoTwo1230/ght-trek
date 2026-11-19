@@ -506,6 +506,10 @@
    不依赖任何外部库，纯前端渲染，保证长列表可完整滚动。
    ════════════════════════════════════════════════════════════ */
 const t = window.GHTI18N.t;
+const MONTHS_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+function calTitleText(y, mo) {
+  return GHTI18N.getLang() === 'en' ? (MONTHS_EN[mo] + ' ' + y) : (y + ' 年 ' + (mo + 1) + ' 月');
+}
 const LS = {
   itinerary: 'ght_itinerary',
   actual:    'ght_actual',
@@ -524,8 +528,15 @@ const SECTION_NAMES  = ['干城章嘉保护区','马卡鲁-巴润国家公园','
 const SEC = (typeof window !== 'undefined' && window.GHT_SECTIONS) ? window.GHT_SECTIONS : [];
 function regionOf(id){
   const r = SEC[(id||1)-1];
-  if (r) return r;
-  return { zh: (SECTION_NAMES[(id||1)-1] || ('第'+id+'段')), color: (SECTION_COLORS[(id||1)-1] || '#888') };
+  if (r) {
+    // 统一暴露 zh / en 两个字段（GHT_SECTIONS 用 regionZh / regionEn）
+    return Object.assign({}, r, {
+      zh: r.zh || r.regionZh || r.regionEn || r.en || '',
+      en: r.en || r.regionEn || r.regionZh || r.zh || ''
+    });
+  }
+  const zh = SECTION_NAMES[(id||1)-1] || ('第'+id+'段');
+  return { zh: zh, en: zh, color: (SECTION_COLORS[(id||1)-1] || '#888') };
 }
 
 /* ── 日期工具（YYYY-MM-DD）── */
@@ -750,13 +761,13 @@ function renderCalendar(){
   if(!DATA.planned.length) return;
   MAP = buildMap();
   const y = viewY, mo = viewM;
-  document.getElementById('calTitle').textContent = y + ' 年 ' + (mo+1) + ' 月';
+  document.getElementById('calTitle').textContent = calTitleText(y, mo);
 
   const first = new Date(y, mo, 1);
   const startOffset = (first.getDay() + 6) % 7;     // 周一为起点
   const daysInMonth = new Date(y, mo+1, 0).getDate();
   const todayStr = ymd(new Date());
-  const wd = ['一','二','三','四','五','六','日'];
+  const wd = t('it.wd');
   let html = wd.map(w=>`<div class="wd">${w}</div>`).join('');
 
   // 前置补白（上月）
@@ -785,7 +796,7 @@ function renderCalendar(){
           <span class="stripe" style="background:${region.color}"></span>
           <span class="crow"><span class="dlab">D${day.day}</span><span class="sdot" style="background:${STATUS[st].c}"></span></span>
           <span class="route">${esc(day.from)}<span class="ar">→</span>${esc(day.to)}</span>
-          <span class="meta"><span>${((+day.plannedDistance)||0).toFixed(1)}km</span><span class="rname">${esc(region.zh)}</span></span>
+          <span class="meta"><span>${((+day.plannedDistance)||0).toFixed(1)}km</span><span class="rname">${esc(GHTI18N.getLang()==='en' ? (region.en || region.zh) : region.zh)}</span></span>
           ${ghost}</button>`;
       } else {
         // 多天重叠（方案 A）：紧凑块 + 角标，点开看全部
@@ -797,7 +808,7 @@ function renderCalendar(){
           <span class="route" style="color:var(--text-dim)">${list.length} 天重叠 ↗</span></button>`;
       }
     }
-    html += `<div class="cell${isToday?' today':''}">${isToday?'<span class="today-badge">今日</span>':''}${inner}</div>`;
+    html += `<div class="cell${isToday?' today':''}">${isToday?'<span class="today-badge">'+t('it.today')+'</span>':''}${inner}</div>`;
   }
   // 后置补白（下月）
   const total = startOffset + daysInMonth;
@@ -833,16 +844,17 @@ function dayDetail(d){
   const planDate = getPlannedDate(DATA.startDate, d.day);
   const chipCls = st === 'on-track' ? 'ontime' : st;
 
+  const isEn = GHTI18N.getLang() === 'en';
   const head = `<div class="dd-h">
     <span class="day-badge"><span class="dot" style="background:${col}"></span><span class="num">Day ${d.day}</span></span>
     <span class="chip2 ${chipCls}">${stInfo.t}</span>
-    <span class="dd-sub">第 <b>${d.sectionId}</b> 段 · ${esc(region.zh)}</span>
+    <span class="dd-sub">${isEn ? 'Section' : '第'} <b>${d.sectionId}</b> ${isEn ? '' : '段'} · ${esc(isEn ? region.en : region.zh)}</span>
     <span class="dd-delay">${d.delayed
       ? ['weather','injured','tired','other'].map(r => '<button class="dd-dbtn' + (d.delayReason === r ? ' on' : '') + '" onclick="event.stopPropagation();toggleDelay(' + d.day + ",'" + r + '\')" title="' + delayLabel(r) + '">' + DELAY_ICON[r] + '</button>').join('')
       : '<button class="dd-dbtn" onclick="event.stopPropagation();toggleDelay(' + d.day + ')" title="' + t('it.legend.delay') + '">☁️</button>'
     }</span>
   </div>`;
-  const meta = `<div class="dd-sub" style="margin:2px 0 8px">计划 ${planDate||'—'}${d.actual&&d.actual.date?` · 实际 ${esc(shortYmd(d.actual.date))}`:''}</div>`;
+  const meta = `<div class="dd-sub" style="margin:2px 0 8px">${isEn?'Planned':'计划'} ${planDate||'—'}${d.actual&&d.actual.date?` · ${isEn?'Actual':'实际'} ${esc(shortYmd(d.actual.date))}`:''}</div>`;
 
   const planCol = `
     <div class="col plan"><div class="col-title">${t('it.drawer.plan')}</div>
@@ -919,7 +931,7 @@ function render(){
   if(warn){
     if(!DATA.startOk){
       warn.style.display = 'block';
-      warn.innerHTML = '⚠️ 未设置出发日期（或格式无效）。日历按「今天」起算的<b>临时排期</b>显示 '+DATA.planned.length+' 天；请到 <a href="index.html?v=2">地图追踪页</a> 设置真实出发日，以获得准确日历与「超前/落后」判定。';
+      warn.innerHTML = t('it.warn').replace('{n}', DATA.planned.length);
     } else {
       warn.style.display = 'none';
     }
@@ -962,7 +974,7 @@ window.onLangChange = function () {
     renderCalendar();
     const datePart = DATA.startOk
       ? t('it.foot.date').replace('{d}', esc(DATA.startDateReal))
-      : '（未设置出发日期 · 临时排期）';
+      : t('it.foot.temp');
     document.getElementById('footNote').innerHTML = t('it.foot').replace('{date}', datePart);
   }
 };
