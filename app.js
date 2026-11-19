@@ -635,7 +635,7 @@ const I18N = {
     'elev.scopePreset': '预设轨迹', 'elev.highest': '最高', 'elev.lowest': '最低',
     'elev.climbLabel': '累计爬升', 'elev.current': '当前',
     // ── Header / Footer / 其他 ──
-    'hdr.live': '实时追踪中', 'hdr.idle': '计划中 · 尚未出发',
+    'hdr.live': '定位中', 'hdr.idle': '等待定位数据',
     'brand.title': 'GHT 大喜马拉雅高线徒步追踪', 'brand.sub': '远征追踪面板',
     'footer.copyright': '© 2026 GHT 高线追踪', 'footer.dataSrc': '数据来源: GPX',
     'loading.parse': '正在解析 GPX 轨迹...'
@@ -669,7 +669,7 @@ const I18N = {
     'elev.scopePreset': 'Preset Track', 'elev.highest': 'Highest', 'elev.lowest': 'Lowest',
     'elev.climbLabel': 'Total climb', 'elev.current': 'Current',
     // ── Header / Footer / Misc ──
-    'hdr.live': 'Live Tracking', 'hdr.idle': 'Planned · Not started',
+    'hdr.live': '定位中', 'hdr.idle': 'Waiting for position',
     'brand.title': 'GHT Great Himalaya Trail', 'brand.sub': 'Expedition Tracker',
     'footer.copyright': '© 2026 GHT Tracker', 'footer.dataSrc': 'Data source: GPX',
     'loading.parse': 'Parsing GPX track...'
@@ -1006,6 +1006,15 @@ const API = (function () {
     getShare: async () => {
       if (!hasBackend()) return { ok: true, status: 200, data: null };
       return req('GET', '/api/share');
+    },
+    // 实时上报：只读公开，写入需 owner token
+    getLive: async () => {
+      if (!hasBackend()) return { ok: true, status: 200, data: null };
+      return req('GET', '/api/live');
+    },
+    postLive: async (point) => {
+      if (!hasBackend()) return noBackend();
+      return req('POST', '/api/live', { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(point || {}) });
     },
     putShare: async (bundle) => {
       if (!hasBackend()) return noBackend();
@@ -1785,7 +1794,7 @@ function updateLiveStatus() {
   const hasLive = APP.currentPosition && APP.actualTracks && APP.actualTracks.length;
   if (hasLive) {
     el.className = 'live-dot';
-    el.innerHTML = '<span class="ld-dot"></span> Live Tracking Active · ' + t('hdr.live');
+    el.innerHTML = '<span class="ld-dot"></span> ' + t('hdr.live');
   } else {
     el.className = 'live-dot offline';
     el.innerHTML = '<span class="ld-dot offline"></span> ' + t('hdr.idle');
@@ -3952,6 +3961,32 @@ function addActualTrack(gpxData, stats) {
   renderAllTracks();      // 内部会调用 updateProgress() 刷新总距离 / 进度百分比
   updateProgressDOM();
   openPanel(APP.activeTab || 'progress');  // 刷新当前面板，使行程/进度即时同步
+
+  // ── 合并点：实际轨迹上传后，直接取刚解析的末尾点同步到 live 图层 ──
+  // 复用同一份 gpxData，不再二次解析文件；实时点只进 live 键，不进 actualTracks 统计。
+  try {
+    if (window.GpxLive && gpxData.trackPoints && gpxData.trackPoints.length) {
+      var tail = gpxData.trackPoints.slice(-window.GpxLive.MAX).map(function (p) {
+        return {
+          lat: p.lat, lon: p.lon,
+          elev: p.elev != null ? p.elev : null,
+          time: p.time ? Date.parse(p.time) : null
+        };
+      });
+      var livePts = window.GpxLive.toLivePoints(tail, window.GpxLive.MAX);
+      if (livePts.length) {
+        if (location.protocol === 'file:') {
+          window.GpxLive.saveAndBroadcast(livePts);   // 本地预览：写 store + 广播，首页/全屏页自动刷新
+        } else if (window.API && typeof API.postLive === 'function') {
+          var _last = livePts[livePts.length - 1];
+          API.postLive({
+            lat: _last.lat, lon: _last.lon, elev: _last.elev,
+            ts: _last.ts, source: 'gpx', note: '实际轨迹末尾点'
+          }).catch(function () {});
+        }
+      }
+    }
+  } catch (e) { console.warn('[ght] live sync skipped', e); }
 }
 
 function setAsPreset(gpxData, stats) {

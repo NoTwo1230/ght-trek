@@ -117,6 +117,7 @@
   .admin-main.locked{display:none}
 </style>
 <link rel="stylesheet" href="design-redesign.css" />
+<link rel="stylesheet" href="demo-live.css" />
 <script>document.documentElement.dataset.theme='light';</script>
 </head>
 
@@ -140,6 +141,7 @@
     <div class="brand"><span style="width:26px;height:26px;border-radius:7px;background:#635BFF;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19l5-7 4 5 3-4 6 6"/><circle cx="17" cy="6" r="2"/></svg></span> GHT <span class="badge">后台 ADMIN</span></div>
     <span class="spacer"></span>
     <a href="index.html?v=2" target="_blank" rel="noopener">查看前台 ↗</a>
+    <a href="track.html" target="_blank" rel="noopener">实时地图 ↗</a>
     <a href="journal.html?v=2" target="_blank" rel="noopener">日志页 ↗</a>
     <button id="adminLogout" type="button">退出登录</button>
   </header>
@@ -158,6 +160,7 @@
     <nav class="tabs">
       <button class="tab-btn active" data-tab="journal" type="button">📝 日志</button>
       <button class="tab-btn" data-tab="tracks" type="button">📍 轨迹</button>
+      <button class="tab-btn" data-tab="live" type="button">📡 实时上报</button>
       <button class="tab-btn" data-tab="config" type="button">⚙️ 配置</button>
     </nav>
 
@@ -193,7 +196,37 @@
       </div>
     </section>
 
-    <!-- 3. 配置 -->
+    <!-- 3. 实时上报（演示：写入独立 live 键，不影响实际轨迹统计） -->
+    <section class="tab-panel" id="tab-live">
+      <h2 class="sec-head">📡 最后位置同步 <span class="en">LIVE</span></h2>
+      <p class="sec-hint">GPX 导入统一在「📍 轨迹」Tab 完成：上传「实际徒步轨迹」后，系统会自动取该文件末尾轨迹点同步到地图，无需在这里重复上传。本页只用于<strong>手动补录单个坐标</strong>（例如手机临时看了一眼位置、来不及导出文件时）。</p>
+      <div class="live-status-strip" id="liveStatusStrip">
+        <span class="lss-dot" id="lssDot"></span>
+        <div class="lss-body">
+          <div class="lss-title" id="lssTitle">最后定位 · 等待数据</div>
+          <div class="lss-sub" id="lssSub">导入实际轨迹或手动补录后，这里显示定位时间距今多久</div>
+        </div>
+        <button class="btn-op" id="lssRefresh" type="button">刷新</button>
+      </div>
+      <div class="live-report-box">
+        <div class="iu-title">手动录入坐标<span class="iu-mode-tag iu-mode-actual">LIVE</span></div>
+        <div class="live-report-grid">
+          <div><label for="liveLat">纬度 LAT</label><input id="liveLat" type="number" step="0.00001" placeholder="27.73692"></div>
+          <div><label for="liveLon">经度 LON</label><input id="liveLon" type="number" step="0.00001" placeholder="87.97342"></div>
+          <div><label for="liveElev">海拔 m</label><input id="liveElev" type="number" step="1" placeholder="4095"></div>
+          <div><label for="liveSpeed">速度 km/h</label><input id="liveSpeed" type="number" step="0.1" placeholder="1.2"></div>
+          <div><label for="liveDevice">设备 / 备注</label><input id="liveDevice" type="text" placeholder="Garmin / 手机"></div>
+        </div>
+        <div class="live-report-actions">
+          <button class="cfg-save" id="liveSubmit" type="button">提交上报</button>
+          <button class="btn-op btn-op-primary" id="liveFill" type="button">填入最后 GPS 点</button>
+          <span class="live-report-msg" id="liveMsg"></span>
+        </div>
+      </div>
+      <p class="sec-hint" style="margin-top:14px">提示：本地 file:// 预览时没有后端，上报会写入浏览器本地存储供首页演示；部署到 Cloudflare Pages 并绑定 GHT_KV 后，同一表单会写入 <code>/api/live</code>。GPX 同步频率取决于你多久能回到有信号的地方，通常每天一次即可。</p>
+    </section>
+
+    <!-- 4. 配置 -->
     <section class="tab-panel" id="tab-config">
       <h2 class="sec-head">⚙️ 站点配置 <span class="en">CONFIG</span></h2>
       <p class="sec-hint">出发日期、默认语言。保存后全设备生效。</p>
@@ -216,8 +249,12 @@
 
   </main>
 
+  <script src="demo-seed.js"></script>
+  <script src="demo-seed-init.js"></script>
   <script src="ght-region-map.js?v=3"></script>
   <script src="app.js?v=13"></script>
+  <script src="gpx-live.js"></script>
+  <script src="demo-live-admin.js"></script>
   <script>
   /* ============================================================
      后台管理逻辑 v3：单一登录 + 日志/轨迹/配置 三 Tab + 数据操作栏。
@@ -231,6 +268,13 @@
     }
     const NEPAL_OFFSET_MS = (5 * 60 + 45) * 60 * 1000;
     const TOKEN_KEY = 'ght_token';
+    // 本地密码兜底仅在本地预览环境生效（本地文件或 localhost），线上强制走真实后端登录，
+    // 避免 ght2026 硬编码密码在公开站点被用作后台后门。
+    const _localHost = /^(localhost|127\.0\.0\.1|\[::1\])$/i.test(location.hostname);
+    const DEMO_MODE = !!window.GHT_DEMO_SEED && (location.protocol === 'file:' || _localHost);
+    const DEMO_PWD = 'ght2026';
+    const DEMO_TOKEN = 'ght-demo-local-token';
+    const DEMO_SESSION_KEY = 'ght_demo_admin';
     function getOwnerToken() { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; } }
     function setOwnerToken(t) { try { if (t) localStorage.setItem(TOKEN_KEY, t); else localStorage.removeItem(TOKEN_KEY); } catch (e) {} }
     function apiBase() { const m = document.querySelector('meta[name="ght-api"]'); const v = (m && m.getAttribute('content') || '').trim().replace(/\/+$/, ''); return v || location.origin; }
@@ -248,6 +292,11 @@
 
     // ── 单一登录 ──
     async function adminLogin(pwd) {
+      // 本地演示副本：无后端时用与 journal.html 相同的主密码兜底
+      if (DEMO_MODE) {
+        if (pwd === DEMO_PWD) return { ok: true, token: DEMO_TOKEN };
+        return { ok: false, msg: '密码错误（本地演示密码：ght2026）' };
+      }
       try {
         const res = await fetch(apiBase() + '/api/login?_t=' + Date.now(), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pwd }) });
         let data = null; try { data = await res.json(); } catch (e) {}
@@ -264,6 +313,7 @@
       if (r.ok) {
         setOwnerToken(r.token);
         if (typeof API.setToken === 'function') API.setToken(r.token);
+        if (DEMO_MODE) { try { sessionStorage.setItem(DEMO_SESSION_KEY, '1'); } catch (e) {} }
         APP.isOwner = true;
         enterAdmin();
       } else if (err) { err.textContent = r.msg; }
@@ -279,6 +329,7 @@
     function exitAdmin() {
       setOwnerToken('');
       if (typeof API.clearToken === 'function') API.clearToken();
+      try { sessionStorage.removeItem(DEMO_SESSION_KEY); } catch (e) {}
       APP.isOwner = false;
       location.reload();
     }
@@ -531,6 +582,15 @@
     document.getElementById('cfgSave').addEventListener('click', saveConfig);
     document.getElementById('adminLogout').addEventListener('click', exitAdmin);
     // 若已登录（token 仍在），轨迹免密
+    if (DEMO_MODE) {
+      try {
+        if (sessionStorage.getItem(DEMO_SESSION_KEY) === '1') {
+          setOwnerToken(DEMO_TOKEN);
+          if (typeof API.setToken === 'function') API.setToken(DEMO_TOKEN);
+          APP.isOwner = true;
+        }
+      } catch (e) {}
+    }
     if (getOwnerToken() && typeof API.setToken === 'function') API.setToken(getOwnerToken());
     if (getOwnerToken()) APP.isOwner = true;
 

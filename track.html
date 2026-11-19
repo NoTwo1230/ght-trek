@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GHT 轨迹同步地图 · 大喜马拉雅高线</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="track.css" />
+</head>
+<body>
+
+<header class="tk-topbar">
+  <div class="tk-brand">
+    <div class="tk-mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 19l5-7 4 5 3-4 6 6"/><circle cx="17" cy="6" r="2"/>
+      </svg>
+    </div>
+    <div>
+      <div class="tk-title">GHT 轨迹同步地图</div>
+      <div class="tk-sub">Great Himalaya Trail · GPX track sync</div>
+    </div>
+  </div>
+  <div class="tk-spacer"></div>
+  <span class="tk-status" id="tkStatus"><span class="tk-dot"></span><span id="tkStatusText">等待定位数据</span></span>
+  <a class="tk-back" href="index.html?v=2" title="返回首页"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> 返回首页</a>
+  <button class="tk-lang-btn" type="button">Language ▾</button>
+</header>
+
+<div class="tk-shell">
+  <aside class="tk-panel">
+
+    <div class="tk-section">
+      <div class="tk-section-h">Traveler info · 行者信息</div>
+      <div class="tk-traveler-name">王琛</div>
+      <div class="tk-kv"><span>项目</span><b>GHT 大喜马拉雅高线</b></div>
+      <div class="tk-kv"><span>记录设备</span><b>手表 / 手机 GPX</b></div>
+      <div class="tk-kv"><span>当前位置</span><b id="tkRegion">—</b></div>
+      <div class="tk-kv"><span>天气</span><b>山区无实时气象站</b></div>
+      <div class="tk-kv"><span>轨迹点数</span><b id="tkBattery">—</b></div>
+    </div>
+
+    <div class="tk-section">
+      <div class="tk-section-h">Track sync · GPX 轨迹同步</div>
+      <div class="tk-live-banner" id="tkBanner"><span class="tk-dot"></span><span id="tkBannerText">等待定位数据</span></div>
+      <div class="tk-telem">
+        <div class="tk-cell"><label>当前纬度 (LAT)</label><strong id="tkLat">—</strong></div>
+        <div class="tk-cell"><label>当前经度 (LON)</label><strong id="tkLon">—</strong></div>
+        <div class="tk-cell"><label>当前海拔 (ALT)</label><strong id="tkAlt">—</strong></div>
+        <div class="tk-cell"><label>即时速度 (SPD)</label><strong id="tkSpd">—</strong></div>
+        <div class="tk-cell wide"><label>累计徒步里程</label><strong id="tkDistance">—</strong></div>
+        <div class="tk-cell wide"><label>最后同步点（尼泊尔时间）</label><strong id="tkLastTs">—</strong></div>
+      </div>
+      <button class="tk-btn primary" id="tkLocate" type="button">定位行者坐标</button>
+    </div>
+
+    <div class="tk-section">
+      <div class="tk-section-h">地图视图 · Map view</div>
+      <div class="tk-btns">
+        <button class="tk-btn" id="tkFit" type="button">全览路线</button>
+      </div>
+    </div>
+
+    <div class="tk-section">
+      <div class="tk-section-h">Recent reports · 同步记录</div>
+      <div class="tk-timeline" id="tkTimeline"></div>
+    </div>
+
+  </aside>
+
+  <main class="tk-map-wrap">
+    <button class="tk-panel-toggle" id="tkPanelToggle" type="button">☰ 行者信息</button>
+    <div id="map"></div>
+    <div class="tk-map-title">GHT 全线 · 最后同步位置<small id="tkMapSub">底图：Esri World Topo · 与总览页一致</small></div>
+    <div class="tk-basemap">
+      <button type="button" id="tkBaseTerrain" class="on">地形</button>
+      <button type="button" id="tkBaseTopo">等高线</button>
+      <button type="button" id="tkBaseSatellite">卫星</button>
+    </div>
+    <div class="tk-compass" title="正北 N">N</div>
+    <div class="tk-legend">
+      <div class="tk-lg-row"><span class="tk-lg-sw tk-lg-plan"></span>计划路线 · 目标</div>
+      <div class="tk-lg-row"><span class="tk-lg-sw tk-lg-actual"></span>实际徒步轨迹</div>
+      <div class="tk-lg-row"><span class="tk-lg-sw tk-lg-live"></span>GPX 同步轨迹（最后一段）</div>
+    </div>
+  </main>
+</div>
+
+<script src="demo-seed.js"></script>
+<script src="gpx-live.js"></script>
+<script src="track-demo.js"></script>
+</body>
+</html>

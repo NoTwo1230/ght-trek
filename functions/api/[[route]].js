@@ -125,6 +125,16 @@ export async function onRequest(context) {
     return json(raw ? { ok: true, data: JSON.parse(raw) } : { ok: true, data: null });
   }
 
+  // 公开：读取最新实时上报点 + 最近 60 点轨迹（与实时图层共用，不写入 actualTracks）
+  if (path === '/api/live' && request.method === 'GET') {
+    const latestRaw = await kvGet(env, 'live:latest');
+    const pointsRaw = await kvGet(env, 'live:points');
+    let latest = null, points = [];
+    try { latest = latestRaw ? JSON.parse(latestRaw) : null; } catch (e) {}
+    try { points = pointsRaw ? JSON.parse(pointsRaw) : []; } catch (e) {}
+    return json({ ok: true, data: { latest, points: Array.isArray(points) ? points : [] } });
+  }
+
   // 健康检查 / 诊断（无需登录）：对 KV 做一次读探测
   if (path === '/api/debug') {
     let storeStatus = 'unknown';
@@ -169,6 +179,34 @@ export async function onRequest(context) {
 
   // 以下接口需登录（token 过期即 401，前端自动清 token 重新登录）
   if (!await isOwner(request, env)) return json({ error: 'unauthorized', hint: 'token 过期或无效，请重新登录 admin.html' }, 401);
+
+  // 主人写入一条实时上报；服务端补时间戳，并只保留最近 60 点
+  // 写频率建议 >= 2 分钟一次（KV 免费额度每日 1000 次写）；前端只读轮询不占写额度。
+  if (path === '/api/live' && request.method === 'POST') {
+    let body;
+    try { body = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400); }
+    const lat = Number(body.lat), lon = Number(body.lon);
+    if (!isFinite(lat) || !isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) {
+      return json({ error: 'invalid coordinates' }, 400);
+    }
+    const point = {
+      lat, lon,
+      elev: body.elev != null && isFinite(Number(body.elev)) ? Number(body.elev) : null,
+      speed: body.speed != null && isFinite(Number(body.speed)) ? Number(body.speed) : null,
+      battery: body.battery != null && isFinite(Number(body.battery)) ? Number(body.battery) : null,
+      device: typeof body.device === 'string' ? body.device.slice(0, 60) : '',
+      note: typeof body.note === 'string' ? body.note.slice(0, 160) : '',
+      ts: Date.now()
+    };
+    let points = [];
+    try { const raw = await kvGet(env, 'live:points'); points = raw ? JSON.parse(raw) : []; } catch (e) {}
+    if (!Array.isArray(points)) points = [];
+    points.push(point);
+    if (points.length > 60) points = points.slice(-60);
+    await kvPut(env, 'live:latest', point);
+    await kvPut(env, 'live:points', points);
+    return json({ ok: true, data: point });
+  }
 
   // 写入配置
   if (path === '/api/config' && request.method === 'PUT') {

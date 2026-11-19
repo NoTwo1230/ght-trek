@@ -1,0 +1,224 @@
+/* GHT 实时遥测轨迹页 —— 备份副本专用，信息架构参考 hiki-cn/track.html */
+
+:root {
+  --tk-bg: #f6f8fb;
+  --tk-panel: #ffffff;
+  --tk-text: #0d1219;
+  --tk-dim: #6b7787;
+  --tk-faint: #98a2b3;
+  --tk-border: #e3e8ee;
+  --tk-accent: #635bff;
+  --tk-green: #00a86b;
+  --tk-live: #f85149;
+  --tk-amber: #d97706;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--tk-bg);
+  color: var(--tk-text);
+  font-size: 13px;
+  overflow: hidden;
+}
+
+.tk-topbar {
+  height: 58px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 20px;
+  background: var(--tk-panel);
+  border-bottom: 1px solid var(--tk-border);
+  position: relative;
+  z-index: 1100;
+}
+.tk-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.tk-mark {
+  width: 30px; height: 30px; border-radius: 8px; flex: none;
+  background: var(--tk-accent); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+}
+.tk-mark svg { width: 17px; height: 17px; }
+.tk-title { font-size: 15px; font-weight: 650; white-space: nowrap; }
+.tk-sub { font-size: 11px; color: var(--tk-faint); white-space: nowrap; }
+.tk-spacer { flex: 1; }
+.tk-status {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 6px 12px; border-radius: 999px;
+  border: 1px solid rgba(0,168,107,.3); background: rgba(0,168,107,.08);
+  color: var(--tk-green); font-size: 12px; font-weight: 600; white-space: nowrap;
+}
+.tk-status .tk-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--tk-green);
+  box-shadow: 0 0 0 3px rgba(0,168,107,.18);
+}
+.tk-status.is-delayed { color: var(--tk-amber); border-color: rgba(217,119,6,.3); background: rgba(217,119,6,.08); }
+.tk-status.is-delayed .tk-dot { background: var(--tk-amber); box-shadow: 0 0 0 3px rgba(217,119,6,.16); }
+.tk-status.is-offline { color: var(--tk-dim); border-color: var(--tk-border); background: #f3f5f8; }
+.tk-status.is-offline .tk-dot { background: var(--tk-faint); box-shadow: none; }
+.tk-nav { display: flex; gap: 6px; }
+.tk-nav a {
+  font-size: 12px; color: var(--tk-dim); text-decoration: none;
+  padding: 6px 10px; border-radius: 7px; border: 1px solid transparent; white-space: nowrap;
+}
+.tk-nav a:hover { color: var(--tk-accent); border-color: var(--tk-border); }
+.tk-nav a.on { color: var(--tk-accent); background: rgba(99,91,255,.07); border-color: rgba(99,91,255,.2); }
+
+/* 返回首页 / 语言：与其他子页面（sections/journal/itinerary）保持一致 */
+.tk-back {
+  display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
+  color: #425466; border: 1px solid #D6DEE8; border-radius: 8px;
+  padding: 7px 13px; font-size: 12px; white-space: nowrap; transition: .2s;
+}
+.tk-back svg { width: 14px; height: 14px; }
+.tk-back:hover { color: #0A2540; border-color: var(--tk-accent); background: #EEEBFF; }
+.tk-lang-btn {
+  display: inline-flex; align-items: center; cursor: pointer; font-family: inherit;
+  background: #F6F9FC; color: #0A2540; border: 1px solid #D6DEE8;
+  border-radius: 8px; padding: 7px 13px; font-size: 12px; white-space: nowrap; transition: .2s;
+}
+.tk-lang-btn:hover { border-color: var(--tk-accent); background: #EEEBFF; }
+
+.tk-shell { display: flex; height: calc(100% - 58px); }
+.tk-panel {
+  width: 326px; flex: none; overflow-y: auto;
+  background: var(--tk-panel); border-right: 1px solid var(--tk-border);
+  padding: 16px 16px 24px;
+}
+.tk-section { margin-bottom: 18px; }
+.tk-section-h {
+  font-size: 11px; font-weight: 650; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--tk-faint); padding-bottom: 8px; margin-bottom: 10px;
+  border-bottom: 1px solid var(--tk-border);
+}
+.tk-traveler-name { font-size: 18px; font-weight: 650; margin-bottom: 4px; }
+.tk-kv { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; padding: 4px 0; }
+.tk-kv span { color: var(--tk-dim); }
+.tk-kv b { font-weight: 550; text-align: right; }
+
+.tk-live-banner {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 11px; border-radius: 8px; margin-bottom: 12px;
+  background: rgba(0,168,107,.08); border: 1px solid rgba(0,168,107,.22);
+  color: var(--tk-green); font-size: 12px; font-weight: 600;
+}
+.tk-live-banner .tk-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.tk-live-banner.is-delayed { color: var(--tk-amber); background: rgba(217,119,6,.08); border-color: rgba(217,119,6,.22); }
+.tk-live-banner.is-offline { color: var(--tk-dim); background: #f5f7fa; border-color: var(--tk-border); }
+
+.tk-telem { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tk-cell {
+  background: #f8fafc; border: 1px solid var(--tk-border);
+  border-radius: 9px; padding: 10px 11px; min-width: 0;
+}
+.tk-cell label { display: block; font-size: 10px; color: var(--tk-faint); margin-bottom: 5px; white-space: nowrap; }
+.tk-cell strong {
+  display: block; font-size: 16px; font-weight: 650; letter-spacing: -.01em;
+  font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tk-cell small { font-size: 10px; font-weight: 400; color: var(--tk-dim); margin-left: 2px; }
+.tk-cell.wide { grid-column: 1 / -1; }
+.tk-cell.wide strong { font-size: 15px; }
+
+.tk-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+.tk-btn {
+  font: inherit; font-size: 11px; cursor: pointer;
+  padding: 6px 10px; border-radius: 7px;
+  background: #fff; color: var(--tk-text);
+  border: 1px solid var(--tk-border);
+}
+.tk-btn:hover { border-color: var(--tk-accent); color: var(--tk-accent); }
+.tk-btn.on { color: #fff; background: var(--tk-accent); border-color: var(--tk-accent); }
+.tk-btn.primary { width: 100%; margin-top: 8px; padding: 9px; font-size: 12px; color: #fff; background: var(--tk-accent); border-color: var(--tk-accent); }
+
+.tk-timeline { position: relative; padding-left: 18px; }
+.tk-timeline::before { content: ''; position: absolute; left: 4px; top: 6px; bottom: 6px; width: 1px; background: var(--tk-border); }
+.tk-tl-item { position: relative; margin-bottom: 10px; }
+.tk-tl-item::before {
+  content: ''; position: absolute; left: -18px; top: 5px;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--tk-live); box-shadow: 0 0 0 3px rgba(248,81,73,.14);
+}
+.tk-tl-time { font-size: 10px; color: var(--tk-faint); }
+.tk-tl-text { font-size: 11px; color: var(--tk-dim); font-variant-numeric: tabular-nums; }
+
+.tk-map-wrap { flex: 1; position: relative; min-width: 0; }
+#map { position: absolute; inset: 0; background: #eef2f7; }
+.tk-map-title {
+  position: absolute; z-index: 800; top: 14px; left: 14px;
+  background: rgba(255,255,255,.94); border: 1px solid var(--tk-border);
+  border-radius: 8px; padding: 8px 12px; font-size: 12px; font-weight: 600;
+  box-shadow: 0 2px 8px rgba(13,18,25,.06);
+}
+.tk-map-title small { display: block; font-weight: 400; color: var(--tk-dim); font-size: 10px; margin-top: 2px; }
+.tk-legend {
+  position: absolute; z-index: 800; bottom: 18px; left: 58px;
+  background: rgba(255,255,255,.94); border: 1px solid var(--tk-border);
+  border-radius: 8px; padding: 8px 11px; font-size: 11px; line-height: 1.7;
+}
+.tk-lg-row { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+.tk-lg-sw { width: 20px; height: 3px; border-radius: 2px; flex: none; }
+.tk-lg-plan { background: repeating-linear-gradient(90deg, #635bff 0 5px, transparent 5px 10px); }
+.tk-lg-actual { background: var(--tk-green); }
+.tk-lg-live { background: repeating-linear-gradient(90deg, var(--tk-live) 0 5px, transparent 5px 9px); }
+.tk-basemap {
+  position: absolute; z-index: 800; top: 14px; right: 14px;
+  display: flex; gap: 4px; padding: 4px;
+  background: rgba(255,255,255,.94); border: 1px solid var(--tk-border); border-radius: 8px;
+}
+.tk-basemap button {
+  font: inherit; font-size: 11px; cursor: pointer;
+  border: 0; background: transparent; color: var(--tk-dim);
+  padding: 5px 9px; border-radius: 6px;
+}
+.tk-basemap button.on { background: var(--tk-accent); color: #fff; }
+.tk-compass {
+  position: absolute; z-index: 800; top: 60px; right: 18px;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: rgba(255,255,255,.94); border: 1px solid var(--tk-border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: var(--tk-live);
+}
+
+@keyframes tk-pulse { 0% { transform: translate(-50%,-50%) scale(.5); opacity: .6; } 100% { transform: translate(-50%,-50%) scale(2.6); opacity: 0; } }
+.tk-person { position: relative; width: 40px; height: 40px; }
+.tk-person .tk-ring {
+  position: absolute; top: 50%; left: 50%; width: 12px; height: 12px; border-radius: 50%;
+  background: rgba(248,81,73,.35); animation: tk-pulse 2s ease-out infinite;
+}
+
+/* 抽屉按钮默认隐藏，仅在窄屏媒体查询内开启（顺序必须在媒体查询之前） */
+.tk-panel-toggle { display: none; }
+
+/* ── 窄屏：地图始终为主视图，信息面板改为可折叠抽屉（不再把地图挤到首屏之外） ── */
+@media (max-width: 980px) {
+  body { overflow: hidden; }
+  .tk-topbar { height: auto; min-height: 56px; flex-wrap: wrap; padding: 10px 14px; gap: 10px; }
+  .tk-sub { display: none; }
+  .tk-shell { display: block; height: calc(100% - 56px); position: relative; }
+  .tk-map-wrap { position: absolute; inset: 0; height: 100%; }
+
+  /* 抽屉切换按钮 */
+  .tk-panel-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    position: absolute; z-index: 1050; top: 12px; left: 12px;
+    padding: 8px 12px; border-radius: 8px; cursor: pointer;
+    background: rgba(255,255,255,.96); border: 1px solid var(--tk-border);
+    color: var(--tk-text); font: inherit; font-size: 12px; font-weight: 600;
+    box-shadow: 0 2px 8px rgba(16,24,40,.08);
+  }
+  .tk-panel {
+    position: absolute; z-index: 1040; top: 0; left: 0; bottom: 0;
+    width: min(340px, 86vw); height: 100%;
+    border-right: 1px solid var(--tk-border); border-bottom: 0;
+    box-shadow: 4px 0 18px rgba(16,24,40,.12);
+    transform: translateX(-100%); transition: transform .25s ease;
+  }
+  .tk-shell.panel-open .tk-panel { transform: translateX(0); }
+
+  /* 顶栏标题/图例在窄屏下给抽屉按钮让位 */
+  .tk-map-title { top: 12px; left: 108px; }
+  .tk-legend { bottom: 12px; left: 12px; }
+}

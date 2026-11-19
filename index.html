@@ -12,6 +12,7 @@
   <script src="sections-data.js"></script>
 <link rel="stylesheet" href="styles.css" />
 <link rel="stylesheet" href="design-redesign.css" />
+<link rel="stylesheet" href="demo-live.css" />
 <script>document.documentElement.dataset.theme='light';</script>
 </head>
 
@@ -33,9 +34,10 @@
       </div>
     </div>
     <div class="header-right">
-      <span class="live" id="hdrLive"><span class="dot"></span>实时追踪中</span>
+      <span class="live" id="hdrLive"><span class="dot"></span>定位中</span>
       <button class="lang-btn" type="button">Language ▾</button>
       <nav class="hdr-nav" aria-label="页面导航">
+        <a class="hn-link" id="navTrack" href="track.html" target="_blank" rel="noopener">实时轨迹</a>
         <a class="hn-link" id="navItinerary" href="itinerary.html?v=3" target="_blank" rel="noopener">行程</a>
         <a class="hn-link" id="navSections" href="sections.html?v=2" target="_blank" rel="noopener">路段</a>
         <a class="hn-link" id="navJournal" href="journal.html?v=2" target="_blank" rel="noopener">日志</a>
@@ -48,36 +50,12 @@
 
     <!-- ① 进度总览模块已并入「整体进度」卡片（圆环 + 4 KPI），见 cardStatus -->
 
-    <!-- ② 当前状态（整体进度） + ③ 今日摘要 双栏 -->
-    <div class="two-col">
-      <section class="card" id="cardStatus"></section>
-      <section class="card" id="cardToday"></section>
-    </div>
-
-    <!-- 地图 + 垭口：并排小区域 -->
-    <div class="dash-duo">
-      <section class="card map-card">
-      <div class="card-h"><span class="ch-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3 3 5v16l6-2 6 2 6-2V3l-6 2-6-2z"/><path d="M9 3v16M15 5v16"/></svg></span><span>交互地图</span><span class="en">MAP</span></div>
-      <div class="map-wrap">
-        <div id="map"></div>
-        <div class="map-overlay pos-badge" id="currentPosBadge">
-          <span class="pb-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M12 21s-7-6.3-7-11a7 7 0 0114 0c0 4.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></span> 当前位置: <span class="prov-name">--</span><span class="prov-elev"></span>
-        </div>
-        <div class="map-overlay map-compass" title="正北方向 N">
-          <svg viewBox="0 0 40 40" width="22" height="22" aria-hidden="true">
-            <circle cx="20" cy="20" r="18.5" fill="rgba(13,18,25,0.0)" stroke="rgba(230,237,243,0.30)" stroke-width="1.5"/>
-            <polygon points="20,5 23.5,20 20,16.5 16.5,20" fill="#f85149"/>
-            <polygon points="20,35 16.5,20 20,23.5 23.5,20" fill="#8b949e"/>
-            <text x="20" y="14" text-anchor="middle" font-size="9" font-weight="700" fill="#ffffff">N</text>
-          </svg>
-        </div>
-        <div class="map-overlay map-legend" aria-label="图例">
-          <div class="lg-row"><span class="lg-sw lg-actual"></span>实际徒步轨迹</div>
-          <div class="lg-row"><span class="lg-sw lg-plan"></span>计划路线 · 目标</div>
-        </div>
-        <div class="map-overlay region-info" id="regionInfo" hidden></div>
+    <!-- 首页布局：左侧「整体进度 / 今日摘要」上下排列，右侧「垭口清单」；地图已移到导航「实时轨迹」页 -->
+    <div class="main-duo">
+      <div class="two-col">
+        <section class="card" id="cardStatus"></section>
+        <section class="card" id="cardToday"></section>
       </div>
-      </section>
       <section class="card" id="cardPasses"></section>
     </div>
 
@@ -108,12 +86,19 @@
   <!-- ── BOTTOM STATUS BAR ── -->
   <footer class="statusbar">
     <span>© 2026 GHT 高线追踪</span>
-    <span class="live-dot" id="liveDot"><span class="ld-dot"></span> Live Tracking Active · 实时追踪中</span>
+    <span class="live-dot" id="liveDot"><span class="ld-dot"></span> 等待定位数据</span>
     <span class="spacer"></span>
-    <span>数据来源: GPX</span>
+    <span>数据来源: GPX + GPX 同步轨迹（演示）</span>
     <span>底图: © OpenStreetMap · Esri · OpenTopoMap</span>
   </footer>
 
+</div>
+
+<!-- 首页已移除可见地图；保留离屏容器供地图与定位状态栏脚本正常初始化，视觉上不显示 -->
+<div id="mapOffscreen" aria-hidden="true" style="position:absolute;left:-10000px;top:0;width:600px;height:400px;visibility:hidden;pointer-events:none;">
+  <div id="map" style="width:100%;height:100%;"></div>
+  <div id="currentPosBadge" class="pos-badge"><span class="prov-name">--</span><span class="prov-elev"></span></div>
+  <div id="regionInfo" hidden></div>
 </div>
 
 <div class="loading-overlay" id="loadingOverlay">
@@ -123,8 +108,12 @@
   </div>
 </div>
 
+<script src="demo-seed.js"></script>
+<script src="demo-seed-init.js"></script>
 <script src="ght-region-map.js?v=3"></script>
 <script src="app.js?v=13"></script>
+<script src="gpx-live.js"></script>
+<script src="demo-live.js"></script>
 
 <!-- 主题切换已移除：全站仅保留 Stripe 浅色 -->
 </body>

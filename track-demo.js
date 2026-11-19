@@ -1,0 +1,303 @@
+/* 全屏 GPX 轨迹同步页 —— 备份副本专用，底图与原项目一致（另有卫星影像切换） */
+(function () {
+  'use strict';
+
+  var seed = window.GHT_DEMO_SEED;
+  if (!window.L || !seed) return;
+
+  var G = window.GpxLive;
+  var KEY = G ? G.KEY : 'ght_live_demo_points';
+  var MAX = 60;
+  var MINUTE = 60000, HOUR = 3600000, DAY = 24 * HOUR;
+
+  // ── 地图：与 app.js 完全相同的瓦片配置 ──
+  var map = L.map('map', {
+    center: [28.5, 84.0], zoom: 7, minZoom: 6, maxZoom: 16,
+    zoomControl: false, attributionControl: true
+  });
+
+  var basemaps = {
+    terrain: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+      attribution: '&copy; Esri', maxZoom: 13
+    }),
+    topo: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://opentopomap.org">OpenTopoMap</a> contributors',
+      subdomains: 'abc', maxZoom: 13
+    }),
+    // 实测：尼泊尔境外高德影像模糊且有大量无数据灰块，改用 Esri 全球影像（清晰覆盖喜马拉雅山区）
+    satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles &copy; Esri', maxZoom: 18
+    })
+  };
+  var currentBase = 'terrain';
+  basemaps.terrain.addTo(map);
+  L.control.zoom({ position: 'bottomleft' }).addTo(map);
+  L.control.scale({ metric: true, imperial: false, position: 'bottomright', maxWidth: 120 }).addTo(map);
+
+  // 三个底图（Esri / OpenTopoMap）均为 WGS-84，轨迹坐标无需转换；
+  // proj 保留为统一坐标入口，且影像叠加时标注仍显示原始 GPX 经纬度。
+  function proj(p) {
+    return [p.lat, p.lon];
+  }
+
+  var planLayer = L.layerGroup().addTo(map);
+  var actualLayer = L.layerGroup().addTo(map);
+  var liveLayer = L.layerGroup().addTo(map);
+
+  // ── 计划路线：按路段区域色叠在底线之上 ──
+  var presetPts = (seed.preset && seed.preset.trackPoints) || [];
+  var presetCoords = [];
+  function renderPlan() {
+    planLayer.clearLayers();
+    presetCoords = presetPts.map(proj);
+    if (presetCoords.length < 2) return;
+    L.polyline(presetCoords, { color: '#dfe5ee', weight: 5, opacity: 0.85, lineCap: 'round' }).addTo(planLayer);
+    (seed.sections || []).forEach(function (r) {
+      var slice = presetCoords.slice(r.startIndex, r.endIndex + 1);
+      if (slice.length < 2) return;
+      L.polyline(slice, { color: r.regionColor || '#635BFF', weight: 2.6, opacity: 0.95, lineCap: 'round' })
+        .bindPopup('<b>' + (r.regionZh || r.regionEn || '路段') + '</b><br>状态：' + (r.status === 'completed' ? '已完成' : r.status === 'in-progress' ? '进行中' : '未开始'))
+        .addTo(planLayer);
+    });
+  }
+
+  // ── 实际轨迹：绿色实线 ──
+  function renderActual() {
+    actualLayer.clearLayers();
+    (seed.actual || []).forEach(function (t) {
+      var c = (t.trackPoints || []).map(proj);
+      if (c.length < 2) return;
+      L.polyline(c, { color: '#ffffff', weight: 6, opacity: 0.5, lineCap: 'round' }).addTo(actualLayer);
+      L.polyline(c, { color: '#00A86B', weight: 3, opacity: 0.95, lineCap: 'round' })
+        .bindPopup('<b>实际轨迹 · ' + (t.date || t.fileName || '') + '</b><br>' + (t.distance || 0).toFixed(1) + ' km')
+        .addTo(actualLayer);
+    });
+  }
+  renderPlan();
+  renderActual();
+
+  // ── 实时点 ──
+  function readStore() {
+    try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { return null; }
+  }
+  function writeStore(pts) {
+    try { localStorage.setItem(KEY, JSON.stringify(pts.slice(-MAX))); } catch (e) {}
+  }
+  function sourcePath() {
+    var tracks = seed.actual || [];
+    if (!tracks.length) return [];
+    return (tracks[tracks.length - 1].trackPoints || []).slice(-40);
+  }
+  var path = sourcePath();
+  var cursor = Math.max(0, path.length - 14);
+  var dir = 1;
+
+  function initialPoints() {
+    var stored = readStore();
+    if (Array.isArray(stored) && stored.length > 1) return stored.slice(-MAX);
+    if (!path.length) return [];
+    var now = Date.now();
+    var tail = path.slice(-12);
+    var pts = tail.map(function (p, i) {
+      return { lat: p.lat, lon: p.lon, elev: p.elev, time: null, ts: now - (tail.length - 1 - i) * 45000, source: 'demo' };
+    });
+    writeStore(pts);
+    return pts;
+  }
+
+  var points = initialPoints();
+  var paused = false;
+
+  function nextPoint() {
+    if (!path.length) return null;
+    var idx = cursor + dir;
+    if (idx >= path.length) { dir = -1; idx = Math.max(0, path.length - 2); }
+    if (idx < 0) { dir = 1; idx = Math.min(1, path.length - 1); }
+    cursor = idx;
+    var p = path[idx];
+    return { lat: p.lat, lon: p.lon, elev: p.elev, ts: Date.now(), source: 'demo' };
+  }
+
+  function lastTs() {
+    var p = points[points.length - 1];
+    return p ? (p.ts || Date.now()) : Date.now();
+  }
+  function freshness() {
+    return G ? G.freshness(lastTs()) : {
+      age: Math.max(0, Date.now() - lastTs()),
+      level: 'fresh', label: '刚刚', phrase: '刚刚定位', advise: ''
+    };
+  }
+
+  function personIcon() {
+    return L.divIcon({
+      html: '<div class="tk-person"><div class="tk-ring"></div>' +
+        '<svg width="40" height="40" viewBox="0 0 40 40" style="position:absolute;top:0;left:0">' +
+        '<circle cx="20" cy="20" r="8" fill="#F85149"/><circle cx="20" cy="20" r="3.5" fill="#fff"/>' +
+        '<path d="M20 2 L24 9 L16 9 Z" fill="#F85149"/></svg></div>',
+      className: '', iconSize: [40, 40], iconAnchor: [20, 20]
+    });
+  }
+
+  function renderLive() {
+    liveLayer.clearLayers();
+    if (points.length < 2) return;
+    var c = points.map(proj);
+    L.polyline(c, { color: '#ffffff', weight: 8, opacity: 0.7, lineCap: 'round' }).addTo(liveLayer);
+    L.polyline(c, { color: '#F85149', weight: 3, opacity: 0.95, dashArray: '7 6', lineCap: 'round' })
+      .addTo(liveLayer);
+    points.slice(0, -1).forEach(function (p) {
+      L.circleMarker(proj(p), { radius: 2.5, color: '#fff', fillColor: '#F85149', fillOpacity: 1, weight: 1 }).addTo(liveLayer);
+    });
+    var last = points[points.length - 1];
+    L.marker(proj(last), { icon: personIcon() })
+      .bindPopup('<b>最后同步位置 · GPX</b><br>' + Number(last.lat).toFixed(5) + ', ' + Number(last.lon).toFixed(5))
+      .addTo(liveLayer);
+  }
+
+  function regionForPoint(p) {
+    var best = null, bestD = Infinity;
+    (seed.sections || []).forEach(function (r) {
+      var mid = Math.floor(((r.startIndex || 0) + (r.endIndex || 0)) / 2);
+      var q = presetPts[mid];
+      if (!q) return;
+      var d = (q.lat - p.lat) * (q.lat - p.lat) + (q.lon - p.lon) * (q.lon - p.lon);
+      if (d < bestD) { bestD = d; best = r; }
+    });
+    return best ? (best.regionZh || best.regionEn || '—') : '—';
+  }
+
+  function setText(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; }
+
+  function updateUI() {
+    var p = points[points.length - 1];
+    if (!p) return;
+    var f = freshness();
+    var statusCls = f.level === 'fresh' ? '' : ' is-' + f.level;
+    var status = document.getElementById('tkStatus');
+    if (status) status.className = 'tk-status' + statusCls;
+    setText('tkStatusText', f.phrase);
+
+    var banner = document.getElementById('tkBanner');
+    if (banner) banner.className = 'tk-live-banner' + statusCls;
+    setText('tkBannerText', f.advise ? f.phrase + ' · ' + f.advise : f.phrase);
+
+    setText('tkLat', Number(p.lat).toFixed(4) + '° N');
+    setText('tkLon', Number(p.lon).toFixed(4) + '° E');
+    setText('tkAlt', p.elev != null ? Math.round(p.elev).toLocaleString('en-US') + ' m' : '—');
+    var spd = G ? G.currentSpeed(points) : null;
+    setText('tkSpd', spd != null ? spd.toFixed(1) + ' km/h' : '—');
+    var done = (seed.actual || []).reduce(function (s, t) { return s + (Number(t.distance) || 0); }, 0);
+    setText('tkDistance', done.toFixed(2) + ' / ' + (seed.totalDistance || 1602) + ' km');
+    setText('tkLastTs', G ? G.formatNepal(lastTs()) : new Date(lastTs()).toLocaleString('zh-CN', { hour12: false }));
+    setText('tkRegion', regionForPoint(p) + ' · 行进中');
+    setText('tkBattery', points.length + ' 点');
+
+    var tl = document.getElementById('tkTimeline');
+    if (tl) {
+      tl.innerHTML = points.slice(-6).reverse().map(function (q) {
+        var tm = q.source === 'gpx' ? (G ? G.formatNepal(q.ts) : new Date(q.ts).toLocaleTimeString('zh-CN', { hour12: false }))
+          : new Date(q.ts || Date.now()).toLocaleTimeString('zh-CN', { hour12: false });
+        var tag = q.source === 'gpx' ? 'GPX 同步' : (q.source === 'admin' ? '手动上报' : '演示数据');
+        return '<div class="tk-tl-item"><div class="tk-tl-time">' + tm + ' · ' + tag + '</div>' +
+          '<div class="tk-tl-text">' + Number(q.lat).toFixed(4) + '°N ' + Number(q.lon).toFixed(4) + '°E · ' +
+          (q.elev != null ? Math.round(q.elev) + ' m' : '—') + '</div></div>';
+      }).join('');
+    }
+
+  }
+
+  function refresh() { renderLive(); updateUI(); }
+
+  function tick() {
+    var stored = readStore();
+    if (stored && stored.length && stored[stored.length - 1].ts > lastTs()) {
+      points = stored.slice(-MAX);
+      refresh();
+      return;
+    }
+    if (paused) { updateUI(); return; }
+    var np = nextPoint();
+    if (!np) return;
+    points.push(np);
+    writeStore(points);
+    refresh();
+  }
+
+  function applyImportedPoints(livePts, sourceName) {
+    points = livePts.slice(-MAX);
+    paused = true;
+    writeStore(points);
+    refresh();
+    var last = points[points.length - 1];
+    if (last) map.flyTo(proj(last), 12, { duration: 0.9 });
+  }
+
+  // 导入统一在后台完成；前台只接收后台写入后的同步事件
+  function wireSync() {
+    if (!G) return;
+    window.addEventListener(G.EVENT, function (e) {
+      if (e.detail && e.detail.length) applyImportedPoints(e.detail, '后台同步');
+    });
+  }
+
+  function wire() {
+    // 窄屏抽屉：点按钮展开/收起信息面板；点地图区域自动收起
+    var toggle = document.getElementById('tkPanelToggle');
+    var shell = document.querySelector('.tk-shell');
+    if (toggle && shell) {
+      toggle.onclick = function (e) {
+        e.stopPropagation();
+        var open = shell.classList.toggle('panel-open');
+        toggle.textContent = open ? '✕ 收起' : '☰ 行者信息';
+      };
+      document.getElementById('map').addEventListener('click', function () {
+        if (shell.classList.contains('panel-open')) {
+          shell.classList.remove('panel-open');
+          toggle.textContent = '☰ 行者信息';
+        }
+      });
+    }
+    document.getElementById('tkLocate').onclick = function () {
+      var p = points[points.length - 1];
+      if (p) map.flyTo(proj(p), 12, { duration: 0.9 });
+    };
+    document.getElementById('tkFit').onclick = function () {
+      if (presetCoords.length > 1) map.fitBounds(L.latLngBounds(presetCoords), { padding: [32, 32], maxZoom: 12 });
+    };
+    document.getElementById('tkBaseTerrain').onclick = function () { switchBase('terrain'); };
+    document.getElementById('tkBaseTopo').onclick = function () { switchBase('topo'); };
+    document.getElementById('tkBaseSatellite').onclick = function () { switchBase('satellite'); };
+  }
+
+  var BASE_SUB = {
+    terrain: '底图：Esri World Topo · 与总览页一致',
+    topo: '底图：OpenTopoMap · 与总览页一致',
+    satellite: '底图：Esri 全球影像 · 卫星俯瞰，喜马拉雅山区清晰'
+  };
+  function switchBase(key) {
+    if (key === currentBase) return;
+    map.removeLayer(basemaps[currentBase]);
+    basemaps[key].addTo(map);
+    currentBase = key;
+    // 重绘全部图层，保证轨迹样式与底图协调
+    renderPlan();
+    renderActual();
+    renderLive();
+    ['terrain', 'topo', 'satellite'].forEach(function (k) {
+      var btn = document.getElementById('tkBase' + k.charAt(0).toUpperCase() + k.slice(1));
+      if (btn) btn.classList.toggle('on', k === key);
+    });
+    setText('tkMapSub', BASE_SUB[key]);
+  }
+
+  wire();
+  wireSync();
+  refresh();
+  if (presetCoords.length > 1) {
+    map.fitBounds(L.latLngBounds(presetCoords), { padding: [32, 32], maxZoom: 12 });
+  } else if (points.length) {
+    map.setView(proj(points[points.length - 1]), 10);
+  }
+  setInterval(tick, 5000);
+})();
