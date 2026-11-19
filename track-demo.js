@@ -46,6 +46,72 @@
   var actualLayer = L.layerGroup().addTo(map);
   var liveLayer = L.layerGroup().addTo(map);
 
+  // ── 13 区域色块（行政区填充多边形）──
+  // 与主首页地图一致：ght-region-map.js 提供 districtToRegion + regions 调色板，
+  // nepal-districts.geojson 提供行政区几何。独立 pane(z=350) 让色块始终在轨迹线之下。
+  var regionLayer = L.layerGroup().addTo(map);
+  map.createPane('regionBlocks');
+  map.getPane('regionBlocks').style.zIndex = 350;
+  map.getPane('regionBlocks').style.pointerEvents = 'auto';
+  var regionGeo = null;
+
+  function distNameOf(f) {
+    var p = f.properties || {};
+    return p.DIST_EN || p.DISTRICT || p.district || p.NAME || p.name || '';
+  }
+
+  function renderRegions() {
+    regionLayer.clearLayers();
+    var RM = window.GHT_REGION_MAP;
+    if (!RM || !regionGeo) return;
+    var districtToRegion = RM.districtToRegion || {};
+    var regions = RM.regions || {};
+    var isEn = I && I.getLang() === 'en';
+    var uncolored = [];
+    var byRegion = {};
+    (regionGeo.features || []).forEach(function (f) {
+      var dname = distNameOf(f);
+      var rid = districtToRegion[dname];
+      if (rid) { (byRegion[rid] = byRegion[rid] || []).push(f); }
+      else { f.properties._dname = dname; uncolored.push(f); }
+    });
+    // 非 GHT 县：灰色上下文底
+    if (uncolored.length) {
+      L.geoJSON({ type: 'FeatureCollection', features: uncolored }, {
+        pane: 'regionBlocks',
+        style: function () { return { color: '#B4B2A9', weight: 0.5, fillColor: '#D3D1C7', fillOpacity: 0.18 }; }
+      }).addTo(regionLayer);
+    }
+    // GHT 13 区域：填充色块 + 悬浮信息
+    Object.keys(byRegion).forEach(function (key) {
+      var i = +key, r = regions[i];
+      if (!r) return;
+      L.geoJSON({ type: 'FeatureCollection', features: byRegion[key] }, {
+        pane: 'regionBlocks',
+        style: function () { return { color: r.stroke, weight: 1, fillColor: r.color, fillOpacity: 0.5 }; },
+        onEachFeature: function (f, lyr) {
+          var dname = f.properties._dname || distNameOf(f);
+          var label = i + '. ' + (isEn ? (r.en || r.zh) : (r.zh || r.en)) + '\n' +
+            (r.park || '') + '\n' + (r.days || '') + ' · ' + (r.dist || '') + 'km' +
+            (isEn ? (dname ? '\nDistrict: ' + dname : '') : (dname ? '\n行政区: ' + dname : ''));
+          lyr.bindTooltip(label, { sticky: true, className: 'tk-region-tip' });
+        }
+      }).addTo(regionLayer);
+    });
+  }
+
+  (function loadRegionGeo() {
+    var local = 'assets/nepal-districts.geojson';
+    var cdn = 'https://cdn.jsdelivr.net/gh/mesaugat/geoJSON-Nepal@master/nepal-districts-new.geojson';
+    fetch(local).then(function (res) { if (!res.ok) throw new Error('local ' + res.status); return res.json(); })
+      .then(function (geo) { regionGeo = geo; renderRegions(); })
+      .catch(function () {
+        fetch(cdn).then(function (res) { if (!res.ok) throw new Error('cdn ' + res.status); return res.json(); })
+          .then(function (geo) { regionGeo = geo; renderRegions(); })
+          .catch(function (err) { console.warn('[region] geojson load failed', err); });
+      });
+  })();
+
   // ── 计划路线：按路段区域色叠在底线之上 ──
   var presetPts = (seed.preset && seed.preset.trackPoints) || [];
   var presetCoords = [];
@@ -308,6 +374,7 @@
 
   // 语言切换：重绘带文案的图层标注 + 动态 UI + 底图副标题 + 抽屉按钮
   window.onLangChange = function () {
+    renderRegions();
     renderPlan();
     renderActual();
     renderLive();
