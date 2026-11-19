@@ -149,6 +149,25 @@
   renderPlan();
   renderActual();
 
+  // ── 图例：让「计划路线」色条与地图上的 13 段区域着色使用同一份数据 ──
+  // 原 CSS 写死紫色虚线(#635bff)，但地图计划线是按 regionColor 逐段着色的实线，
+  // 造成图例与轨迹颜色不一致。这里直接用 seed.sections.regionColor 生成渐变色条。
+  function syncLegend() {
+    var el = document.querySelector('.tk-lg-plan');
+    if (!el) return;
+    var cols = (seed.sections || []).map(function (r) { return r.regionColor || '#635BFF'; });
+    if (cols.length < 2) return;
+    var stops = cols.map(function (c, i) {
+      var a = (i / cols.length * 100).toFixed(2);
+      var b = ((i + 1) / cols.length * 100).toFixed(2);
+      return c + ' ' + a + '% ' + b + '%';
+    }).join(',');
+    el.style.width = '38px';
+    el.style.height = '5px';
+    el.style.background = 'linear-gradient(90deg,' + stops + ')';
+  }
+  syncLegend();
+
   // ── 实时点 ──
   function readStore() {
     try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { return null; }
