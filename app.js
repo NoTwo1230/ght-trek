@@ -681,11 +681,15 @@ function t(k, def) {
   if (I18N.zh[k] != null) return I18N.zh[k];
   return def != null ? def : k;
 }
-// 卡片标题：中文模式显示「中文+EN副标题」，英文模式只显示英文（去掉重复）
+// 卡片标题：始终输出「中文 span + .en 英文 span」，可见性完全交给 CSS 的 html[lang] 控制。
+// 原因：语言按钮只改 html[lang]、不重渲染卡片（当前布局无 .tn-tab）。若按 currentLang
+// 只输出一个 span，则「英文刷新后」或「英文下切回中文」时该 span 会被 CSS 规则
+// `html[lang="en"] .card-h > span:not(.en){display:none}` / `.card-h .en{display:none}` 隐藏，
+// 造成标题消失（垭口清单 / 整体进度 / 今日摘要 均受影响）。始终双 span 与 showView() 一致。
 function cardTitle(i18nKey, enText, extraHtml) {
-  const en = enText || t(i18nKey);
-  if (currentLang === 'en') return '<span>' + en + '</span>' + (extraHtml || '');
-  return '<span>' + t(i18nKey) + '</span><span class="en">' + en + '</span>' + (extraHtml || '');
+  const zh = (I18N.zh && I18N.zh[i18nKey] != null) ? I18N.zh[i18nKey] : i18nKey;
+  const en = enText || ((I18N.en && I18N.en[i18nKey] != null) ? I18N.en[i18nKey] : t(i18nKey));
+  return '<span>' + zh + '</span><span class="en">' + en + '</span>' + (extraHtml || '');
 }
 function getProvEN(pid) {
   const m = { koshi: 'Koshi', bagmati: 'Bagmati', gandaki: 'Gandaki', lumbini: 'Lumbini', karnali: 'Karnali', sudurpashchim: 'Sudurpashchim' };
@@ -751,6 +755,9 @@ if (_langBtn) _langBtn.addEventListener('click', function () {
   currentLang = currentLang === 'zh' ? 'en' : 'zh';
   try { localStorage.setItem('ght_lang', currentLang); } catch(e) {}
   applyLang();
+  // 重渲染卡片，使 ch-cap 徽章等「按渲染时 currentLang 生成」的动态文案同步到新语言
+  // （标题本身由双 span + CSS 控制，此处重渲染不影响其正确性）
+  if (typeof renderDashboard === 'function') renderDashboard();
   const active = document.querySelector('.tn-tab.active');
   if (active) showView(active.dataset.view);
 });
