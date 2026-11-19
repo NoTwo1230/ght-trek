@@ -669,7 +669,7 @@ const I18N = {
     'elev.scopePreset': 'Preset Track', 'elev.highest': 'Highest', 'elev.lowest': 'Lowest',
     'elev.climbLabel': 'Total climb', 'elev.current': 'Current',
     // ── Header / Footer / Misc ──
-    'hdr.live': '定位中', 'hdr.idle': 'Waiting for position',
+    'hdr.live': 'Locating', 'hdr.idle': 'Waiting for position',
     'brand.title': 'GHT Great Himalaya Trail', 'brand.sub': 'Expedition Tracker',
     'footer.copyright': '© 2026 GHT Tracker', 'footer.dataSrc': 'Data source: GPX',
     'loading.parse': 'Parsing GPX track...'
@@ -738,7 +738,8 @@ function applyLang() {
   if (legendRows.length >= 2) { legendRows[0].lastChild.textContent = t('leg.actual'); legendRows[1].lastChild.textContent = t('leg.plan'); }
   // 海拔面板
   const evTitle = document.querySelector('.ev-title'); if (evTitle) evTitle.textContent = t('elev.title');
-  const evScopeName = document.getElementById('elevScopeName'); if (evScopeName && !evScopeName.dataset.translated) { evScopeName.textContent = t('elev.scopePreset'); evScopeName.dataset.translated = '1'; }
+  // 每次语言切换都同步 scope 名称（原先 dataset.translated 一次性标记会导致切回时停留在旧语言）
+  const evScopeName = document.getElementById('elevScopeName'); if (evScopeName) evScopeName.textContent = t('elev.scopePreset');
   const scopeBtns = document.querySelectorAll('#elevScope button');
   if (scopeBtns.length >= 2) { scopeBtns[0].textContent = t('elev.scopeFull'); scopeBtns[1].textContent = t('elev.scopeRegion'); }
   // 页脚
@@ -758,6 +759,9 @@ if (_langBtn) _langBtn.addEventListener('click', function () {
   // 重渲染卡片，使 ch-cap 徽章等「按渲染时 currentLang 生成」的动态文案同步到新语言
   // （标题本身由双 span + CSS 控制，此处重渲染不影响其正确性）
   if (typeof renderDashboard === 'function') renderDashboard();
+  // 海拔剖面的统计行/区域图例/位置标注由 drawElevationProfile() 渲染，切换语言后必须重绘
+  if (typeof updateElevScopeUI === 'function') updateElevScopeUI();
+  if (typeof drawElevationProfile === 'function') drawElevationProfile();
   const active = document.querySelector('.tn-tab.active');
   if (active) showView(active.dataset.view);
 });
