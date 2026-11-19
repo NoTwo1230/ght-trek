@@ -6,7 +6,7 @@
 <title data-i18n="tk.title">GHT 轨迹同步地图 · 大喜马拉雅高线</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<link rel="stylesheet" href="track.css?v=3" />
+<link rel="stylesheet" href="track.css?v=4" />
 <script src="lang.js"></script>
 </head>
 <body>
@@ -53,13 +53,9 @@
         <div class="tk-cell wide"><label data-i18n="tk.distance">累计徒步里程</label><strong id="tkDistance">—</strong></div>
         <div class="tk-cell wide"><label data-i18n="tk.lastts">最后同步点（尼泊尔时间）</label><strong id="tkLastTs">—</strong></div>
       </div>
-      <button class="tk-btn primary" id="tkLocate" type="button" data-i18n="tk.locate">定位行者坐标</button>
-    </div>
-
-    <div class="tk-section">
-      <div class="tk-section-h"><span data-i18n="tk.mapview">地图视图</span></div>
-      <div class="tk-btns">
-        <button class="tk-btn" id="tkFit" type="button" data-i18n="tk.fit">全览路线</button>
+      <div class="tk-btns tk-primary-btns">
+        <button class="tk-btn primary" id="tkLocate" type="button" data-i18n="tk.locate">定位行者坐标</button>
+        <button class="tk-btn primary" id="tkFit" type="button" data-i18n="tk.fit">全览路线</button>
       </div>
     </div>
 

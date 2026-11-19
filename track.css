@@ -132,6 +132,8 @@ body {
 .tk-btn:hover { border-color: var(--tk-accent); color: var(--tk-accent); }
 .tk-btn.on { color: #fff; background: var(--tk-accent); border-color: var(--tk-accent); }
 .tk-btn.primary { width: 100%; margin-top: 8px; padding: 9px; font-size: 12px; color: #fff; background: var(--tk-accent); border-color: var(--tk-accent); }
+.tk-primary-btns { margin-top: 8px; gap: 8px; }
+.tk-primary-btns .tk-btn.primary { width: auto; flex: 1 1 0; min-width: 0; margin-top: 0; }
 
 .tk-timeline { position: relative; padding-left: 18px; }
 .tk-timeline::before { content: ''; position: absolute; left: 4px; top: 6px; bottom: 6px; width: 1px; background: var(--tk-border); }
