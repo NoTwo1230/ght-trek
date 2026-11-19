@@ -112,14 +112,20 @@
       });
   })();
 
-  // ── 计划路线：按路段区域色叠在底线之上 ──
+  // ── 计划路线：整条蓝色虚线（与图例 .tk-lg-plan 一致）──
+  // 视觉上用一条连续蓝虚线；每段的区域名/状态用透明交互线承载，点击仍可查看。
   var presetPts = (seed.preset && seed.preset.trackPoints) || [];
   var presetCoords = [];
+  var PLAN_COLOR = '#635BFF';   // 与 track.css .tk-lg-plan 的 #635bff 保持一致
   function renderPlan() {
     planLayer.clearLayers();
     presetCoords = presetPts.map(proj);
     if (presetCoords.length < 2) return;
+    // 浅色底线：让虚线在地形/卫星底图上都清晰
     L.polyline(presetCoords, { color: '#dfe5ee', weight: 5, opacity: 0.85, lineCap: 'round' }).addTo(planLayer);
+    // 计划路线主视觉：蓝色虚线
+    L.polyline(presetCoords, { color: PLAN_COLOR, weight: 2.8, opacity: 0.95, dashArray: '6 6', lineCap: 'round' }).addTo(planLayer);
+    // 分段透明交互线：保留区域名 + 状态 popup，不改变蓝色虚线外观
     (seed.sections || []).forEach(function (r) {
       var slice = presetCoords.slice(r.startIndex, r.endIndex + 1);
       if (slice.length < 2) return;
@@ -127,7 +133,7 @@
       var st = r.status === 'completed'
         ? (isEn ? 'Done' : '已完成')
         : (r.status === 'in-progress' ? (isEn ? 'In progress' : '进行中') : (isEn ? 'Not started' : '未开始'));
-      L.polyline(slice, { color: r.regionColor || '#635BFF', weight: 2.6, opacity: 0.95, lineCap: 'round' })
+      L.polyline(slice, { color: PLAN_COLOR, weight: 8, opacity: 0.01, lineCap: 'round' })
         .bindPopup('<b>' + (isEn ? (r.regionEn || r.regionZh) : (r.regionZh || r.regionEn) || '—') + '</b><br>' + (isEn ? 'Status: ' : '状态：') + st)
         .addTo(planLayer);
     });
@@ -148,25 +154,6 @@
   }
   renderPlan();
   renderActual();
-
-  // ── 图例：让「计划路线」色条与地图上的 13 段区域着色使用同一份数据 ──
-  // 原 CSS 写死紫色虚线(#635bff)，但地图计划线是按 regionColor 逐段着色的实线，
-  // 造成图例与轨迹颜色不一致。这里直接用 seed.sections.regionColor 生成渐变色条。
-  function syncLegend() {
-    var el = document.querySelector('.tk-lg-plan');
-    if (!el) return;
-    var cols = (seed.sections || []).map(function (r) { return r.regionColor || '#635BFF'; });
-    if (cols.length < 2) return;
-    var stops = cols.map(function (c, i) {
-      var a = (i / cols.length * 100).toFixed(2);
-      var b = ((i + 1) / cols.length * 100).toFixed(2);
-      return c + ' ' + a + '% ' + b + '%';
-    }).join(',');
-    el.style.width = '38px';
-    el.style.height = '5px';
-    el.style.background = 'linear-gradient(90deg,' + stops + ')';
-  }
-  syncLegend();
 
   // ── 实时点 ──
   function readStore() {
