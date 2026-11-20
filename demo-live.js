@@ -221,6 +221,12 @@
       var d = j && j.data;
       if (!d || !d.latest) return;
       var pts = Array.isArray(d.points) && d.points.length ? d.points : [d.latest];
+      // 兼容旧云端数据：后端早期版本未存 source，按 gpx 标记以保证尼泊尔时间格式/时间轴标签正确
+      pts = pts.map(function (p) {
+        var q = {}; for (var k in p) q[k] = p[k];
+        if (!q.source) q.source = 'gpx';
+        return q;
+      });
       state.backend = true;
       state.points = pts.slice(-MAX_POINTS);
       state.paused = true;   // 后端有真实数据时停止模拟，只跟随上报更新

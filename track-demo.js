@@ -186,6 +186,7 @@
 
   var points = initialPoints();
   var paused = false;
+  var backendActive = false;   // 是否已切到 /api/live 云端数据（首次切换才 flyTo，后续静默更新）
 
   function nextPoint() {
     if (!path.length) return null;
@@ -315,11 +316,50 @@
     if (last) map.flyTo(proj(last), 12, { duration: 0.9 });
   }
 
+  // ── 后端轮询：访客打开轨迹页也能看到云端最新位置（首页 demo-live.js 已有同等逻辑）──
+  // 本地 file:// 直接打开时跳过（无后端），继续用演示点；线上每 30 秒 GET /api/live。
+  // 关键：只在云端最新点比本地更新时才切换，避免用户手动缩放/查看时被旧数据反复 flyTo 打断。
+  function pollBackend() {
+    if (location.protocol === 'file:') return;
+    fetch('/api/live', { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) {
+        var d = j && j.data;
+        if (!d || !d.latest) return;                       // 云端尚无上报点 → 保留本地演示
+        var pts = (Array.isArray(d.points) && d.points.length) ? d.points : [d.latest];
+        var cloudTs = pts[pts.length - 1].ts || 0;
+        var localTs = points.length ? (points[points.length - 1].ts || 0) : 0;
+        // 已连云端且云端无新点时不动作；首次连接（backendActive=false）无条件接管演示点
+        if (backendActive && cloudTs <= localTs) return;
+        // 归一化：后端若未存 source（旧数据），按云端点默认 gpx 处理，保证时间格式与时间轴标签正确
+        pts = pts.map(function (p) {
+          var q = { lat: p.lat, lon: p.lon, elev: p.elev, ts: p.ts,
+                    source: p.source || 'gpx' };
+          return q;
+        });
+        var wasDemo = !backendActive;
+        backendActive = true;
+        points = pts.slice(-MAX);
+        paused = true;
+        writeStore(points);
+        refresh();
+        // 仅首次从演示切到真实数据时飞到最新点，之后轮询不再移动地图
+        if (wasDemo) {
+          var last = points[points.length - 1];
+          if (last) map.flyTo(proj(last), 12, { duration: 0.9 });
+        }
+      })
+      .catch(function () { /* 后端不可用时继续本地演示，不打扰用户 */ });
+  }
+
   // 导入统一在后台完成；前台只接收后台写入后的同步事件
   function wireSync() {
     if (!G) return;
     window.addEventListener(G.EVENT, function (e) {
-      if (e.detail && e.detail.length) applyImportedPoints(e.detail, '后台同步');
+      if (e.detail && e.detail.length) {
+        backendActive = true;   // 本地广播也是最新数据源，避免随后轮询用更旧的云端点覆盖
+        applyImportedPoints(e.detail, '后台同步');
+      }
     });
   }
 
@@ -394,6 +434,8 @@
   wire();
   wireSync();
   refresh();
+  pollBackend();                       // 立即拉一次云端最新点
+  var pollTimer = setInterval(pollBackend, 30000);   // 每 30 秒同步，与首页一致
   if (presetCoords.length > 1) {
     map.fitBounds(L.latLngBounds(presetCoords), { padding: [32, 32], maxZoom: 12 });
   } else if (points.length) {

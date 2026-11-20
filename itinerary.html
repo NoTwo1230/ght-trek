@@ -943,7 +943,14 @@ function render(){
       <div class="empty" style="grid-column:1/-1;">
         <div class="ico">🗺️</div>
         <h2>${t('it.empty.h')}</h2>
-        <p>${t('it.empty.p').replace('地图追踪页', '<a href="index.html?v=2">地图追踪页</a>')}</p>
+        <p>${(() => {
+          const msg = t('it.empty.p');
+          if (GHTI18N.getLang() === 'en') {
+            // 英文词条不含中文"地图追踪页"，需单独把"map tracking page"变成链接
+            return msg.replace('map tracking page', '<a href="index.html?v=2">map tracking page</a>');
+          }
+          return msg.replace('地图追踪页', '<a href="index.html?v=2">地图追踪页</a>');
+        })()}</p>
       </div>`;
     document.getElementById('countNote').textContent = '';
     document.getElementById('spanNote').textContent = '';

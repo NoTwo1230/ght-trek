@@ -19,7 +19,7 @@
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+  'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Live-Token',
   'Access-Control-Max-Age': '86400',
 };
 
@@ -177,17 +177,34 @@ export async function onRequest(context) {
     return json({ ok: false, error: 'bad password' }, 401);
   }
 
-  // 以下接口需登录（token 过期即 401，前端自动清 token 重新登录）
-  if (!await isOwner(request, env)) return json({ error: 'unauthorized', hint: 'token 过期或无效，请重新登录 admin.html' }, 401);
+  // 以下接口需登录（token 过期即 401，前端自动清 token 重新登录）。
+  // POST /api/live 例外：支持独立 LIVE_TOKEN（配了就用它，未配则仍用 owner token），
+  // 因此在分支内自行鉴权，这里先放行。
+  const livePost = path === '/api/live' && request.method === 'POST';
+  if (!livePost && !await isOwner(request, env)) return json({ error: 'unauthorized', hint: 'token 过期或无效，请重新登录 admin.html' }, 401);
 
   // 主人写入一条实时上报；服务端补时间戳，并只保留最近 60 点
   // 写频率建议 >= 2 分钟一次（KV 免费额度每日 1000 次写）；前端只读轮询不占写额度。
-  if (path === '/api/live' && request.method === 'POST') {
+  if (livePost) {
+    // 双通道鉴权：配置了 LIVE_TOKEN 时只认 X-Live-Token；未配置时回退 owner token（向后兼容）
+    if (env.LIVE_TOKEN) {
+      const supplied = request.headers.get('X-Live-Token') || '';
+      if (supplied !== env.LIVE_TOKEN) return json({ error: 'unauthorized', hint: 'LIVE_TOKEN 无效' }, 401);
+    } else if (!await isOwner(request, env)) {
+      return json({ error: 'unauthorized', hint: 'token 过期或无效，请重新登录 admin.html' }, 401);
+    }
     let body;
     try { body = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400); }
     const lat = Number(body.lat), lon = Number(body.lon);
     if (!isFinite(lat) || !isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) {
       return json({ error: 'invalid coordinates' }, 400);
+    }
+    // ts 设备时间优先（手册 5.3）：GPX 桥接传的是 GPS 记录时刻，手动上报传当前时刻。
+    // 仅接受合理的毫秒时间戳（2000 年之后、不超过当前 5 分钟），脏值回退服务器时间。
+    let ts = Date.now();
+    if (body.ts != null && isFinite(Number(body.ts))) {
+      const cand = Number(body.ts);
+      if (cand > 946684800000 && cand < Date.now() + 5 * 60000) ts = cand;
     }
     const point = {
       lat, lon,
@@ -195,8 +212,9 @@ export async function onRequest(context) {
       speed: body.speed != null && isFinite(Number(body.speed)) ? Number(body.speed) : null,
       battery: body.battery != null && isFinite(Number(body.battery)) ? Number(body.battery) : null,
       device: typeof body.device === 'string' ? body.device.slice(0, 60) : '',
+      source: typeof body.source === 'string' && body.source ? body.source.slice(0, 20) : 'manual',
       note: typeof body.note === 'string' ? body.note.slice(0, 160) : '',
-      ts: Date.now()
+      ts: ts
     };
     let points = [];
     try { const raw = await kvGet(env, 'live:points'); points = raw ? JSON.parse(raw) : []; } catch (e) {}

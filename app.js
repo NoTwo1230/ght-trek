@@ -1029,14 +1029,17 @@ const API = (function () {
       if (!hasBackend()) return { ok: true, status: 200, data: null };
       return req('GET', '/api/share');
     },
-    // 实时上报：只读公开，写入需 owner token
+    // 实时上报：只读公开，写入若服务端配了 LIVE_TOKEN 则用独立令牌，否则回退 owner token
     getLive: async () => {
       if (!hasBackend()) return { ok: true, status: 200, data: null };
       return req('GET', '/api/live');
     },
     postLive: async (point) => {
       if (!hasBackend()) return noBackend();
-      return req('POST', '/api/live', { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(point || {}) });
+      const headers = { 'Content-Type': 'application/json' };
+      // 独立上报令牌（仅上报用，与管理员 token 分开）。后台「实时上报」区填写后存本机。
+      try { const lt = localStorage.getItem('ght_live_token'); if (lt) headers['X-Live-Token'] = lt; } catch (e) {}
+      return req('POST', '/api/live', { headers: headers, body: JSON.stringify(point || {}) });
     },
     putShare: async (bundle) => {
       if (!hasBackend()) return noBackend();
@@ -1062,9 +1065,14 @@ async function applyServerConfig() {
     const r = await API.getConfig();
     if (!r.ok || !r.data) return;
     const c = r.data;
-    if (c.language && c.language !== currentLang) {
-      currentLang = c.language;
-      applyLang();
+    if (c.language) {
+      let lang = c.language;
+      // 兼容历史脏值：后台旧版把"中文"存成 zh-CN，但代码判断用 zh，会导致语言按钮失效
+      if (/^zh/i.test(lang)) lang = 'zh';
+      if (lang !== currentLang) {
+        currentLang = lang;
+        applyLang();
+      }
     }
     if (c.itineraryStartDate != null) {
       APP.itineraryStartDate = c.itineraryStartDate;

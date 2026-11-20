@@ -6,6 +6,15 @@
   var msg = document.getElementById('liveMsg');
   if (!msg) return;
 
+  // 独立上报令牌：仅存本机，回填输入框
+  var tokenEl = document.getElementById('liveToken');
+  if (tokenEl) {
+    try { tokenEl.value = localStorage.getItem('ght_live_token') || ''; } catch (e) {}
+    tokenEl.addEventListener('input', function () {
+      try { localStorage.setItem('ght_live_token', tokenEl.value.trim()); } catch (e) {}
+    });
+  }
+
   function say(text, ok) {
     msg.textContent = text;
     msg.style.color = ok ? '#00A86B' : '#BA7517';
