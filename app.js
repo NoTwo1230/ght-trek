@@ -602,93 +602,13 @@ const APP = {
 //  MAP INITIALIZATION
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  I18N (中文 / English)
+//  I18N (统一由 lang.js / window.GHTI18N 提供)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-let currentLang = (function(){ try { return localStorage.getItem('ght_lang') || 'zh'; } catch(e){ return 'zh'; } })();
-const I18N = {
-  zh: {
-    'nav.dashboard': '仪表盘', 'nav.sections': '路段', 'nav.itinerary': '行程', 'nav.datamgmt': '数据管理',
-    'nav.itinerary.full': '行程对比', 'nav.sections.full': '路段', 'nav.journal.full': '日志', 'nav.track': '实时轨迹',
-    'nav.itinerary.title': '计划 vs 实际 · 行程对比', 'nav.sections.title': '路段进度 · 按 已完成/进行中/未完成 分组', 'nav.journal.title': '远征日志 · 按路段分组',
-    'brand.sub': '大喜马拉雅高线',
-    'pos.prefix': '📍 当前位置:',
-    'basemap.terrain': '户外图 (Esri 地形 · 默认)', 'basemap.topo': '地形图 (等高线)',
-    'prog.done': '已完成 km', 'prog.total': '总计 km',
-    'st.camp': '当前营地', 'st.area': '所在区域', 'st.elev': '当前海拔', 'st.pass': '下一垭口', 'st.eta': '预计抵达',
-    'today.dist': '距离', 'today.gain': '爬升', 'today.loss': '下降', 'today.move': '移动时间', 'today.speed': '均速 km/h', 'today.max': '最高海拔',
-    'today.dateLbl': '数据日期：', 'today.nodata': '暂无今日 GPS 数据',
-    'ei.from': '出发地', 'ei.total': '总距离', 'ei.recorded': '已记录', 'ei.gain': '累计爬升', 'ei.max': '最高点', 'ei.passes': '垭口 / 营地', 'ei.end': '预计结束',
-    'pass.none': '暂无垭口数据', 'pass.soon': '近日', 'pass.seg': '段', 'pass.all': '查看全部路段 →',
-    'up.btn': '📤 上传GPS轨迹', 'up.hint': '支持批量多文件 (.gpx/.kml)<br>PeakVisor / Strava / Garmin 均可', 'up.date': '出发日期：', 'up.reset': '🗑️ 重置本机数据',
-    'view.empty': '暂无内容',
-    'dm.title': '数据管理', 'dm.pwdHint': '请输入主人密码以管理轨迹数据', 'dm.unlock': '解锁', 'dm.pwdErr': '密码错误', 'dm.connErr': '无法连接服务器（后端未启动？）',
-    // ── 整体进度模块 ──
-    'prog.title': '整体进度', 'prog.doneKm': '已完成里程', 'prog.totalGain': '累计爬升', 'prog.goal': '目标约',
-    'prog.curElev': '当前海拔', 'prog.nextPass': '下一垭口', 'prog.ringDay': '远征第 {d} 天',
-    'prog.ringCap': '全程进度', 'prog.ringDone': '已完成', 'prog.ringDayUnit': '日',
-    // ── 今日摘要 / 当前状态 / 垭口 ──
-    'today.title': '今日摘要', 'st.title': '当前状态', 'pass.title': '垭口清单',
-    'st.start': '起点', 'st.notStarted': '未出发', 'st.unnamed': '未命名',
-    // ── 地图 / 海拔 ──
-    'map.title': '交互地图', 'leg.actual': '实际徒步轨迹', 'leg.plan': '计划路线 · 目标',
-    'elev.title': '海拔剖面', 'elev.scopeFull': '全程', 'elev.scopeRegion': '当前区域',
-    'elev.scopePreset': '预设轨迹', 'elev.highest': '最高', 'elev.lowest': '最低',
-    'elev.climbLabel': '累计爬升', 'elev.current': '当前',
-    // ── Header / Footer / 其他 ──
-    'hdr.live': '定位中', 'hdr.idle': '等待定位数据',
-    'brand.title': 'GHT 大喜马拉雅高线徒步追踪', 'brand.sub': '远征追踪面板',
-    'footer.copyright': '© 2026 GHT 高线追踪', 'footer.dataSrc': '数据来源: GPX',
-    'loading.parse': '正在解析 GPX 轨迹...'
-  },
-  en: {
-    'nav.dashboard': 'Dashboard', 'nav.sections': 'Sections', 'nav.itinerary': 'Itinerary', 'nav.datamgmt': 'Data',
-    'nav.itinerary.full': 'Itinerary', 'nav.sections.full': 'Sections', 'nav.journal.full': 'Journal', 'nav.track': 'Live Track',
-    'nav.itinerary.title': 'Planned vs actual · itinerary', 'nav.sections.title': 'Section progress · grouped by done/in-progress/todo', 'nav.journal.title': 'Expedition journal · grouped by section',
-    'brand.sub': 'GREAT HIMALAYA TRAIL',
-    'pos.prefix': '📍 Current location:',
-    'basemap.terrain': 'Terrain (Esri Topo · default)', 'basemap.topo': 'Topographic (Contours)',
-    'prog.done': 'Done km', 'prog.left': 'Left km', 'prog.total': 'Total km',
-    'st.camp': 'Current camp', 'st.area': 'Region', 'st.elev': 'Elevation', 'st.pass': 'Next pass', 'st.eta': 'ETA',
-    'today.dist': 'Distance', 'today.gain': 'Ascent', 'today.loss': 'Descent', 'today.move': 'Moving time', 'today.speed': 'Avg km/h', 'today.max': 'Max elev',
-    'today.dateLbl': 'Data date: ', 'today.nodata': 'No GPS data today',
-    'ei.from': 'Start', 'ei.total': 'Total dist', 'ei.recorded': 'Recorded', 'ei.gain': 'Total ascent', 'ei.max': 'Highest point', 'ei.passes': 'Passes / Camps', 'ei.end': 'Est. finish',
-    'pass.none': 'No pass data', 'pass.soon': 'Soon', 'pass.seg': 'seg', 'pass.all': 'All sections →',
-    'up.btn': '📤 Upload GPS track', 'up.hint': 'Batch upload (.gpx/.kml)<br>PeakVisor / Strava / Garmin supported', 'up.date': 'Start date: ', 'up.reset': '🗑️ Reset data',
-    'view.empty': 'No content',
-    'dm.title': 'Data Management', 'dm.pwdHint': 'Enter owner password to manage track data', 'dm.unlock': 'Unlock', 'dm.pwdErr': 'Wrong password', 'dm.connErr': 'Cannot reach server (backend down?)',
-    // ── Overall Progress module ──
-    'prog.title': 'Overall Progress', 'prog.doneKm': 'Distance done', 'prog.totalGain': 'Total ascent', 'prog.goal': 'Goal ~',
-    'prog.curElev': 'Current elev', 'prog.nextPass': 'Next pass', 'prog.ringDay': 'Expedition Day {d}',
-    'prog.ringCap': 'Progress', 'prog.ringDone': 'done', 'prog.ringDayUnit': 'days',
-    // ── Today / Status / Passes ──
-    'today.title': "Today's Summary", 'st.title': 'Current Status', 'pass.title': 'Pass Checklist',
-    'st.start': 'Start', 'st.notStarted': 'Not started', 'st.unnamed': 'Unnamed',
-    // ── Map / Elevation ──
-    'map.title': 'Interactive Map', 'leg.actual': 'Actual track', 'leg.plan': 'Planned route · target',
-    'elev.title': 'Elevation Profile', 'elev.scopeFull': 'Full Route', 'elev.scopeRegion': 'Current Region',
-    'elev.scopePreset': 'Preset Track', 'elev.highest': 'Highest', 'elev.lowest': 'Lowest',
-    'elev.climbLabel': 'Total climb', 'elev.current': 'Current',
-    // ── Header / Footer / Misc ──
-    'hdr.live': 'Locating', 'hdr.idle': 'Waiting for position',
-    'brand.title': 'GHT Great Himalaya Trail', 'brand.sub': 'Expedition Tracker',
-    'footer.copyright': '© 2026 GHT Tracker', 'footer.dataSrc': 'Data source: GPX',
-    'loading.parse': 'Parsing GPX track...'
-  }
-};
-function t(k, def) {
-  const tbl = I18N[currentLang];
-  if (tbl && tbl[k] != null) return tbl[k];
-  if (I18N.zh[k] != null) return I18N.zh[k];
-  return def != null ? def : k;
-}
-// 卡片标题：始终输出「中文 span + .en 英文 span」，可见性完全交给 CSS 的 html[lang] 控制。
-// 原因：语言按钮只改 html[lang]、不重渲染卡片（当前布局无 .tn-tab）。若按 currentLang
-// 只输出一个 span，则「英文刷新后」或「英文下切回中文」时该 span 会被 CSS 规则
-// `html[lang="en"] .card-h > span:not(.en){display:none}` / `.card-h .en{display:none}` 隐藏，
-// 造成标题消失（垭口清单 / 整体进度 / 今日摘要 均受影响）。始终双 span 与 showView() 一致。
+const t = window.GHTI18N.t;
+let currentLang = window.GHTI18N.getLang();
 function cardTitle(i18nKey, enText, extraHtml) {
-  const zh = (I18N.zh && I18N.zh[i18nKey] != null) ? I18N.zh[i18nKey] : i18nKey;
-  const en = enText || ((I18N.en && I18N.en[i18nKey] != null) ? I18N.en[i18nKey] : t(i18nKey));
+  const zh = window.GHTI18N.get('zh', i18nKey, i18nKey);
+  const en = enText || window.GHTI18N.get('en', i18nKey, t(i18nKey));
   return '<span>' + zh + '</span><span class="en">' + en + '</span>' + (extraHtml || '');
 }
 function getProvEN(pid) {
@@ -697,6 +617,7 @@ function getProvEN(pid) {
 }
 function getProv(pid) { return currentLang === 'en' ? getProvEN(pid) : getProvZH(pid); }
 function applyLang() {
+  currentLang = window.GHTI18N.getLang();
   document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
   const lb = document.querySelector('.lang-btn');
   if (lb) lb.textContent = 'Language ▾';
@@ -719,8 +640,6 @@ function applyLang() {
       s.textContent = s.textContent.replace(/^(底图[:：]|Basemap:)\s*/, currentLang === 'en' ? 'Basemap: ' : '底图: ');
     }
   });
-  // 通知 demo-live 等模块按新语言重渲染动态状态文案
-  if (typeof window.onLangChange === 'function') { try { window.onLangChange(currentLang); } catch (e) {} }
   const dmt = document.getElementById('dmTitle'); if (dmt) dmt.textContent = t('dm.title');
   const dph = document.getElementById('dmPwdHint'); if (dph) dph.textContent = t('dm.pwdHint');
   const du = document.getElementById('dmUnlock'); if (du) du.textContent = t('dm.unlock');
@@ -751,20 +670,18 @@ function applyLang() {
 }
 const DELAY_ICON = { weather: '☁️', injured: '🩹', tired: '😴', other: '⚠️' };
 function delayLabel(reason) { return t('it.delay.' + (reason || 'other')); }
-const _langBtn = document.querySelector('.lang-btn');
-if (_langBtn) _langBtn.addEventListener('click', function () {
-  currentLang = currentLang === 'zh' ? 'en' : 'zh';
-  try { localStorage.setItem('ght_lang', currentLang); } catch(e) {}
+function onHomeLangChange() {
+  currentLang = window.GHTI18N.getLang();
   applyLang();
   // 重渲染卡片，使 ch-cap 徽章等「按渲染时 currentLang 生成」的动态文案同步到新语言
-  // （标题本身由双 span + CSS 控制，此处重渲染不影响其正确性）
   if (typeof renderDashboard === 'function') renderDashboard();
   // 海拔剖面的统计行/区域图例/位置标注由 drawElevationProfile() 渲染，切换语言后必须重绘
   if (typeof updateElevScopeUI === 'function') updateElevScopeUI();
   if (typeof drawElevationProfile === 'function') drawElevationProfile();
   const active = document.querySelector('.tn-tab.active');
   if (active) showView(active.dataset.view);
-});
+}
+window.GHTI18N.onChange(onHomeLangChange);
 applyLang();
 
 const map = L.map('map', {
@@ -1070,8 +987,8 @@ async function applyServerConfig() {
       // 兼容历史脏值：后台旧版把"中文"存成 zh-CN，但代码判断用 zh，会导致语言按钮失效
       if (/^zh/i.test(lang)) lang = 'zh';
       if (lang !== currentLang) {
-        currentLang = lang;
-        applyLang();
+        window.GHTI18N.setLang(lang);
+        currentLang = window.GHTI18N.getLang();
       }
     }
     if (c.itineraryStartDate != null) {

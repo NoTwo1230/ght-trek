@@ -129,7 +129,7 @@
       /* journal.html */
       /* itinerary.html 动态渲染补充 */
       'it.cal.ym': '{y} 年 {m} 月', 'it.wd': ['一','二','三','四','五','六','日'], 'it.today': '今日',
-      'it.warn': '⚠️ 未设置出发日期（或格式无效）。日历按「今天」起算的<b>临时排期</b>显示 {n} 天；请到 <a href="index.html?v=2">地图追踪页</a> 设置真实出发日，以获得准确日历与「超前/落后」判定。',
+      'it.warn': '⚠️ 未设置出发日期（或格式无效）。日历按「今天」起算的<b>临时排期</b>显示 {n} 天；请到 <a href="index.html">地图追踪页</a> 设置真实出发日，以获得准确日历与「超前/落后」判定。',
       'it.foot.temp': '（未设置出发日期 · 临时排期）',
 
       'jo.title': '📝 远征日志',
@@ -294,7 +294,7 @@
 
       /* itinerary.html dynamic additions */
       'it.cal.ym': '{y} / {m}', 'it.wd': ['Mo','Tu','We','Th','Fr','Sa','Su'], 'it.today': 'Today',
-      'it.warn': '⚠️ No start date set (or invalid format). Calendar shows <b>temporary schedule</b> of {n} days counted from "today"; please set the real start date on the <a href="index.html?v=2">map tracking page</a> for accurate calendar and ahead/behind judgement.',
+      'it.warn': '⚠️ No start date set (or invalid format). Calendar shows <b>temporary schedule</b> of {n} days counted from "today"; please set the real start date on the <a href="index.html">map tracking page</a> for accurate calendar and ahead/behind judgement.',
       'it.foot.temp': '(No start date set · temporary schedule)',
 
       'jo.title': '📝 Expedition Journal',
@@ -349,10 +349,85 @@
     }
   };
 
+  /* 首页 / 后台原 app.js 内置词库，已并入本文件，全站只保留这一份翻译引擎 */
+  const APP_I18N = {
+    zh: {
+      'nav.dashboard': '仪表盘', 'nav.sections': '路段', 'nav.itinerary': '行程', 'nav.datamgmt': '数据管理',
+      'nav.itinerary.full': '行程对比', 'nav.sections.full': '路段', 'nav.journal.full': '日志', 'nav.track': '实时轨迹',
+      'nav.itinerary.title': '计划 vs 实际 · 行程对比', 'nav.sections.title': '路段进度 · 按 已完成/进行中/未完成 分组', 'nav.journal.title': '远征日志 · 按路段分组',
+      'brand.sub': '大喜马拉雅高线',
+      'pos.prefix': '📍 当前位置:',
+      'basemap.terrain': '户外图 (Esri 地形 · 默认)', 'basemap.topo': '地形图 (等高线)',
+      'prog.done': '已完成 km', 'prog.total': '总计 km',
+      'st.camp': '当前营地', 'st.area': '所在区域', 'st.elev': '当前海拔', 'st.pass': '下一垭口', 'st.eta': '预计抵达',
+      'today.dist': '距离', 'today.gain': '爬升', 'today.loss': '下降', 'today.move': '移动时间', 'today.speed': '均速 km/h', 'today.max': '最高海拔',
+      'today.dateLbl': '数据日期：', 'today.nodata': '暂无今日 GPS 数据',
+      'ei.from': '出发地', 'ei.total': '总距离', 'ei.recorded': '已记录', 'ei.gain': '累计爬升', 'ei.max': '最高点', 'ei.passes': '垭口 / 营地', 'ei.end': '预计结束',
+      'pass.none': '暂无垭口数据', 'pass.soon': '近日', 'pass.seg': '段', 'pass.all': '查看全部路段 →',
+      'up.btn': '📤 上传GPS轨迹', 'up.hint': '支持批量多文件 (.gpx/.kml)<br>PeakVisor / Strava / Garmin 均可', 'up.date': '出发日期：', 'up.reset': '🗑️ 重置本机数据',
+      'view.empty': '暂无内容',
+      'dm.title': '数据管理', 'dm.pwdHint': '请输入主人密码以管理轨迹数据', 'dm.unlock': '解锁', 'dm.pwdErr': '密码错误', 'dm.connErr': '无法连接服务器（后端未启动？）',
+      'prog.title': '整体进度', 'prog.doneKm': '已完成里程', 'prog.totalGain': '累计爬升', 'prog.goal': '目标约',
+      'prog.curElev': '当前海拔', 'prog.nextPass': '下一垭口', 'prog.ringDay': '远征第 {d} 天',
+      'prog.ringCap': '全程进度', 'prog.ringDone': '已完成', 'prog.ringDayUnit': '日',
+      'today.title': '今日摘要', 'st.title': '当前状态', 'pass.title': '垭口清单',
+      'st.start': '起点', 'st.notStarted': '未出发', 'st.unnamed': '未命名',
+      'map.title': '交互地图', 'leg.actual': '实际徒步轨迹', 'leg.plan': '计划路线 · 目标',
+      'elev.title': '海拔剖面', 'elev.scopeFull': '全程', 'elev.scopeRegion': '当前区域',
+      'elev.scopePreset': '预设轨迹', 'elev.highest': '最高', 'elev.lowest': '最低',
+      'elev.climbLabel': '累计爬升', 'elev.current': '当前',
+      'hdr.live': '定位中', 'hdr.idle': '等待定位数据',
+      'brand.title': 'GHT 大喜马拉雅高线徒步追踪', 'brand.sub': '远征追踪面板',
+      'footer.copyright': '© 2026 GHT 高线追踪', 'footer.dataSrc': '数据来源: GPX',
+      'loading.parse': '正在解析 GPX 轨迹...'
+    },
+    en: {
+      'nav.dashboard': 'Dashboard', 'nav.sections': 'Sections', 'nav.itinerary': 'Itinerary', 'nav.datamgmt': 'Data',
+      'nav.itinerary.full': 'Itinerary', 'nav.sections.full': 'Sections', 'nav.journal.full': 'Journal', 'nav.track': 'Live Track',
+      'nav.itinerary.title': 'Planned vs actual · itinerary', 'nav.sections.title': 'Section progress · grouped by done/in-progress/todo', 'nav.journal.title': 'Expedition journal · grouped by section',
+      'brand.sub': 'GREAT HIMALAYA TRAIL',
+      'pos.prefix': '📍 Current location:',
+      'basemap.terrain': 'Terrain (Esri Topo · default)', 'basemap.topo': 'Topographic (Contours)',
+      'prog.done': 'Done km', 'prog.left': 'Left km', 'prog.total': 'Total km',
+      'st.camp': 'Current camp', 'st.area': 'Region', 'st.elev': 'Elevation', 'st.pass': 'Next pass', 'st.eta': 'ETA',
+      'today.dist': 'Distance', 'today.gain': 'Ascent', 'today.loss': 'Descent', 'today.move': 'Moving time', 'today.speed': 'Avg km/h', 'today.max': 'Max elev',
+      'today.dateLbl': 'Data date: ', 'today.nodata': 'No GPS data today',
+      'ei.from': 'Start', 'ei.total': 'Total dist', 'ei.recorded': 'Recorded', 'ei.gain': 'Total ascent', 'ei.max': 'Highest point', 'ei.passes': 'Passes / Camps', 'ei.end': 'Est. finish',
+      'pass.none': 'No pass data', 'pass.soon': 'Soon', 'pass.seg': 'seg', 'pass.all': 'All sections →',
+      'up.btn': '📤 Upload GPS track', 'up.hint': 'Batch upload (.gpx/.kml)<br>PeakVisor / Strava / Garmin supported', 'up.date': 'Start date: ', 'up.reset': '🗑️ Reset data',
+      'view.empty': 'No content',
+      'dm.title': 'Data Management', 'dm.pwdHint': 'Enter owner password to manage track data', 'dm.unlock': 'Unlock', 'dm.pwdErr': 'Wrong password', 'dm.connErr': 'Cannot reach server (backend down?)',
+      'prog.title': 'Overall Progress', 'prog.doneKm': 'Distance done', 'prog.totalGain': 'Total ascent', 'prog.goal': 'Goal ~',
+      'prog.curElev': 'Current elev', 'prog.nextPass': 'Next pass', 'prog.ringDay': 'Expedition Day {d}',
+      'prog.ringCap': 'Progress', 'prog.ringDone': 'done', 'prog.ringDayUnit': 'days',
+      'today.title': "Today's Summary", 'st.title': 'Current Status', 'pass.title': 'Pass Checklist',
+      'st.start': 'Start', 'st.notStarted': 'Not started', 'st.unnamed': 'Unnamed',
+      'map.title': 'Interactive Map', 'leg.actual': 'Actual track', 'leg.plan': 'Planned route · target',
+      'elev.title': 'Elevation Profile', 'elev.scopeFull': 'Full Route', 'elev.scopeRegion': 'Current Region',
+      'elev.scopePreset': 'Preset Track', 'elev.highest': 'Highest', 'elev.lowest': 'Lowest',
+      'elev.climbLabel': 'Total climb', 'elev.current': 'Current',
+      'hdr.live': 'Locating', 'hdr.idle': 'Waiting for position',
+      'brand.title': 'GHT Great Himalaya Trail', 'brand.sub': 'Expedition Tracker',
+      'footer.copyright': '© 2026 GHT Tracker', 'footer.dataSrc': 'Data source: GPX',
+      'loading.parse': 'Parsing GPX track...'
+    }
+  };
+  Object.keys(APP_I18N.zh).forEach(function (k) { I18N.zh[k] = APP_I18N.zh[k]; });
+  Object.keys(APP_I18N.en).forEach(function (k) { I18N.en[k] = APP_I18N.en[k]; });
+
+  const listeners = [];
+  function onChange(fn) { if (typeof fn === 'function' && listeners.indexOf(fn) < 0) listeners.push(fn); }
+
   function t(k, def) {
     const tbl = I18N[currentLang];
     if (tbl && tbl[k] != null) return tbl[k];
     if (I18N.zh[k] != null) return I18N.zh[k];
+    return def != null ? def : k;
+  }
+
+  function get(lang, k, def) {
+    const tbl = I18N[lang];
+    if (tbl && tbl[k] != null) return tbl[k];
     return def != null ? def : k;
   }
 
@@ -365,11 +440,20 @@
     });
     document.querySelectorAll('[data-i18n-ph]').forEach(el => el.setAttribute('placeholder', t(el.dataset.i18nPh)));
     document.querySelectorAll('[data-i18n-title]').forEach(el => el.setAttribute('title', t(el.dataset.i18nTitle)));
-    if (typeof window.onLangChange === 'function') window.onLangChange(currentLang);
+    listeners.forEach(function (fn) { try { fn(currentLang); } catch (e) {} });
+    if (typeof window.onLangChange === 'function') { try { window.onLangChange(currentLang); } catch (e) {} }
   }
 
   function toggleLang() {
     currentLang = currentLang === 'zh' ? 'en' : 'zh';
+    try { localStorage.setItem('ght_lang', currentLang); } catch (e) {}
+    applyLang();
+  }
+
+  function setLang(lang) {
+    const next = /^en/i.test(lang) ? 'en' : 'zh';
+    if (next === currentLang) return;
+    currentLang = next;
     try { localStorage.setItem('ght_lang', currentLang); } catch (e) {}
     applyLang();
   }
@@ -379,5 +463,9 @@
     applyLang();
   });
 
-  window.GHTI18N = { t: t, applyLang: applyLang, toggleLang: toggleLang, getLang: function () { return currentLang; } };
+  window.GHTI18N = {
+    t: t, get: get, applyLang: applyLang, toggleLang: toggleLang, setLang: setLang,
+    onChange: onChange,
+    getLang: function () { return currentLang; }
+  };
 })();
