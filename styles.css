@@ -1,5 +1,5 @@
 
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+  /* Noto Sans SC 原由 Google Fonts 加载（境外依赖）；已改用系统字体栈，见 --font-body */
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -48,7 +48,7 @@
   }
 
   body {
-    font-family: 'Noto Sans SC', -apple-system, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
     background: var(--bg);
     color: var(--text);
     height: 100vh;
@@ -883,19 +883,6 @@
   .log-entry .daily-stats .stat-item .val.orange { color: var(--accent2); }
   .log-entry .daily-stats .stat-item .val.white { color: var(--text); }
 
-
-  .donate-section { text-align: center; padding: 20px 0; }
-  .donate-section .qr-box {
-    width: 160px; height: 160px;
-    margin: 16px auto;
-    background: #fff;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    color: #333;
-  }
 
   .loading-overlay {
     position: fixed; inset: 0;

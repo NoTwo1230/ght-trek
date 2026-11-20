@@ -12,6 +12,8 @@
 
   let currentLang = 'zh';
   try { currentLang = localStorage.getItem('ght_lang') || 'zh'; } catch (e) {}
+  // 后台（admin.html）只用中文：强制 zh，忽略 localStorage，并禁用切换
+  if (window.GHT_FORCE_ZH) currentLang = 'zh';
 
   const I18N = {
     zh: {
@@ -445,12 +447,14 @@
   }
 
   function toggleLang() {
+    if (window.GHT_FORCE_ZH) return;
     currentLang = currentLang === 'zh' ? 'en' : 'zh';
     try { localStorage.setItem('ght_lang', currentLang); } catch (e) {}
     applyLang();
   }
 
   function setLang(lang) {
+    if (window.GHT_FORCE_ZH) return;
     const next = /^en/i.test(lang) ? 'en' : 'zh';
     if (next === currentLang) return;
     currentLang = next;

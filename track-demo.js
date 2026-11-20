@@ -124,14 +124,9 @@
 
   (function loadRegionGeo() {
     var local = 'assets/nepal-districts.geojson';
-    var cdn = 'https://cdn.jsdelivr.net/gh/mesaugat/geoJSON-Nepal@master/nepal-districts-new.geojson';
     fetch(local).then(function (res) { if (!res.ok) throw new Error('local ' + res.status); return res.json(); })
       .then(function (geo) { regionGeo = geo; renderRegions(); })
-      .catch(function () {
-        fetch(cdn).then(function (res) { if (!res.ok) throw new Error('cdn ' + res.status); return res.json(); })
-          .then(function (geo) { regionGeo = geo; renderRegions(); })
-          .catch(function (err) { console.warn('[region] geojson load failed', err); });
-      });
+      .catch(function (err) { console.warn('[region] geojson load failed', err); });
   })();
 
   // ── 计划路线：整条蓝色虚线（与图例 .tk-lg-plan 一致）──

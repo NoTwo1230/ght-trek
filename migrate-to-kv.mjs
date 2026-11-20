@@ -8,7 +8,8 @@
  *   export CF_ACCOUNT_ID=你的账户ID
  *   export CF_KV_NS=你的KV命名空间ID
  *   export CF_API_TOKEN=具有「账户→Workers KV 存储：编辑」权限的 API Token
- *   node migrate-to-kv.mjs [备份文件路径，默认 ght-trek-cloud-backup-2026-07-22.json]
+ *   node migrate-to-kv.mjs <备份文件路径>
+ *   （备份文件已不在仓库内，历史版本可从 git 历史取回；数据早已迁入 KV，此脚本仅备用）
  *
  * 说明：
  *   · 备份文件形如 { ok:true, data:{ preset, actual, itinerary, journal, ... } }
@@ -25,7 +26,11 @@ if (!ACCOUNT_ID || !NS_ID || !TOKEN) {
   process.exit(1);
 }
 
-const backupPath = process.argv[2] || 'ght-trek-cloud-backup-2026-07-22.json';
+const backupPath = process.argv[2];
+if (!backupPath) {
+  console.error('用法：node migrate-to-kv.mjs <备份文件路径>');
+  process.exit(1);
+}
 import fs from 'node:fs';
 const raw = fs.readFileSync(backupPath, 'utf-8');
 const backup = JSON.parse(raw);
