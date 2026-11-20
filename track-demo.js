@@ -75,18 +75,19 @@
       if (rid) { (byRegion[rid] = byRegion[rid] || []).push(f); }
       else { f.properties._dname = dname; uncolored.push(f); }
     });
-    // 非 GHT 县：灰色上下文底
+    // 非 GHT 县：灰色上下文底。原始样式记录在 _ghtBase，供缩放切换时恢复。
     if (uncolored.length) {
-      L.geoJSON({ type: 'FeatureCollection', features: uncolored }, {
+      var grayLayer = L.geoJSON({ type: 'FeatureCollection', features: uncolored }, {
         pane: 'regionBlocks',
         style: function () { return { color: '#B4B2A9', weight: 0.5, fillColor: '#D3D1C7', fillOpacity: 0.18 }; }
       }).addTo(regionLayer);
+      grayLayer._ghtBase = { color: '#B4B2A9', fillColor: '#D3D1C7', uncolored: true };
     }
     // GHT 13 区域：填充色块 + 悬浮信息
     Object.keys(byRegion).forEach(function (key) {
       var i = +key, r = regions[i];
       if (!r) return;
-      L.geoJSON({ type: 'FeatureCollection', features: byRegion[key] }, {
+      var regionLyr = L.geoJSON({ type: 'FeatureCollection', features: byRegion[key] }, {
         pane: 'regionBlocks',
         style: function () { return { color: r.stroke, weight: 1, fillColor: r.color, fillOpacity: 0.5 }; },
         onEachFeature: function (f, lyr) {
@@ -97,8 +98,29 @@
           lyr.bindTooltip(label, { sticky: true, className: 'tk-region-tip' });
         }
       }).addTo(regionLayer);
+      regionLyr._ghtBase = { color: r.stroke, fillColor: r.color, uncolored: false };
+    });
+    applyRegionZoomStyle();
+  }
+
+  // 概览时保留色块填充；放大到 10 级及以上只留边界，让出地形细节。
+  // 定位按钮 flyTo(12)、全览 fitBounds(maxZoom 12)、手动滚轮缩放都会触发 zoomend。
+  var REGION_OUTLINE_ZOOM = 10;
+  function applyRegionZoomStyle() {
+    var outlineOnly = map.getZoom() >= REGION_OUTLINE_ZOOM;
+    regionLayer.eachLayer(function (lyr) {
+      var b = lyr._ghtBase || { color: '#B4B2A9', fillColor: '#D3D1C7', uncolored: true };
+      var style = {
+        color: b.color,
+        fillColor: b.fillColor,
+        weight: b.uncolored ? 0.5 : 1,
+        opacity: outlineOnly ? (b.uncolored ? 0.3 : 0.8) : 1,
+        fillOpacity: outlineOnly ? 0 : (b.uncolored ? 0.18 : 0.5)
+      };
+      lyr.setStyle(style);
     });
   }
+  map.on('zoomend', applyRegionZoomStyle);
 
   (function loadRegionGeo() {
     var local = 'assets/nepal-districts.geojson';
