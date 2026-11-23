@@ -269,18 +269,32 @@
 
   function setText(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; }
 
+  // 是否处于演示态：未连后端、且最后一个点仍是演示种子（source=demo 或无来源）。
+  // 连上 /api/live 或收到后台广播后 backendActive=true，一律视为真实数据。
+  function isDemoData() {
+    var p = points[points.length - 1];
+    if (!p) return true;
+    if (backendActive) return false;
+    return p.source === 'demo' || !p.source;
+  }
+
   function updateUI() {
     var p = points[points.length - 1];
     if (!p) return;
     var f = freshness();
-    var statusCls = f.level === 'fresh' ? '' : ' is-' + f.level;
+    var demo = isDemoData();
+    // 演示态：不用假时间戳算出的"刚刚定位"误导关注者。状态栏与首页统一为"等待定位数据"，
+    // 用灰色徽章 + banner 说明当前只是演示轨迹；一旦切到真实数据即恢复 freshness 状态。
+    var statusCls = demo ? ' is-offline' : (f.level === 'fresh' ? '' : ' is-' + f.level);
     var status = document.getElementById('tkStatus');
     if (status) status.className = 'tk-status' + statusCls;
-    setText('tkStatusText', f.phrase);
+    setText('tkStatusText', demo ? t('tk.waiting', '等待定位数据') : f.phrase);
 
     var banner = document.getElementById('tkBanner');
     if (banner) banner.className = 'tk-live-banner' + statusCls;
-    setText('tkBannerText', f.advise ? f.phrase + ' · ' + f.advise : f.phrase);
+    setText('tkBannerText', demo
+      ? t('tk.demo.banner', '当前显示演示轨迹，尚未同步真实 GPX 定位')
+      : (f.advise ? f.phrase + ' · ' + f.advise : f.phrase));
 
     setText('tkLat', Number(p.lat).toFixed(4) + '° N');
     setText('tkLon', Number(p.lon).toFixed(4) + '° E');
