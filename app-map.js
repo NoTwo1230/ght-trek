@@ -25,13 +25,13 @@ function applyLang() {
   const sub = document.querySelector('.brand .sub'); if (sub) sub.textContent = t('brand.sub');
   document.querySelectorAll('.basemap-btn').forEach((el, i) => { el.title = t(['basemap.terrain', 'basemap.topo'][i]); });
   const dm = document.getElementById('btnDataMgmt'); if (dm) dm.textContent = '🔧 ' + t('nav.datamgmt');
-  // 顶栏三个外链（行程对比 / 路段 / 日志）此前硬编码中文、未进翻译循环 → 补上 i18n
+  // 顶栏三个外链统一 4 字命名（行程对比 / 路段进度 / 远征日志），无符号无箭头
   const ni = document.getElementById('navItinerary');
-  if (ni) { ni.textContent = '📅 ' + t('nav.itinerary.full') + ' ↗'; ni.title = t('nav.itinerary.title'); }
+  if (ni) { ni.textContent = t('nav.itinerary.full'); ni.title = t('nav.itinerary.title'); }
   const ns = document.getElementById('navSections');
-  if (ns) { ns.textContent = '🏔️ ' + t('nav.sections.full') + ' ↗'; ns.title = t('nav.sections.title'); }
+  if (ns) { ns.textContent = t('nav.sections.full'); ns.title = t('nav.sections.title'); }
   const nj = document.getElementById('navJournal');
-  if (nj) { nj.textContent = '📝 ' + t('nav.journal.full') + ' ↗'; nj.title = t('nav.journal.title'); }
+  if (nj) { nj.textContent = t('nav.journal.full'); nj.title = t('nav.journal.title'); }
   const nt = document.getElementById('navTrack');
   if (nt) nt.textContent = t('nav.track');
   // 底图版权行前缀（© 前的「底图:」↔「Basemap:」），双向切换
@@ -507,8 +507,8 @@ function fitRoute() {
 }
 
 const VIEW_TITLES = {
-  sections: ['🏔️ 路段探索器', 'SECTION EXPLORER'],
-  itinerary: ['📅 行程安排', 'ITINERARY']
+  sections: ['路段进度', 'SECTION PROGRESS'],
+  itinerary: ['行程对比', 'ITINERARY']
 };
 // 根据 currentLang 返回正确的标题 [中文, 英文]
 function vt(key) { const v = VIEW_TITLES[key]; return v ? (currentLang === 'en' ? [v[1], v[1]] : v) : ['视图', 'VIEW']; }

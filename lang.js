@@ -22,7 +22,7 @@
       'lang.btn': 'Language ▾',
 
       /* itinerary.html */
-      'it.title': '行程日历',
+      'it.title': '行程对比',
       'it.sub': '计划 vs 实际徒步对比',
       'it.basis': '位置基准',
       'it.plan': '📋 计划日期',
@@ -97,7 +97,7 @@
       'it.foot.nodate': ' 未设置出发日期（日程日期显示为「—」）。',
 
       /* sections.html */
-      'sec.title': 'GHT 路段全景',
+      'sec.title': '路段进度',
       'sec.sub': '13 段区域徒步指南',
       'sec.banner': 'GHT 大喜马拉雅高线 · 13 段 区域徒步',
       'sec.banner2': '从东端的干城章嘉到西陲的达尔楚拉，整条高线穿越 13 个尼泊尔区域。横屏滑动浏览每段区域地图与名称，悬停即可居中放大，点击「查看大图」进入含全部徒步数据的详情页。',
@@ -106,7 +106,7 @@
       'sec.filter.plan': '计划',
       'sec.legend.meas': '完成 · 来自轨迹',
       'sec.legend.plan': '计划 · 参考里程',
-      'sec.cover': '🗺️ 路段全景',
+      'sec.cover': '路段进度',
       'sec.cover2': '悬停切换 · 点击「查看大图」看完整数据',
       'sec.view': '查看大图 ↗',
       'sec.detail.dist': '距离',
@@ -134,7 +134,7 @@
       'it.warn': '⚠️ 未设置出发日期（或格式无效）。日历按「今天」起算的<b>临时排期</b>显示 {n} 天；请到 <a href="index.html">地图追踪页</a> 设置真实出发日，以获得准确日历与「超前/落后」判定。',
       'it.foot.temp': '（未设置出发日期 · 临时排期）',
 
-      'jo.title': '📝 远征日志',
+      'jo.title': '远征日志',
       'jo.en': 'JOURNAL · 时间线 · 最新在前',
       'jo.sub': '从 Phungling 到 Darchula 的全程纪实。沿途随笔按时间倒序排列，最新发布在最上方。山里信号不稳，只发文字、不传照片。',
       'jo.total': '总日志',
@@ -164,7 +164,7 @@
       'jo.republish': '🔄 重新发布共享', 'jo.republish.ok': '✅ 已将本机日志重新发布到云端',
 
       /* track.html 全屏轨迹页 */
-      'tk.title': 'GHT 轨迹同步地图',
+      'tk.title': '实时轨迹',
       'tk.back': '返回首页',
       'tk.waiting': '等待定位数据',
       'tk.traveler': '行者信息',
@@ -190,7 +190,7 @@
       'back.home': '← Back to home',
       'lang.btn': 'Language ▾',
 
-      'it.title': 'Itinerary Calendar',
+      'it.title': 'Itinerary',
       'it.sub': 'Planned vs actual trek',
       'it.basis': 'Reference basis',
       'it.plan': '📋 Planned dates',
@@ -264,7 +264,7 @@
       'it.foot.date': ' Start date: {d}.',
       'it.foot.nodate': ' No start date set (dates show “—”).',
 
-      'sec.title': 'GHT Section Panorama',
+      'sec.title': 'Section Progress',
       'sec.sub': '13 regional trekking guides',
       'sec.banner': 'GHT Great Himalaya Trail · 13 regional treks',
       'sec.banner2': 'From Kanchenjunga in the east to Darchula in the far west, the trail crosses 13 Nepali regions. Swipe sideways to browse each region map and name; hover to zoom, click "View large" for the full data detail page.',
@@ -273,7 +273,7 @@
       'sec.filter.plan': 'Plan',
       'sec.legend.meas': 'Done · from track',
       'sec.legend.plan': 'Plan · reference',
-      'sec.cover': '🗺️ Section panorama',
+      'sec.cover': 'Section Progress',
       'sec.cover2': 'Hover to switch · click "View large" for full data',
       'sec.view': 'View large ↗',
       'sec.detail.dist': 'Distance',
@@ -300,7 +300,7 @@
       'it.warn': '⚠️ No start date set (or invalid format). Calendar shows <b>temporary schedule</b> of {n} days counted from "today"; please set the real start date on the <a href="index.html">map tracking page</a> for accurate calendar and ahead/behind judgement.',
       'it.foot.temp': '(No start date set · temporary schedule)',
 
-      'jo.title': '📝 Expedition Journal',
+      'jo.title': 'Expedition Journal',
       'jo.en': 'JOURNAL · Timeline · Newest first',
       'jo.sub': 'A full record from Phungling to Darchula. Notes are listed newest-first. Signal is unstable in the mountains — text only, no photos.',
       'jo.total': 'Total logs',
@@ -330,7 +330,7 @@
       'jo.republish': '🔄 Republish share', 'jo.republish.ok': '✅ Local journal republished to cloud',
 
       /* track.html full-screen track page */
-      'tk.title': 'GHT Track Sync Map',
+      'tk.title': 'Live Track',
       'tk.back': 'Back to home',
       'tk.waiting': 'Waiting for position data',
       'tk.traveler': 'Traveler info',
@@ -357,7 +357,7 @@
   const APP_I18N = {
     zh: {
       'nav.dashboard': '仪表盘', 'nav.sections': '路段', 'nav.itinerary': '行程', 'nav.datamgmt': '数据管理',
-      'nav.itinerary.full': '行程对比', 'nav.sections.full': '路段', 'nav.journal.full': '日志', 'nav.track': '实时轨迹',
+      'nav.itinerary.full': '行程对比', 'nav.sections.full': '路段进度', 'nav.journal.full': '远征日志', 'nav.track': '实时轨迹',
       'nav.itinerary.title': '计划 vs 实际 · 行程对比', 'nav.sections.title': '路段进度 · 按 已完成/进行中/未完成 分组', 'nav.journal.title': '远征日志 · 按路段分组',
       'brand.sub': '大喜马拉雅高线',
       'pos.prefix': '📍 当前位置:',
@@ -387,7 +387,7 @@
     },
     en: {
       'nav.dashboard': 'Dashboard', 'nav.sections': 'Sections', 'nav.itinerary': 'Itinerary', 'nav.datamgmt': 'Data',
-      'nav.itinerary.full': 'Itinerary', 'nav.sections.full': 'Sections', 'nav.journal.full': 'Journal', 'nav.track': 'Live Track',
+      'nav.itinerary.full': 'Itinerary', 'nav.sections.full': 'Section Progress', 'nav.journal.full': 'Expedition Journal', 'nav.track': 'Live Track',
       'nav.itinerary.title': 'Planned vs actual · itinerary', 'nav.sections.title': 'Section progress · grouped by done/in-progress/todo', 'nav.journal.title': 'Expedition journal · grouped by section',
       'brand.sub': 'GREAT HIMALAYA TRAIL',
       'pos.prefix': '📍 Current location:',

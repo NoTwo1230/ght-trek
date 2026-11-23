@@ -873,7 +873,7 @@ function focusRegion(idx) {
 }
 
 function renderSections() {
-  let html = '<div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:12px;">🏔️ 路段探索器</div>';
+  let html = '<div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:12px;">路段进度</div>';
 
   if (APP.sectionRanges && APP.sectionRanges.length > 0) {
     APP.sectionRanges.forEach((range, idx) => {
