@@ -35,7 +35,7 @@ body {
   position: relative;
   z-index: 1100;
 }
-.tk-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.tk-brand { display: flex; align-items: center; gap: 11px; min-width: 0; }
 .tk-mark {
   width: 34px; height: 34px; border-radius: 9px; flex: none;
   background: var(--tk-accent); color: #fff;
@@ -43,7 +43,7 @@ body {
 }
 .tk-mark svg { width: 18px; height: 18px; }
 .tk-title { font-size: 16px; font-weight: 700; line-height:1.2; white-space: nowrap; }
-.tk-sub { font-size: 11.5px; color: var(--tk-faint); line-height:1.4; margin-top:2px; white-space: nowrap; }
+.tk-sub { font-size: 11.5px; color: var(--tk-dim); line-height:1.4; margin-top:2px; white-space: nowrap; }
 .tk-spacer { flex: 1; }
 .tk-status {
   display: inline-flex; align-items: center; gap: 7px;
