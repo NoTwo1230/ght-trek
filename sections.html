@@ -27,12 +27,14 @@
   }
   /* ── topbar（Stripe 浅色主题）── */
   .topbar{position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:14px;
-    padding:13px 20px;background:#FFFFFF;border-bottom:1px solid var(--border);flex-wrap:wrap}
+    min-height:64px;box-sizing:border-box;padding:0 20px;background:#FFFFFF;border-bottom:1px solid var(--border);flex-wrap:wrap}
   .topbar .title{font-size:16px;font-weight:500;color:var(--text);display:flex;align-items:center;gap:11px;white-space:nowrap}
   .topbar .title .glyph{width:34px;height:34px;border-radius:9px;background:var(--accent);
     display:flex;align-items:center;justify-content:center;flex-shrink:0}
   .topbar .title .glyph svg{width:18px;height:18px;stroke:#fff}
-  .topbar .title small{font-weight:400;color:var(--text-dim);font-size:11px}
+  .topbar .pg-head{display:flex;flex-direction:column;gap:2px}
+  .topbar .pg-title{font-size:16px;font-weight:700;line-height:1.2}
+  .topbar .pg-sub{font-size:11.5px;font-weight:400;color:var(--text-dim);line-height:1.4}
   .back-link{margin-left:auto;display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:var(--text-dim);
     border:1px solid var(--border);border-radius:8px;padding:7px 13px;font-size:13px;font-weight:400;transition:.2s}
   .back-link:hover{color:var(--text);border-color:var(--accent);background:var(--accent-bg)}
@@ -43,9 +45,7 @@
 
   /* ── intro banner ── */
   .banner{max-width:1320px;margin:0 auto;padding:20px 20px 4px}
-  .banner h1{font-size:22px;font-weight:700;letter-spacing:.5px}
-  .banner h1 span{color:var(--accent)}
-  .banner p{color:var(--text-dim);font-size:13px;margin-top:6px;max-width:880px}
+  .banner p{color:var(--text-dim);font-size:12.5px;margin-top:0;max-width:880px;line-height:1.5}
   .note{display:inline-flex;gap:8px;align-items:center;margin-top:12px;font-size:12px;color:var(--text-dim);
     background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--amber);border-radius:8px;padding:8px 12px}
   .note b{color:var(--amber)}
@@ -171,13 +171,12 @@
 </head>
 <body>
   <div class="topbar">
-    <div class="title"><span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19l5-7 4 5 3-4 6 6"/><circle cx="17" cy="6" r="2"/></svg></span> <span data-i18n="sec.title">路段进度</span> <small data-i18n="sec.sub">· 13 段区域徒步指南</small></div>
+    <div class="title"><span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19l5-7 4 5 3-4 6 6"/><circle cx="17" cy="6" r="2"/></svg></span><span class="pg-head"><span class="pg-title" data-i18n="sec.title">路段进度</span><small class="pg-sub" data-i18n="sec.sub">13 段区域徒步指南</small></span></div>
     <a class="back-link" href="index.html" title="返回首页" data-i18n="back.home" data-i18n-title="back.home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> 返回首页</a>
     <button class="lang-btn" type="button">Language ▾</button>
   </div>
 
   <div class="banner">
-    <h1 data-i18n="sec.banner">GHT 大喜马拉雅高线 · 13 段 区域徒步</h1>
     <p data-i18n="sec.banner2">从东端的干城章嘉到西陲的达尔楚拉，整条高线穿越 13 个尼泊尔区域。横屏滑动浏览每段区域地图与名称，悬停即可居中放大，点击「查看大图」进入含全部徒步数据的详情页。</p>
     <div class="note">📊 <span id="dataNote" data-i18n="sec.note.loading">数据说明：加载中…</span></div>
   </div>
@@ -195,7 +194,7 @@
   </div>
 
   <div class="cover-head">
-    <h2 data-i18n="sec.cover">路段进度</h2>
+    <h2 data-i18n="sec.cover">区域地图</h2>
     <span data-i18n="sec.cover2">悬停切换 · 点击「查看大图」看完整数据</span>
   </div>
 
