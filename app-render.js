@@ -178,10 +178,20 @@ function drawElevationProfile() {
     '<rect width="' + w + '" height="' + h + '" fill="transparent"/>' +
     gridLines +
     sectionDividers +
-    '<path d="' + pathD + '" fill="none" stroke="var(--accent)" stroke-width="1.5" opacity="0.6"/>' +
-    '<path d="' + pathD + '" fill="url(#elevGrad)" stroke="none" opacity="0.15"/>' +
+    '<path d="' + pathD + '" fill="none" stroke="url(#elevSemantic)" stroke-width="2" opacity="0.92"/>' +
+    '<path d="' + pathD + '" fill="url(#elevAreaGrad)" stroke="none" opacity="0.16"/>' +
     posLine +
-    '<defs><linearGradient id="elevGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--accent)" stop-opacity="0.3"/><stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>' +
+    '<defs>' +
+      '<linearGradient id="elevSemantic" x1="0" y1="0" x2="0" y2="1">' +
+        '<stop offset="0%" stop-color="#0284C7"/>' +
+        '<stop offset="45%" stop-color="#0E7490"/>' +
+        '<stop offset="100%" stop-color="#059669"/>' +
+      '</linearGradient>' +
+      '<linearGradient id="elevAreaGrad" x1="0" y1="0" x2="0" y2="1">' +
+        '<stop offset="0%" stop-color="#0284C7" stop-opacity="0.38"/>' +
+        '<stop offset="100%" stop-color="#059669" stop-opacity="0.02"/>' +
+      '</linearGradient>' +
+    '</defs>' +
     '</svg></div>';
 }
 
@@ -405,11 +415,11 @@ function progressModuleHTML() {
   const doneDays = days.filter(d => d.actual).length;
   const totalDays = days.length;
   const pct = APP.progressPercentage || APP.progressPct || 0;
-  const gain = (APP.presetTrack && APP.presetTrack.stats && APP.presetTrack.stats.elevGain)
+  const plannedGain = (APP.presetTrack && APP.presetTrack.stats && APP.presetTrack.stats.elevGain)
     ? APP.presetTrack.stats.elevGain : 0;
+  const doneGain = (typeof getCumulativeElevGain === 'function') ? getCumulativeElevGain() : 0;
   const elev = getDisplayElev();
   const np = getNextPass();
-  const goalGain = gain ? Math.round(gain * 1.12) : 0;
   const kcell = (v, l, s, cls) => '<div class="tg-cell' + (cls ? ' ' + cls : '') + '"><div class="l">' + l + '</div><div class="v">' + (v == null ? '—' : v) + '</div>' + (s ? '<div class="s">' + s + '</div>' : '') + '</div>';
   const ringIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"/><path d="M12 12l4-2"/></svg>';
   return '<div class="card-h"><span class="ch-ico">' + ringIcon + '</span>' + cardTitle('prog.title', 'OVERALL PROGRESS', '<span class="ch-cap">' + t('prog.ringCap') + ' <b>' + pct.toFixed(1) + '%</b> · ' + t('prog.ringDone') + ' ' + doneDays + ' / ' + totalDays + ' ' + t('prog.ringDayUnit') + '</span>') + '</div>' +
@@ -417,7 +427,7 @@ function progressModuleHTML() {
       statusRingHTML() +
       '<div class="tg progress-kpi">' +
         kcell(fmtNum(doneKm, 0) + 'km', t('prog.doneKm'), 'Total ' + fmtNum(totalKm, 0) + 'km') +
-        kcell(gain ? fmtNum(gain) + 'm' : '—', t('prog.totalGain'), t('prog.goal') + ' ' + fmtNum(goalGain) + 'm', 'k-green') +
+        kcell(doneGain ? fmtNum(doneGain) + 'm' : '—', t('prog.totalGain'), t('prog.planned') + ' ' + fmtNum(plannedGain) + 'm', 'k-green') +
         kcell(elev != null ? fmtNum(elev) + 'm' : '—', t('prog.curElev'), 'Day ' + doneDays, 'k-indigo') +
         kcell((np && np.elev != null) ? fmtNum(np.elev) + 'm' : '—', t('prog.nextPass'), (np && np.name ? esc(np.name) : '—'), 'k-pass') +
       '</div>' +
@@ -614,7 +624,26 @@ function renderDashboard() {
   setCard('cardToday', todaySummaryHTML());
   setCard('cardPasses', passesHTML());
   updateLiveStatus();
+  if (typeof updateHero === 'function') updateHero();
   if (typeof bindSectionClickHandlers === 'function') { try { bindSectionClickHandlers(); } catch (e) {} }
+}
+
+// Demo：叙事首屏三项数据（远征第 N 天 / 已行进 km / 累计海拔），取自真实 APP 数据
+function updateHero() {
+  const dEl = document.getElementById('heroDay');
+  const kEl = document.getElementById('heroKm');
+  const eEl = document.getElementById('heroElev');
+  if (!dEl && !kEl && !eEl) return;
+  const days = APP.itinerary || [];
+  const doneDays = days.filter(d => d.actual).length;
+  const doneKm = (APP.completedDistance / 1000) || 0;
+  const gain = (typeof getCumulativeElevGain === 'function') ? getCumulativeElevGain() : 0;
+  const nf = new Intl.NumberFormat('en-US');
+  const en = window.GHTI18N && window.GHTI18N.getLang() === 'en';
+  const dayUnit = en ? 'd' : '天';
+  if (dEl) dEl.innerHTML = nf.format(doneDays) + '<small>' + dayUnit + '</small>';
+  if (kEl) kEl.innerHTML = nf.format(Math.round(doneKm)) + '<small>km</small>';
+  if (eEl) eEl.innerHTML = (gain != null ? nf.format(Math.round(gain)) : '—') + '<small>m</small>';
 }
 
 function renderInfoBar() {

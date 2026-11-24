@@ -1,0 +1,48 @@
+/* ============================================================
+   GHT 探险纪实化 Demo · 全站高山色系 (alpine-theme.css)
+   只覆盖颜色变量，不改布局。所有页面在各自样式之后引入。
+   ============================================================ */
+
+/* 主色令牌：覆盖 design-redesign.css / 内联 :root（首页、行程、路段、日志、后台） */
+[data-theme="light"] {
+  --bg: #F4F7F6;
+  --panel: #FFFFFF;
+  --panel-alt: #EDF3F1;
+  --panel-bg: rgba(255, 255, 255, 0.94);
+  --bg-soft: #EAF1EF;
+  --border: #DDE7E3;
+  --border-light: #CBD9D4;
+  --text: #0C2B2A;
+  --text-dim: #47615D;
+  --text-dimmer: #6B837E;
+  --text-faint: #9AB0AB;
+  --accent: #0E7490;
+  --accent-bg: #E3F2F4;
+  --accent-soft: #D9EEF0;
+  --accent-grad: linear-gradient(135deg, #0E7490 0%, #0891B2 55%, #38BDF8 100%);
+  --accent2: #C2410C;
+  --route-done: #0E7490;
+  --route-plan: #C2410C;
+  --green: #0E7490;
+  --red: #B91C1C;
+  --purple: #7C3AED;
+  --cyan: #0891B2;
+  --gold: #B45309;
+  --amber: #C2410C;
+  --current-province: rgba(14, 116, 144, 0.12);
+}
+
+/* 轨迹页使用独立的 --tk-* 变量，单独映射 */
+:root {
+  --tk-bg: #F4F7F6;
+  --tk-panel: #FFFFFF;
+  --tk-text: #0C2B2A;
+  --tk-dim: #47615D;
+  --tk-faint: #7E968F;
+  --tk-border: #DDE7E3;
+  --tk-accent: #0E7490;
+  --tk-accent-bg: #D9EEF0;
+  --tk-green: #0E7490;
+  --tk-live: #C2410C;
+  --tk-amber: #B45309;
+}

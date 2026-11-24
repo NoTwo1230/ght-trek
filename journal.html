@@ -30,21 +30,21 @@
 
   /* 顶栏（Stripe 浅色主题） */
   .topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:16px;
-    padding:12px 22px;background:#FFFFFF;border-bottom:1px solid #E3E8EE}
-  .brand{display:flex;align-items:center;gap:11px;font-weight:500;font-size:16px;letter-spacing:.2px;color:#0A2540;flex:none}
+    padding:12px 22px;background:#FFFFFF;border-bottom:1px solid var(--border)}
+  .brand{display:flex;align-items:center;gap:11px;font-weight:500;font-size:16px;letter-spacing:.2px;color:var(--text);flex:none}
   .brand .logo{width:34px;height:34px;border-radius:9px;
-    background:#635BFF;display:grid;place-items:center;flex-shrink:0}
+    background:var(--accent);display:grid;place-items:center;flex-shrink:0}
   .brand .logo svg{width:18px;height:18px;stroke:#fff}
-  .brand .sub{font-weight:400;font-size:11px;color:#425466;letter-spacing:1px}
+  .brand .sub{font-weight:400;font-size:11px;color:var(--text-dim);letter-spacing:1px}
   .topbar .spacer{flex:1}
-  .back-link{margin-left:auto;font-size:13px;color:#425466;background:#fff;border:1px solid #D6DEE8;
+  .back-link{margin-left:auto;font-size:13px;color:var(--text-dim);background:#fff;border:1px solid var(--border);
     border-radius:8px;padding:7px 13px;text-decoration:none;cursor:pointer;transition:.18s;white-space:nowrap;
     display:inline-flex;align-items:center;gap:6px}
-  .back-link:hover{color:#0A2540;border-color:#635BFF;background:#EEEBFF}
+  .back-link:hover{color:var(--text);border-color:var(--accent);background:var(--accent-bg)}
   .lang-btn{margin-left:14px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-family:inherit;
-    background:#F6F9FC;color:#0A2540;border:1px solid #D6DEE8;
+    background:var(--bg);color:var(--text);border:1px solid var(--border);
     border-radius:8px;padding:7px 13px;font-size:13px;font-weight:400;transition:.18s;white-space:nowrap}
-  .lang-btn:hover{color:#0A2540;border-color:#635BFF;background:#EEEBFF}
+  .lang-btn:hover{color:var(--text);border-color:var(--accent);background:var(--accent-bg)}
 
   /* 页头 */
   .page-head{max-width:920px;margin:0 auto;padding:30px 22px 6px}
@@ -148,6 +148,7 @@
   }
 </style>
 <link rel="stylesheet" href="design-redesign.css" />
+<link rel="stylesheet" href="alpine-theme.css" />
 <script>document.documentElement.dataset.theme='light';</script>
 </head>
 <body>

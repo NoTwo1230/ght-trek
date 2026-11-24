@@ -1,0 +1,98 @@
+/* ============================================================
+   GHT 探险纪实化 Demo 层 (hero.css)
+   仅作用于 Demo，覆盖 design-redesign.css / demo-live.css 的外观，
+   不改动任何业务逻辑。包含：高山色系 + 叙事首屏 + 排版精修。
+   ============================================================ */
+
+/* 配色统一由 alpine-theme.css 提供（须先于本文件引入） */
+
+/* ── 2. 布局：固定三行 → 可滚动，给 Hero 让位 ── */
+body { overflow-y: auto; }
+.app { grid-template-rows: 50px auto 1fr 26px; height: auto; min-height: 100vh; }
+.dash-grid { grid-row: 3; min-height: 0; }
+
+/* ── 3. 叙事首屏 Hero ── */
+.hero {
+  grid-row: 2;
+  position: relative;
+  overflow: hidden;
+  color: #F8FAFC;
+  background: linear-gradient(115deg, #0B3B47 0%, #0E5A6E 48%, #0E7490 100%);
+  padding: 20px 26px 22px;
+  min-height: 132px;
+}
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to top, rgba(255,255,255,.10) 1px, transparent 1px),
+    linear-gradient(to right, rgba(255,255,255,.06) 1px, transparent 1px);
+  background-size: 46px 46px;
+  opacity: .35;
+}
+.hero::after {
+  content: "";
+  position: absolute;
+  right: -40px; bottom: -80px;
+  width: 460px; height: 300px;
+  background:
+    linear-gradient(135deg, transparent 47%, rgba(255,255,255,.10) 48%, rgba(255,255,255,.10) 49%, transparent 50%) 0 0/100% 100%,
+    linear-gradient(45deg, transparent 47%, rgba(255,255,255,.07) 48%, rgba(255,255,255,.07) 49%, transparent 50%) 0 0/100% 100%;
+  clip-path: polygon(0 100%, 22% 52%, 38% 72%, 62% 24%, 78% 55%, 100% 30%, 100% 100%);
+  opacity: .55;
+  pointer-events: none;
+}
+.hero-inner { position: relative; z-index: 2; display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
+.hero-copy { flex: 1 1 320px; min-width: 0; }
+.hero-kicker {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 10px; letter-spacing: 2.4px; text-transform: uppercase;
+  color: #A5E6E8; font-weight: 700; margin-bottom: 7px;
+}
+.hero-kicker .line { width: 22px; height: 1px; background: #A5E6E8; opacity: .7; }
+.hero-kicker .en { display: none; }
+html[lang="en"] .hero-kicker .zh { display: none; }
+html[lang="en"] .hero-kicker .en { display: inline; }
+.hero-title { font-size: 27px; line-height: 1.15; font-weight: 800; letter-spacing: .5px; margin: 0 0 6px; }
+.hero-title .en { display: block; font-size: 13px; font-weight: 500; letter-spacing: 1px; color: #A5E6E8; margin-top: 3px; }
+.hero-sub { font-size: 12px; color: #CDE9E7; line-height: 1.6; margin: 0; max-width: 480px; }
+.hero-sub .en { display: none; }
+html[lang="en"] .hero-title .zh, html[lang="en"] .hero-sub .zh { display: none; }
+html[lang="en"] .hero-sub .en { display: inline; }
+
+.hero-metrics { display: flex; gap: 10px; flex: 0 0 auto; }
+.hero-metric {
+  background: rgba(255,255,255,.10);
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 12px;
+  padding: 11px 15px 10px;
+  min-width: 104px;
+  backdrop-filter: blur(2px);
+}
+.hero-metric .hm-v {
+  font-size: 25px; font-weight: 800; line-height: 1;
+  font-variant-numeric: tabular-nums; letter-spacing: -.5px;
+  color: #FFFFFF;
+}
+.hero-metric .hm-v small { font-size: 12px; font-weight: 600; color: #A5E6E8; margin-left: 2px; }
+.hero-metric .hm-l { font-size: 10px; color: #CDE9E7; margin-top: 6px; letter-spacing: .5px; }
+.hero-metric .hm-l .en { display: none; }
+html[lang="en"] .hero-metric .hm-l .zh { display: none; }
+html[lang="en"] .hero-metric .hm-l .en { display: inline; }
+
+@media (max-width: 900px) {
+  .hero { padding: 16px 18px; }
+  .hero-title { font-size: 22px; }
+  .hero-metrics { width: 100%; }
+  .hero-metric { flex: 1; min-width: 0; }
+}
+
+/* ── 4. 排版精修：数字等宽 + 卡片气质 ── */
+.tg-cell .v, .info-pct, .big-ring text, .ev-stat, .stat-card .v {
+  font-variant-numeric: tabular-nums;
+}
+.card { border-radius: 12px; box-shadow: 0 1px 2px rgba(12,43,42,.04); }
+.card-h .ch-ico { color: var(--accent); }
+.progress-kpi .k-green .v { color: var(--accent) !important; }
+.progress-kpi .k-indigo .v { color: #0891B2 !important; }

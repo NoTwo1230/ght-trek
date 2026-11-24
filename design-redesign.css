@@ -24,7 +24,7 @@
   --accent: #635BFF;            /* Stripe indigo 品牌色 */
   --accent-bg: #EEEBFF;
   --accent-soft: #ECE9FF;
-  --accent-grad: linear-gradient(135deg, #635BFF 0%, #2DD4BF 100%);  /* 品牌渐变点缀 */
+  --accent-grad: linear-gradient(135deg, var(--accent) 0%, #2DD4BF 100%);  /* 品牌渐变点缀 */
   --accent2: #F5A623;
   --route-done: #00A86B;
   --route-plan: #635BFF;
@@ -38,7 +38,7 @@
   --amber: #B7791F;
   --orange: #C2410C;
   --cyan: #2DD4BF;
-  --current-province: rgba(99, 91, 255, 0.12);
+  --current-province: rgba(14,116,144,0.12);
   --radius: 12px;
   --radius-sm: 8px;
   --shadow-raised: 0 1px 3px rgba(10, 37, 64, .08), 0 1px 2px rgba(10, 37, 64, .04);
@@ -146,7 +146,7 @@
   width: 40px; height: 40px; border-radius: 10px;
   background: var(--accent-grad);
   display: grid; place-items: center; color: #fff;
-  box-shadow: 0 2px 8px rgba(99, 91, 255, .3);
+  box-shadow: 0 2px 8px rgba(14,116,144,.3);
   flex-shrink: 0;
 }
 .brand-mark svg { width: 22px; height: 22px; }
@@ -347,7 +347,7 @@ body, .app, .topnav, .statusbar, .dash-grid, .col-left, .col-right, .col-center,
 .pb-ico svg { width: 14px; height: 14px; }
 .ev-ico { display: inline-flex; align-items: center; color: var(--accent); margin-right: 4px; vertical-align: -2px; }
 .ev-ico svg { width: 14px; height: 14px; }
-.ld-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px rgba(0,168,107,.22); vertical-align: middle; }
+.ld-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px rgba(14,116,144,.22); vertical-align: middle; }
 .live-dot.offline .ld-dot { background: var(--text-dim); box-shadow: none; }
 
 /* ── 浅色(Stripe)仪表盘组件 reskin：仿 demo 视觉语言 ── */
@@ -408,7 +408,7 @@ body, .app, .topnav, .statusbar, .dash-grid, .col-left, .col-right, .col-center,
 [data-theme="light"] .pass-elev { font-family: var(--font-mono); font-size: 14px; color: var(--text-dim); text-align: right; }
 [data-theme="light"] .pass-check { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--green); color: #fff; font-size: 12px; font-weight: 700; }
 [data-theme="light"] .pass-dot { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border); }
-[data-theme="light"] .pass-days { background: rgba(0, 168, 107, .15); color: var(--green); }
+[data-theme="light"] .pass-days { background: rgba(14,116,144,.15); color: var(--green); }
 [data-theme="light"] .pass-days.far { background: rgba(66, 86, 102, .12); color: var(--text-dim); }
 [data-theme="light"] .more-link { color: var(--accent); }
 /* 地图 / 海拔（浅色） */
@@ -419,8 +419,8 @@ body, .app, .topnav, .statusbar, .dash-grid, .col-left, .col-right, .col-center,
 [data-theme="light"] .elevation-panel .elev-scope button.on { background: var(--accent); color: #fff; }
 [data-theme="light"] .pos-badge, [data-theme="light"] .region-info { background: var(--panel-bg); border: 1px solid var(--border); color: var(--text); }
 [data-theme="light"] .map-legend { background: var(--panel-bg); border: 1px solid var(--border); color: var(--text); }
-[data-theme="light"] .lg-sw.lg-actual { background: #00A86B; border: 1px solid rgba(0,168,107,0.3); }
-[data-theme="light"] .lg-sw.lg-plan { background: repeating-linear-gradient(90deg, #635BFF 0 6px, transparent 6px 14px); border: 1px solid rgba(99,91,255,0.3); }
+[data-theme="light"] .lg-sw.lg-actual { background: var(--green); border: 1px solid rgba(14,116,144,0.3); }
+[data-theme="light"] .lg-sw.lg-plan { background: repeating-linear-gradient(90deg, var(--accent) 0 6px, transparent 6px 14px); border: 1px solid rgba(14,116,144,0.3); }
 
 /* ── 无障碍：尊重 reduced-motion ── */
 @media (prefers-reduced-motion: reduce) {
@@ -473,8 +473,8 @@ body, .app, .topnav, .statusbar, .dash-grid, .col-left, .col-right, .col-center,
 /* ── itinerary：日历页专用 ── */
 [data-theme="light"] body:has(.cal-wrap) {
   background:
-    radial-gradient(1200px 600px at 80% -10%, rgba(99, 91, 255, 0.06), transparent 60%),
-    radial-gradient(900px 500px at -10% 110%, rgba(0, 168, 107, 0.05), transparent 60%),
+    radial-gradient(1200px 600px at 80% -10%, rgba(14,116,144,0.06), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(14,116,144,0.05), transparent 60%),
     var(--bg) !important;
 }
 [data-theme="light"] .summary .stat,
@@ -499,7 +499,7 @@ body, .app, .topnav, .statusbar, .dash-grid, .col-left, .col-right, .col-center,
 [data-theme="light"] .cell.today {
   border: 2px solid var(--accent);
   background: var(--accent-bg);
-  box-shadow: 0 0 0 1px rgba(99, 91, 255, 0.25);
+  box-shadow: 0 0 0 1px rgba(14,116,144,0.25);
 }
 [data-theme="light"] .chip {
   background: var(--panel-alt);
@@ -549,17 +549,17 @@ body, .app, .topnav, .statusbar, .dash-grid, .col-left, .col-right, .col-center,
   border-color: var(--border-light);
 }
 [data-theme="light"] .col.plan {
-  background: rgba(99, 91, 255, 0.04);
-  border-color: rgba(99, 91, 255, 0.14);
+  background: rgba(14,116,144,0.04);
+  border-color: rgba(14,116,144,0.14);
 }
 [data-theme="light"] .col.actual {
-  background: rgba(0, 168, 107, 0.04);
-  border-color: rgba(0, 168, 107, 0.14);
+  background: rgba(14,116,144,0.04);
+  border-color: rgba(14,116,144,0.14);
 }
 [data-theme="light"] .slip-note {
   background: rgba(245, 166, 35, 0.08);
   border-color: rgba(245, 166, 35, 0.30);
-  color: #B7791F;
+  color: var(--amber);
 }
 [data-theme="light"] .date-warn {
   background: rgba(223, 27, 65, 0.06);
@@ -571,7 +571,7 @@ body, .app, .topnav, .statusbar, .dash-grid, .col-left, .col-right, .col-center,
 /* ── journal：日志页专用 ── */
 [data-theme="light"] body:has(.feed) {
   background:
-    radial-gradient(1200px 600px at 80% -10%, rgba(99, 91, 255, 0.05), transparent 60%),
+    radial-gradient(1200px 600px at 80% -10%, rgba(14,116,144,0.05), transparent 60%),
     radial-gradient(900px 500px at -5% 10%, rgba(186, 140, 255, 0.04), transparent 55%),
     var(--bg) !important;
 }
@@ -605,8 +605,8 @@ body, .app, .topnav, .statusbar, .dash-grid, .col-left, .col-right, .col-center,
   color: var(--text-dim);
 }
 [data-theme="light"] .gps-badge {
-  background: rgba(0, 168, 107, 0.08);
-  border-color: rgba(0, 168, 107, 0.25);
+  background: rgba(14,116,144,0.08);
+  border-color: rgba(14,116,144,0.25);
   color: var(--green);
 }
 [data-theme="light"] .sc {
@@ -614,7 +614,7 @@ body, .app, .topnav, .statusbar, .dash-grid, .col-left, .col-right, .col-center,
   border-color: var(--border);
 }
 [data-theme="light"] .spark {
-  background: linear-gradient(180deg, rgba(99, 91, 255, 0.04), transparent);
+  background: linear-gradient(180deg, rgba(14,116,144,0.04), transparent);
   border-color: var(--border);
 }
 [data-theme="light"] .composer-box {
@@ -654,7 +654,7 @@ body, .app, .topnav, .statusbar, .dash-grid, .col-left, .col-right, .col-center,
 /* ── sections：路段全景页专用 ── */
 [data-theme="light"] body:has(.cover-wrap) {
   background:
-    radial-gradient(1200px 600px at 85% -10%, rgba(99, 91, 255, 0.05), transparent 60%),
+    radial-gradient(1200px 600px at 85% -10%, rgba(14,116,144,0.05), transparent 60%),
     radial-gradient(900px 500px at -10% 110%, rgba(240, 136, 62, 0.04), transparent 60%),
     var(--bg) !important;
 }

@@ -28,7 +28,7 @@
     --accent: #635BFF;
     --accent-bg: #EEEBFF;
     --accent-soft: #ECE9FF;
-    --accent-grad: linear-gradient(135deg, #635BFF 0%, #2DD4BF 100%);  /* 品牌渐变点缀 */
+    --accent-grad: linear-gradient(135deg, var(--accent) 0%, #2DD4BF 100%);  /* 品牌渐变点缀 */
     --accent2: #F5A623;
     --route-done: #00A86B;
     --route-plan: #635BFF;
@@ -39,7 +39,7 @@
     --purple: #BC8CFF;
     --yellow: #B7791F;
     --cyan: #2DD4BF;
-    --current-province: rgba(99, 91, 255, 0.12);
+    --current-province: rgba(14,116,144,0.12);
     --radius: 12px;
     --radius-sm: 8px;
     --shadow-raised: 0 1px 3px rgba(10, 37, 64, .08), 0 1px 2px rgba(10, 37, 64, .04);
@@ -74,7 +74,7 @@
     width: 34px; height: 34px;
     border-radius: 8px;
     background: var(--accent-bg);
-    border: 1px solid rgba(88,166,255,0.25);
+    border: 1px solid rgba(14,116,144,0.25);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -97,7 +97,7 @@
     color: var(--text-dim);
   }
   .nav-left .nav-btn:hover { background: rgba(255,255,255,0.04); color: var(--text); }
-  .nav-left .nav-btn.active { background: var(--accent-bg); color: var(--accent); border: 1px solid rgba(88,166,255,0.25); }
+  .nav-left .nav-btn.active { background: var(--accent-bg); color: var(--accent); border: 1px solid rgba(14,116,144,0.25); }
   .nav-left .nav-btn .badge {
     position: absolute;
     top: 3px; right: 3px;
@@ -181,7 +181,7 @@
   }
   .info-slip.behind { background: rgba(248,81,73,0.15); color: var(--red); border: 1px solid rgba(248,81,73,0.35); }
   .info-slip.ahead { background: rgba(63,185,80,0.15); color: var(--green); border: 1px solid rgba(63,185,80,0.35); }
-  .info-slip.on { background: rgba(88,166,255,0.12); color: var(--accent); border: 1px solid rgba(88,166,255,0.3); }
+  .info-slip.on { background: rgba(14,116,144,0.12); color: var(--accent); border: 1px solid rgba(14,116,144,0.3); }
   .info-chips { display: flex; gap: 8px; margin-left: auto; }
   .info-chip {
     background: var(--bg);
@@ -398,10 +398,10 @@
   /* 计划路线图例：靛蓝虚线（与地图计划线 --route-plan / dashArray '6,8' 一致） */
   .map-legend .lg-plan {
     width: 24px; height: 3px; border: none;
-    background: repeating-linear-gradient(90deg, #635BFF 0 6px, transparent 6px 14px);
+    background: repeating-linear-gradient(90deg, var(--accent) 0 6px, transparent 6px 14px);
   }
   /* 实际轨迹图例：绿色实线（与地图实际轨迹 --route-done 一致） */
-  .map-legend .lg-actual { background: #00A86B; }
+  .map-legend .lg-actual { background: var(--green); }
   @media (max-width: 640px) {
     .map-legend { width: 160px; top: 8px; left: 8px; }
     .map-compass { top: 8px; right: 8px; }
@@ -595,7 +595,7 @@
     font-size: 12px;
   }
   .section-item:hover { border-color: var(--accent); }
-  .section-item.active { border-color: var(--accent); background: rgba(88,166,255,0.06); }
+  .section-item.active { border-color: var(--accent); background: rgba(14,116,144,0.06); }
   .section-item.completed { border-color: rgba(63,185,80,0.3); }
   .section-indicator {
     width: 10px; height: 10px;
@@ -635,8 +635,8 @@
     justify-content: center;
   }
   .btn:hover { border-color: var(--accent); }
-  .btn.primary { background: rgba(88,166,255,0.12); border-color: rgba(88,166,255,0.3); }
-  .btn.primary:hover { background: rgba(88,166,255,0.2); }
+  .btn.primary { background: rgba(14,116,144,0.12); border-color: rgba(14,116,144,0.3); }
+  .btn.primary:hover { background: rgba(14,116,144,0.2); }
 
   .btn-reset {
     font-size: 10px; padding: 3px 8px;
@@ -683,7 +683,7 @@
     background: var(--bg); border: 1px solid var(--border);
     border-radius: 8px; color: var(--text); font-family: inherit;
   }
-  .form-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(88,166,255,0.15); }
+  .form-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(14,116,144,0.15); }
   .pwd-err { font-size: 12px; color: var(--red); }
 
   /* ── ITINERARY ── */
@@ -719,7 +719,7 @@
     transition: all 0.2s;
   }
   .itinerary-day:hover { border-color: var(--accent); }
-  .itinerary-day.today { border-color: var(--accent); background: rgba(88,166,255,0.06); }
+  .itinerary-day.today { border-color: var(--accent); background: rgba(14,116,144,0.06); }
   .itinerary-day.ahead { border-left: 3px solid var(--green); }
   .itinerary-day.behind { border-left: 3px solid var(--red); }
   .itinerary-day.on-track { border-left: 3px solid var(--accent); }
@@ -772,7 +772,7 @@
     gap: 4px;
   }
   .itinerary-day .col { padding: 5px 6px; border-radius: 3px; }
-  .itinerary-day .col.col-plan { background: rgba(88,166,255,0.05); border: 1px solid rgba(88,166,255,0.12); }
+  .itinerary-day .col.col-plan { background: rgba(14,116,144,0.05); border: 1px solid rgba(14,116,144,0.12); }
   .itinerary-day .col.col-actual { background: rgba(63,185,80,0.05); border: 1px solid rgba(63,185,80,0.12); }
   .itinerary-day .divider { background: var(--border); }
   .itinerary-day .col-title { font-size: 9px; font-weight: 700; letter-spacing: .3px; margin-bottom: 3px; }
@@ -792,7 +792,7 @@
   .chip.today { background: var(--accent); color: #fff; }
   .chip.ahead { background: rgba(63,185,80,.18); color: var(--green); }
   .chip.behind { background: rgba(248,81,73,.18); color: var(--red); }
-  .chip.ontime { background: rgba(88,166,255,.18); color: var(--accent); }
+  .chip.ontime { background: rgba(14,116,144,.18); color: var(--accent); }
 
   .btn-edit-day {
     opacity: 0;
@@ -948,8 +948,8 @@
     transition: all 0.15s;
   }
   .basemap-btn + .basemap-btn { border-top: 1px solid rgba(255,255,255,0.1); }
-  .basemap-btn:hover { background: rgba(88,166,255,0.1); color: var(--text); }
-  .basemap-btn.active { background: rgba(88,166,255,0.15); color: var(--accent); }
+  .basemap-btn:hover { background: rgba(14,116,144,0.1); color: var(--text); }
+  .basemap-btn.active { background: rgba(14,116,144,0.15); color: var(--accent); }
 
   /* Fit-to-route button (between zoom and basemap, bottom-left) */
   .fitview-control { margin-top: 8px; }
@@ -963,7 +963,7 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.5);
     transition: all 0.15s;
   }
-  .fitview-btn:hover { background: rgba(88,166,255,0.2); color: #fff; }
+  .fitview-btn:hover { background: rgba(14,116,144,0.2); color: #fff; }
 
   .region-tooltip {
     background: var(--panel-bg);
@@ -990,7 +990,7 @@
   .leaflet-control-scale-line { background: var(--panel-bg) !important; border-color: rgba(255,255,255,0.15) !important; color: var(--text-dim) !important; }
   .leaflet-control-zoom { border: none !important; }
   .leaflet-control-zoom a { background: var(--panel-bg) !important; color: var(--text) !important; border: 1px solid rgba(255,255,255,0.15) !important; font-size: 18px !important; }
-  .leaflet-control-zoom a:hover { background: rgba(88,166,255,0.2) !important; color: #fff !important; }
+  .leaflet-control-zoom a:hover { background: rgba(14,116,144,0.2) !important; color: #fff !important; }
   .leaflet-control-zoom a:first-child { border-radius: 6px 6px 0 0 !important; }
   .leaflet-control-zoom a:last-child { border-radius: 0 0 6px 6px !important; border-top: none !important; }
 
@@ -1013,7 +1013,7 @@
   .sec-card { background: var(--bg); border-left: 3px solid #888; border-radius: 0 10px 10px 0;
     margin-bottom: 12px; overflow: hidden; cursor: pointer; transition: transform .15s, box-shadow .15s; }
   .sec-card:hover { transform: translateX(2px); }
-  .sec-card.active { box-shadow: 0 0 0 1px var(--accent), 0 6px 18px rgba(88,166,255,.18); }
+  .sec-card.active { box-shadow: 0 0 0 1px var(--accent), 0 6px 18px rgba(14,116,144,.18); }
   .sec-head { display: flex; align-items: center; gap: 8px; padding: 12px 14px 10px; }
   .sec-title { font-weight: 600; font-size: 13px; flex: 1; }
   .sec-title small { display: block; font-weight: 400; font-size: 11px; color: var(--text-dim); }
@@ -1063,7 +1063,7 @@
     display: inline-flex; align-items: center; margin-left: 4px;
     padding: 6px 13px; border-radius: 6px; cursor: pointer; white-space: nowrap;
     font-size: 12px; font-family: inherit; text-decoration: none;
-    color: var(--accent); background: transparent; border: 1px solid rgba(88,166,255,0.25);
+    color: var(--accent); background: transparent; border: 1px solid rgba(14,116,144,0.25);
     transition: all 0.15s;
   }
   .tn-ext:hover { color: #fff; background: var(--accent); }
@@ -1077,7 +1077,7 @@
     background: rgba(255,255,255,.04); border: 1px solid var(--border-light); color: var(--text);
     border-radius: 8px; padding: 7px 13px; font-size: 12px; cursor: pointer; font-family: inherit;
   }
-  .lang-btn:hover { color: #fff; border-color: var(--accent); background: rgba(88,166,255,.08); }
+  .lang-btn:hover { color: #fff; border-color: var(--accent); background: rgba(14,116,144,.08); }
 
   /* ── DASH GRID ── */
   .dash-grid {
