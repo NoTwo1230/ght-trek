@@ -36,11 +36,11 @@ body {
 }
 .tk-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .tk-mark {
-  width: 30px; height: 30px; border-radius: 8px; flex: none;
+  width: 34px; height: 34px; border-radius: 9px; flex: none;
   background: var(--tk-accent); color: #fff;
   display: flex; align-items: center; justify-content: center;
 }
-.tk-mark svg { width: 17px; height: 17px; }
+.tk-mark svg { width: 18px; height: 18px; }
 .tk-title { font-size: 15px; font-weight: 650; white-space: nowrap; }
 .tk-sub { font-size: 11px; color: var(--tk-faint); white-space: nowrap; }
 .tk-spacer { flex: 1; }

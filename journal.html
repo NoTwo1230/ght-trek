@@ -48,7 +48,7 @@
 
   /* 页头 */
   .page-head{max-width:920px;margin:0 auto;padding:30px 22px 6px}
-  .page-head h1{font-size:27px;font-weight:800;letter-spacing:.5px;display:flex;align-items:center;gap:11px}
+  .page-head h1{font-size:27px;font-weight:700;letter-spacing:.5px;display:flex;align-items:center;gap:11px}
   .page-head .en{font-size:12px;font-weight:600;color:var(--text-faint);letter-spacing:3px;margin-top:3px}
   .page-head p.sub{color:var(--text-dim);font-size:13px;margin-top:10px;max-width:660px}
 
@@ -171,7 +171,7 @@
   <div class="stats" id="stats">
     <div class="stat"><div class="v" id="st-total">0<small>篇</small></div><div class="k" data-i18n="jo.total">总日志</div></div>
     <div class="stat"><div class="v green" id="st-dist">0<small>km</small></div><div class="k" data-i18n="jo.dist">已记录里程</div></div>
-    <div class="stat"><div class="v gold" id="st-gain">0<small>km</small></div><div class="k" data-i18n="jo.gain">累计爬升</div></div>
+    <div class="stat"><div class="v gold" id="st-gain">0<small>m</small></div><div class="k" data-i18n="jo.gain">累计爬升</div></div>
     <div class="stat"><div class="v accent" id="st-sec">0<small>段</small></div><div class="k" data-i18n="jo.sec">覆盖路段</div></div>
   </div>
 
@@ -432,7 +432,7 @@
     });
     document.getElementById('st-total').innerHTML = logEntries.length + '<small>' + t('jo.unit.pcs') + '</small>';
     document.getElementById('st-dist').innerHTML = Math.round(dist).toLocaleString() + '<small>km</small>';
-    document.getElementById('st-gain').innerHTML = (gain / 1000).toFixed(1) + '<small>k m</small>';
+    document.getElementById('st-gain').innerHTML = Math.round(gain).toLocaleString() + '<small>m</small>';
     document.getElementById('st-sec').innerHTML = covered.size + '<small>' + t('jo.unit.secs') + '</small>';
   }
 
